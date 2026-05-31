@@ -1,53 +1,220 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>凰貴妃茶堂 - 線上點餐</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
     <style>
       body {
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        padding: 20px;
-        background-color: #f9f9f9;
+        padding: 15px;
+        background-color: #fcf6f2; /* 給顧客端一個溫暖的奶茶色背景 */
         margin: 0;
+        color: #333;
       }
       .container {
         max-width: 600px;
         margin: 0 auto;
         background: white;
         padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       }
       .header {
         text-align: center;
         color: #d35400;
-        border-bottom: 2px solid #eee;
-        padding-bottom: 10px;
+        border-bottom: 2px solid #f2e2d9;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
       }
+      .header h2 { margin: 0 0 5px 0; font-size: 24px; }
+      .header p { margin: 0; color: #7f8c8d; font-size: 14px; }
+      
+      /* 歡迎訊息 */
+      .welcome-msg {
+        text-align: center;
+        font-weight: bold;
+        color: #2980b9;
+        margin-bottom: 20px;
+        display: none; /* 登入後才顯示 */
+      }
+      
+      /* 載入中狀態 */
       .loading-msg {
         text-align: center;
-        color: #666;
-        margin-top: 20px;
+        color: #e67e22;
+        font-weight: bold;
+        padding: 20px 0;
       }
+
+      /* 菜單分類樣式 */
+      .category-title {
+        background-color: #d35400;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-top: 20px;
+        font-size: 16px;
+      }
+      .menu-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px dashed #eee;
+      }
+      .menu-name {
+        font-weight: bold;
+        font-size: 16px;
+        color: #2c3e50;
+      }
+      .menu-price {
+        color: #e74c3c;
+        font-size: 14px;
+      }
+      
+      /* 訂購按鈕 (預留給下一步) */
+      .btn-order {
+        background-color: #f39c12;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .btn-order:hover { background-color: #e67e22; }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
         <h2>凰貴妃茶堂</h2>
-        <p>線上點餐系統</p>
+        <p>線上專屬點餐系統</p>
       </div>
       
+      <div id="welcome-msg" class="welcome-msg"></div>
+
       <div id="app-content">
-        <p class="loading-msg">系統載入中，請稍候...</p>
+        <div class="loading-msg" id="status-text">🔄 系統連線中，請稍候...</div>
+        <div id="menu-container"></div>
       </div>
     </div>
 
     <script>
-      // 網頁載入完成後會執行的邏輯
+      // =========================================
+      // 系統核心設定參數
+      // =========================================
+      const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
+      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw-EwGrE9UwFhUgl4ePZ1JhVrXoYsK0t5YD5YQkC6oc20DuY6GaUeR6ni3h1j_z_N4t/exec";
+
+      // 共用的 API 呼叫函式 (fetch)
+      async function callGAS(action, payload = {}) {
+        payload.action = action;
+        try {
+          const response = await fetch(GAS_API_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+          return await response.json();
+        } catch (error) {
+          document.getElementById("status-text").innerText = "⚠️ 網路連線異常，請重新整理";
+          throw error;
+        }
+      }
+
       window.onload = function() {
-        console.log("顧客端網頁載入成功");
-        // 下一步：在這裡放入 LIFF 初始化程式碼
+        document.getElementById("status-text").innerText = "啟動 LIFF 模組中...";
+        initializeLiff();
       };
+
+      function initializeLiff() {
+        liff.init({ liffId: CUSTOMER_LIFF_ID })
+          .then(() => {
+            if (!liff.isLoggedIn()) {
+              liff.login();
+            } else {
+              // 取得顧客的 LINE 暱稱來打招呼
+              liff.getProfile().then(profile => {
+                const welcomeDiv = document.getElementById("welcome-msg");
+                welcomeDiv.innerText = `哈囉，${profile.displayName}！想喝點什麼呢？`;
+                welcomeDiv.style.display = "block";
+                
+                // 開始抓取菜單
+                loadMenuData();
+              });
+            }
+          })
+          .catch((err) => {
+            document.getElementById("status-text").innerHTML = "LIFF 初始化失敗，請確認設定。<br>" + err;
+          });
+      }
+
+      // 向後端 GAS 索取菜單資料並渲染到畫面上
+      function loadMenuData() {
+        document.getElementById("status-text").innerText = "📖 讀取最新菜單中...";
+        
+        callGAS('getMenuData')
+          .then(res => {
+            if (res.success) {
+              document.getElementById("status-text").style.display = "none";
+              renderMenu(res.data);
+            } else {
+              document.getElementById("status-text").innerText = "載入菜單失敗：" + res.message;
+            }
+          });
+      }
+
+      // 將資料陣列轉換成漂亮的 HTML
+      function renderMenu(menuList) {
+        const container = document.getElementById("menu-container");
+        container.innerHTML = "";
+        
+        if (menuList.length === 0) {
+          container.innerHTML = "<p style='text-align:center;'>目前尚無供應品項</p>";
+          return;
+        }
+
+        // 把菜單依照「分類 (category)」分組
+        const groupedMenu = {};
+        menuList.forEach(item => {
+          if (!groupedMenu[item.category]) {
+            groupedMenu[item.category] = [];
+          }
+          groupedMenu[item.category].push(item);
+        });
+
+        // 依序印出分類與品項
+        for (const category in groupedMenu) {
+          // 印出分類標題
+          const catDiv = document.createElement("div");
+          catDiv.className = "category-title";
+          catDiv.innerText = category;
+          container.appendChild(catDiv);
+
+          // 印出該分類下的所有品項
+          groupedMenu[category].forEach(item => {
+            const itemDiv = document.createElement("div");
+            itemDiv.className = "menu-item";
+            
+            // 價格顯示邏輯 (L杯/XL杯)
+            let priceText = "";
+            if (item.priceL > 0) priceText += `L: $${item.priceL} `;
+            if (item.priceXL > 0) priceText += `XL: $${item.priceXL}`;
+            
+            itemDiv.innerHTML = `
+              <div>
+                <div class="menu-name">${item.name}</div>
+                <div class="menu-price">${priceText}</div>
+              </div>
+              <button class="btn-order" onclick="alert('點餐功能即將開放！')">選擇</button>
+            `;
+            container.appendChild(itemDiv);
+          });
+        }
+      }
     </script>
   </body>
 </html>
