@@ -1,47 +1,17 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>店鋪管理系統</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <style>
-      body {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        padding: 15px;
-        background-color: #e8f4f8; 
-        margin: 0;
-        color: #333;
-      }
-      .container {
-        max-width: 850px;
-        margin: 0 auto 20px auto;
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      }
-      .header {
-        text-align: center;
-        color: #2980b9;
-        margin-bottom: 25px;
-        border-bottom: 3px solid #2980b9;
-        padding-bottom: 10px;
-      }
-      .section {
-        margin-top: 20px;
-        padding: 18px;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        background-color: #fff;
-      }
-      .section h3 {
-        margin-top: 0;
-        color: #2c3e50;
-        border-left: 4px solid #2980b9;
-        padding-left: 10px;
-      }
-      
-      /* 表單與表格樣式 */
+      body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 15px; background-color: #e8f4f8; margin: 0; color: #333; }
+      .container { max-width: 850px; margin: 0 auto 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+      .header { text-align: center; color: #2980b9; margin-bottom: 25px; border-bottom: 3px solid #2980b9; padding-bottom: 10px; }
+      .section { margin-top: 20px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fff; }
+      .section h3 { margin-top: 0; color: #2c3e50; border-left: 4px solid #2980b9; padding-left: 10px; }
       .form-group { margin-bottom: 15px; }
       .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #4f5f6f; }
       .form-control { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
@@ -56,8 +26,6 @@
       .badge { padding: 4px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; }
       .badge-wallet { background-color: #e8f8f5; color: #16a085; }
       .badge-cash { background-color: #fef9e7; color: #d35400; }
-
-      /* 除錯功能與安全防線樣式 */
       .loading-text { text-align: center; color: #7f8c8d; font-size: 18px; margin-top: 30px; }
       .debug-box { background: #333; color: #2ecc71; font-family: monospace; padding: 10px; border-radius: 5px; margin-top: 15px; font-size: 12px; text-align: left; }
       .error-box { background: #fdf2f2; color: #c0392b; border: 1px solid #e74c3c; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: left; }
@@ -69,9 +37,7 @@
   <body>
 
     <div id="loading-layer" class="container">
-      <div class="loading-text">
-        🔒 系統安全驗證中，請稍候...
-      </div>
+      <div class="loading-text">🔒 系統安全驗證中，請稍候...</div>
       <div class="loading-text" style="font-size:14px; color:#3498db; font-weight:bold;">
         目前狀態：<span id="step-status">正在啟動保全模組...</span>
       </div>
@@ -137,9 +103,12 @@
     </div>
 
     <script>
+      // =========================================
+      // 系統核心設定參數 (不用再改了，已經幫你帶入)
+      // =========================================
       const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
+      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw-EwGrE9UwFhUgl4ePZ1JhVrXoYsK0t5YD5YQkC6oc20DuY6GaUeR6ni3h1j_z_N4t/exec";
 
-      // 輔助除錯函式：將進度與錯誤直接噴在手機畫面上
       function logStatus(statusText, isError = false) {
         document.getElementById("step-status").innerText = statusText;
         var logBox = document.getElementById("debug-log");
@@ -151,74 +120,77 @@
         }
       }
 
-      window.onload = function() {
-        logStatus("網頁載入完成，檢查 LIFF ID...");
-        if (!BOSS_LIFF_ID || BOSS_LIFF_ID.includes("請把這行")) {
-          document.getElementById("loading-layer").innerHTML = "<div class='error-box'><h2>配置錯誤</h2><p>請先填入正確的 BOSS_LIFF_ID</p></div>";
-          return;
+      // 建立共用的 API 呼叫函式 (取代舊的 google.script.run)
+      async function callGAS(action, payload = {}) {
+        payload.action = action;
+        try {
+          const response = await fetch(GAS_API_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+          const result = await response.json();
+          return result;
+        } catch (error) {
+          logStatus("API 通訊失敗: " + error.message, true);
+          throw error;
         }
+      }
+
+      window.onload = function() {
+        logStatus("GitHub Pages 網頁載入完成，初始化 LIFF...");
         initializeLiff();
       };
 
       function initializeLiff() {
-        logStatus("正在向 LINE 伺服器初始化 LIFF 架構...");
         liff.init({ liffId: BOSS_LIFF_ID })
           .then(() => {
-            logStatus("LIFF 初始化完成，檢查登入狀態...");
+            logStatus("LIFF 初始化成功！檢查登入狀態...");
             if (!liff.isLoggedIn()) {
-              logStatus("偵測到尚未登入，引導至 LINE 登入畫面...");
+              logStatus("尚未登入，引導至 LINE 登入畫面...");
               liff.login();
             } else {
-              logStatus("登入狀態確認成功！即將提取身分密鑰...");
               verifyAdminPermission();
             }
           })
           .catch((err) => {
             logStatus("LIFF 初始化失敗！原因：" + err, true);
-            document.getElementById("loading-layer").innerHTML = "<div class='error-box'><h2>LIFF 初始化失敗</h2><p>" + err + "</p><p>請確認 LINE Developers 後台的 LIFF ID 是否填寫正確。</p></div>";
           });
       }
 
       function verifyAdminPermission() {
-        logStatus("正在向 LINE 申請讀取您的 Profile 身分...");
+        logStatus("索取 LINE 身分資料...");
         liff.getProfile()
           .then(profile => {
             var userId = profile.userId;
-            logStatus("身分讀取成功！您的系統識別碼為: " + userId.substring(0,6) + "...");
-            logStatus("正在將識別碼發送給 Google 後端進行白名單比對...");
+            logStatus("身分取得: " + userId.substring(0,6) + "... 正在連線 GAS API...");
             
-            google.script.run
-              .withSuccessHandler(function(isAdmin) {
-                logStatus("Google 後端驗證程序完成！分析權限中...");
+            // 使用全新的 fetch API 呼叫 GAS
+            callGAS('verifyAdmin', { userId: userId })
+              .then(res => {
                 document.getElementById("loading-layer").style.display = "none";
-                if (isAdmin === true) {
+                if (res.success && res.isAdmin) {
                   document.getElementById("admin-layer").style.display = "block";
-                  logStatus("解鎖成功，載入後台控制面板...");
                   loadDashboardData();
                 } else {
-                  logStatus("比對失敗：您目前不在白名單管理員名單中。");
                   document.getElementById("user-id-display").innerText = userId;
                   document.getElementById("denied-layer").style.display = "block";
                 }
-              })
-              .withFailureHandler(function(error) {
-                logStatus("呼叫 Google 後端函數 verifyAdmin 失敗！", true);
-                document.getElementById("loading-layer").innerHTML = "<div class='error-box'><h2>Google 後端連線異常</h2><p>" + error.message + "</p><p>請確認您的 Google 試算表中有無建立『管理員名單』工作表。</p></div>";
-              })
-              .verifyAdmin(userId);
+              });
           })
-          .catch(err => {
-            logStatus("向 LINE 索取 Profile 失敗！原因：" + JSON.stringify(err), true);
-            document.getElementById("loading-layer").innerHTML = "<div class='error-box'><h2>讀取 LINE 身分失敗</h2><p>" + JSON.stringify(err) + "</p><p>💡 <b>極重要排查點：</b>請到 LINE Developers 控制台 ➔ 進入此 LIFF ➔ 檢查最下方的 <b>Scopes</b> 設定，<b>必須把 'profile' 勾選起來</b>，否則系統會被 LINE 拒絕存取！</p></div>";
-          });
+          .catch(err => logStatus("取得 LINE 資料失敗：" + err, true));
       }
 
       function loadDashboardData() {
-        google.script.run
-          .withSuccessHandler(function(res) {
+        callGAS('getAdminDashboardData')
+          .then(res => {
+            if (!res.success) {
+               alert("載入資料失敗：" + res.message);
+               return;
+            }
+            
             var userSelect = document.getElementById("user-select");
             userSelect.innerHTML = '<option value="">-- 請選擇現場顧客 --</option>';
-            res.users.forEach(function(user) {
+            res.data.users.forEach(user => {
               var opt = document.createElement("option");
               opt.value = user.userId;
               opt.innerText = user.userName + " (餘額: " + user.balance + " 元)";
@@ -226,44 +198,44 @@
             });
 
             var tbody = document.getElementById("orders-tbody");
-            if (res.orders.length === 0) {
+            if (res.data.orders.length === 0) {
               tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999;">目前沒有未處理的新訂單。</td></tr>';
               return;
             }
             
             tbody.innerHTML = "";
-            res.orders.forEach(function(order) {
+            res.data.orders.forEach(order => {
               var tr = document.createElement("tr");
               var badgeClass = order.payMethod === "餘額扣款" ? "badge-wallet" : "badge-cash";
               var actionBtnText = order.payMethod === "餘額扣款" ? "🔒 確認扣款" : "💵 現場已收現";
               
               tr.innerHTML = `
-                <td>\${order.time}</td>
-                <td><strong>\${order.userName}</strong></td>
-                <td style="white-space: pre-line;">\${order.content}</td>
-                <td style="color:#e74c3c; font-weight:bold;">\${order.total} 元</td>
-                <td><span class="badge \${badgeClass}">\${order.payMethod}</span></td>
+                <td>${order.time}</td>
+                <td><strong>${order.userName}</strong></td>
+                <td style="white-space: pre-line;">${order.content}</td>
+                <td style="color:#e74c3c; font-weight:bold;">${order.total} 元</td>
+                <td><span class="badge ${badgeClass}">${order.payMethod}</span></td>
                 <td>
-                  <button class="btn btn-success btn-small" onclick="handleOrder('\${order.id}', 'complete')">\${actionBtnText}</button>
-                  <button class="btn btn-danger btn-small" onclick="handleOrder('\${order.id}', 'cancel')">取消</button>
+                  <button class="btn btn-success btn-small" onclick="handleOrder('${order.id}', 'complete')">${actionBtnText}</button>
+                  <button class="btn btn-danger btn-small" onclick="handleOrder('${order.id}', 'cancel')">取消</button>
                 </td>
               `;
               tbody.appendChild(tr);
             });
-          })
-          .getAdminDashboardData();
+          });
       }
 
       function submitTopUp() {
         var userId = document.getElementById("user-select").value;
         var amount = document.getElementById("topup-amount").value;
         var note = document.getElementById("topup-note").value;
+        
         if (!userId) return alert("請先選取要儲值的顧客！");
         if (!amount || amount <= 0) return alert("請輸入正確的儲值金額！");
         if (!confirm("確定在現場已收到現金新台幣 " + amount + " 元，並執行儲值嗎？")) return;
 
-        google.script.run
-          .withSuccessHandler(function(result) {
+        callGAS('adminTopUp', { userId: userId, amount: amount, note: note })
+          .then(result => {
             if (result.success) {
               alert("儲值成功！\n顧客：" + result.userName + "\n最新餘額：" + result.newBalance + " 元");
               document.getElementById("topup-amount").value = "";
@@ -272,20 +244,22 @@
             } else {
               alert("儲值失敗：" + result.message);
             }
-          })
-          .adminTopUp(userId, amount, note);
+          });
       }
 
       function handleOrder(orderId, action) {
         var confirmMsg = action === 'complete' ? "確定此訂單結帳並完成嗎？" : "確定要取消此訂單嗎？";
         if (!confirm(confirmMsg)) return;
 
-        google.script.run
-          .withSuccessHandler(function(result) {
-            alert(result.message);
-            loadDashboardData();
-          })
-          .processOrderAction(orderId, action);
+        callGAS('processOrderAction', { orderId: orderId, orderAction: action })
+          .then(result => {
+            if(result.success) {
+              alert(result.message);
+              loadDashboardData();
+            } else {
+              alert("操作失敗: " + result.message);
+            }
+          });
       }
     </script>
   </body>
