@@ -74,11 +74,23 @@
     </div>
 
     <script>
-      const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw-EwGrE9UwFhUgl4ePZ1JhVrXoYsK0t5YD5YQkC6oc20DuY6GaUeR6ni3h1j_z_N4t/exec";
+      // ==========================================
+      // 設定區塊
+      // ==========================================
+      const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; // 已寫入
+      const GAS_API_URL = "請在此貼上你發布後的_GAS_API_網址"; // ⚠️ 需要更換網址
+      let adminIdToken = "";
+
+      function escapeHTML(str) {
+        if (!str) return "";
+        return str.toString().replace(/[&<>'"]/g, 
+          tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+        );
+      }
 
       async function callGAS(action, payload = {}) {
         payload.action = action;
+        payload.idToken = adminIdToken; 
         const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
         return await response.json();
       }
@@ -87,15 +99,14 @@
         liff.init({ liffId: BOSS_LIFF_ID }).then(() => {
           if (!liff.isLoggedIn()) liff.login();
           else {
-            liff.getProfile().then(profile => {
-              callGAS('verifyAdmin', { userId: profile.userId }).then(res => {
-                document.getElementById("loading-layer").style.display = "none";
-                if (res.success && res.isAdmin) {
-                  document.getElementById("admin-layer").style.display = "block";
-                  loadDashboardData();
-                  setInterval(loadDashboardData, 10000); 
-                } else alert("權限不足！");
-              });
+            adminIdToken = liff.getIDToken();
+            callGAS('verifyAdmin').then(res => {
+              document.getElementById("loading-layer").style.display = "none";
+              if (res.success && res.isAdmin) {
+                document.getElementById("admin-layer").style.display = "block";
+                loadDashboardData();
+                setInterval(loadDashboardData, 10000); 
+              } else alert("權限不足或驗證失敗！");
             });
           }
         });
@@ -108,13 +119,13 @@
           var userSelect = document.getElementById("user-select");
           if(userSelect.value === "") {
              userSelect.innerHTML = '<option value="">-- 請選擇會員 --</option>';
-             res.data.users.forEach(user => { userSelect.innerHTML += `<option value="${user.userId}">${user.userName} (餘額: $${user.balance})</option>`; });
+             res.data.users.forEach(user => { userSelect.innerHTML += `<option value="${escapeHTML(user.userId)}">${escapeHTML(user.userName)} (餘額: $${user.balance})</option>`; });
           }
 
           var editSelect = document.getElementById("edit-user-select");
           if(editSelect.value === "") {
              editSelect.innerHTML = '<option value="">-- 請選擇會員 --</option>';
-             res.data.users.forEach(user => { editSelect.innerHTML += `<option value="${user.userId}">${user.userName}</option>`; });
+             res.data.users.forEach(user => { editSelect.innerHTML += `<option value="${escapeHTML(user.userId)}">${escapeHTML(user.userName)}</option>`; });
           }
 
           var container = document.getElementById("orders-container");
@@ -131,7 +142,7 @@
             let actionBtns = "";
             if (order.status === '未處理') {
                actionBtns = `<button class="btn-action btn-orange" onclick="handleOrder('${order.id}', 'accept')">接單</button>
-                             <button class="btn-action btn-gray" onclick="handleOrder('${order.id}', 'cancel')">取消</button>`;
+                             <button class="btn-action btn-gray" onclick="handleOrder('${order.id}', 'cancel')">取消/退款</button>`;
             } else if (order.status === '已接單') {
                actionBtns = `<button class="btn-action btn-blue" onclick="handleOrder('${order.id}', 'ready')">製作完成</button>`;
             } else if (order.status === '製作完成') {
@@ -140,11 +151,11 @@
 
             container.innerHTML += `
               <div class="order-card ${statusClass}">
-                <div class="card-header"><span>時間：${order.time}</span><span style="font-weight:bold;">${statusBadge}</span></div>
-                <div class="card-customer">🙋‍♂️ ${order.userName}</div>
-                <div class="card-items">${order.content}</div>
+                <div class="card-header"><span>時間：${escapeHTML(order.time)}</span><span style="font-weight:bold;">${statusBadge}</span></div>
+                <div class="card-customer">🙋‍♂️ ${escapeHTML(order.userName)}</div>
+                <div class="card-items">${escapeHTML(order.content)}</div>
                 <div class="card-footer">
-                  <div class="card-price">$${order.total} <span style="font-size:13px; color:#7f8c8d;">(${order.payMethod})</span></div>
+                  <div class="card-price">$${order.total} <span style="font-size:13px; color:#7f8c8d;">(${escapeHTML(order.payMethod)})</span></div>
                   <div class="action-btns">${actionBtns}</div>
                 </div>
               </div>`;
@@ -158,20 +169,18 @@
         var type = document.getElementById("topup-type").value;
         var note = document.getElementById("topup-note").value;
         
-        if (!userId || !amount) return alert("請選擇會員並輸入金額");
+        if (!userId || !amount || amount <= 0) return alert("請選擇會員並輸入正確的金額");
         let actionStr = type === 'add' ? "儲值" : "扣除";
         if (!confirm(`確定要對該會員 ${actionStr} ${amount} 元嗎？`)) return;
         
-        callGAS('adminUpdateWallet', { userId: userId, amount: amount, type: type, note: note }).then(res => {
+        callGAS('adminUpdateWallet', { targetUserId: userId, amount: amount, type: type, note: note }).then(res => {
           if (res.success) { 
             alert(res.message + "\n最新餘額：" + res.newBalance); 
             document.getElementById("topup-amount").value = ""; 
             document.getElementById("topup-note").value = ""; 
             document.getElementById("user-select").value = "";
             loadDashboardData(); 
-          } else {
-            alert("操作失敗：" + res.message);
-          }
+          } else { alert("操作失敗：" + res.message); }
         });
       }
 
@@ -179,7 +188,7 @@
         var userId = document.getElementById("edit-user-select").value;
         var newName = document.getElementById("new-user-name").value.trim();
         if (!userId || !newName) return alert("請選擇會員並輸入新稱呼");
-        callGAS('updateMemberName', { userId: userId, newName: newName }).then(res => {
+        callGAS('updateMemberName', { targetUserId: userId, newName: newName }).then(res => {
           if (res.success) { 
             alert(res.message); 
             document.getElementById("new-user-name").value = ""; 
