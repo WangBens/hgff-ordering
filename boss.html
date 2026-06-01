@@ -19,10 +19,7 @@
       .btn-orange { background-color: #f39c12; width: 100%;}
       
       .order-card { background: #fafbfc; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 6px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-      .status-new { border-left-color: #e74c3c; } 
-      .status-accepted { border-left-color: #f39c12; } 
-      .status-ready { border-left-color: #3498db; } 
-      
+      .status-new { border-left-color: #e74c3c; } .status-accepted { border-left-color: #f39c12; } .status-ready { border-left-color: #3498db; } 
       .card-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: #7f8c8d; }
       .card-customer { font-size: 18px; font-weight: bold; color: #2c3e50; }
       .card-items { font-size: 16px; margin: 10px 0; line-height: 1.5; white-space: pre-line; background: #fff; padding: 10px; border-radius: 5px; border: 1px dashed #ccc;}
@@ -41,37 +38,38 @@
       <div class="header"><h2>凰貴妃茶堂 店鋪管理後台</h2></div>
 
       <div class="section">
-        <h3>💰 現場顧客儲值</h3>
+        <h3>💰 會員錢包管理</h3>
         <div class="form-group">
-          <select id="user-select" class="form-control"><option value="">-- 請選擇顧客 --</option></select>
+          <select id="user-select" class="form-control"><option value="">-- 請選擇會員 --</option></select>
         </div>
         <div class="form-group" style="display:flex; gap:10px;">
+          <select id="topup-type" class="form-control" style="flex:1;">
+            <option value="add">➕ 儲值入帳</option>
+            <option value="deduct">➖ 手動扣款</option>
+          </select>
           <input type="number" id="topup-amount" class="form-control" placeholder="金額" style="flex:2;">
-          <input type="text" id="topup-note" class="form-control" placeholder="備註" style="flex:3;">
         </div>
-        <button class="btn btn-success" onclick="submitTopUp()">確認收款並儲值</button>
+        <div class="form-group">
+          <input type="text" id="topup-note" class="form-control" placeholder="備註 (例：現金儲值 / 操作錯誤退款)">
+        </div>
+        <button class="btn btn-success" onclick="submitTopUp()">確認執行帳務變更</button>
       </div>
 
       <div class="section">
-        <h3>📝 會員資料管理</h3>
+        <h3>📝 會員資料設定</h3>
         <div class="form-group">
-          <label>選擇系統自動註冊的客人：</label>
-          <select id="edit-user-select" class="form-control">
-            <option value="">-- 請選擇會員 --</option>
-          </select>
+          <label>選擇自動註冊的客人：</label>
+          <select id="edit-user-select" class="form-control"><option value="">-- 請選擇會員 --</option></select>
         </div>
         <div class="form-group">
-          <label>將他的名字更新為真實稱呼：</label>
-          <input type="text" id="new-user-name" class="form-control" placeholder="例：王先生 (真實稱呼)">
+          <input type="text" id="new-user-name" class="form-control" placeholder="輸入真實稱呼 (例：王先生)">
         </div>
-        <button class="btn btn-orange" onclick="updateMember()">更新會員資料</button>
+        <button class="btn btn-orange" onclick="updateMember()">更新會員名稱</button>
       </div>
 
       <div class="section">
         <h3>📋 即時訂單看板 <span class="auto-refresh-badge">每 10 秒自動刷新</span></h3>
-        <div id="orders-container">
-           <div style="text-align:center; color:#999; padding:20px;">載入中...</div>
-        </div>
+        <div id="orders-container"><div style="text-align:center; color:#999; padding:20px;">載入中...</div></div>
       </div>
     </div>
 
@@ -96,9 +94,7 @@
                   document.getElementById("admin-layer").style.display = "block";
                   loadDashboardData();
                   setInterval(loadDashboardData, 10000); 
-                } else {
-                  alert("權限不足！你的 ID: " + profile.userId);
-                }
+                } else alert("權限不足！");
               });
             });
           }
@@ -109,25 +105,18 @@
         callGAS('getAdminDashboardData').then(res => {
           if (!res.success) return;
           
-          // 更新儲值選單
           var userSelect = document.getElementById("user-select");
           if(userSelect.value === "") {
-             userSelect.innerHTML = '<option value="">-- 請選擇顧客 --</option>';
-             res.data.users.forEach(user => {
-               userSelect.innerHTML += `<option value="${user.userId}">${user.userName} (餘額: ${user.balance})</option>`;
-             });
+             userSelect.innerHTML = '<option value="">-- 請選擇會員 --</option>';
+             res.data.users.forEach(user => { userSelect.innerHTML += `<option value="${user.userId}">${user.userName} (餘額: $${user.balance})</option>`; });
           }
 
-          // 更新修改會員選單
           var editSelect = document.getElementById("edit-user-select");
           if(editSelect.value === "") {
              editSelect.innerHTML = '<option value="">-- 請選擇會員 --</option>';
-             res.data.users.forEach(user => {
-               editSelect.innerHTML += `<option value="${user.userId}">${user.userName}</option>`;
-             });
+             res.data.users.forEach(user => { editSelect.innerHTML += `<option value="${user.userId}">${user.userName}</option>`; });
           }
 
-          // 渲染訂單卡片
           var container = document.getElementById("orders-container");
           if (res.data.orders.length === 0) {
             container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">目前沒有未完成的訂單 🎉</div>';
@@ -151,10 +140,7 @@
 
             container.innerHTML += `
               <div class="order-card ${statusClass}">
-                <div class="card-header">
-                  <span>時間：${order.time}</span>
-                  <span style="font-weight:bold;">${statusBadge}</span>
-                </div>
+                <div class="card-header"><span>時間：${order.time}</span><span style="font-weight:bold;">${statusBadge}</span></div>
                 <div class="card-customer">🙋‍♂️ ${order.userName}</div>
                 <div class="card-items">${order.content}</div>
                 <div class="card-footer">
@@ -169,33 +155,38 @@
       function submitTopUp() {
         var userId = document.getElementById("user-select").value;
         var amount = document.getElementById("topup-amount").value;
-        if (!userId || !amount) return alert("請選擇顧客並輸入金額");
-        if (!confirm("確定儲值 " + amount + " 元？")) return;
-        callGAS('adminTopUp', { userId: userId, amount: amount, note: document.getElementById("topup-note").value }).then(res => {
-          if (res.success) { alert("儲值成功！"); document.getElementById("topup-amount").value = ""; loadDashboardData(); }
+        var type = document.getElementById("topup-type").value;
+        var note = document.getElementById("topup-note").value;
+        
+        if (!userId || !amount) return alert("請選擇會員並輸入金額");
+        let actionStr = type === 'add' ? "儲值" : "扣除";
+        if (!confirm(`確定要對該會員 ${actionStr} ${amount} 元嗎？`)) return;
+        
+        callGAS('adminUpdateWallet', { userId: userId, amount: amount, type: type, note: note }).then(res => {
+          if (res.success) { 
+            alert(res.message + "\n最新餘額：" + res.newBalance); 
+            document.getElementById("topup-amount").value = ""; 
+            document.getElementById("topup-note").value = ""; 
+            document.getElementById("user-select").value = "";
+            loadDashboardData(); 
+          } else {
+            alert("操作失敗：" + res.message);
+          }
         });
       }
 
-      // 送出修改會員姓名指令
       function updateMember() {
         var userId = document.getElementById("edit-user-select").value;
         var newName = document.getElementById("new-user-name").value.trim();
-        
-        if (!userId) return alert("請選擇要修改的會員！");
-        if (!newName) return alert("請輸入新的稱呼！");
-        if (!confirm("確定將名稱更新為「" + newName + "」嗎？")) return;
-
+        if (!userId || !newName) return alert("請選擇會員並輸入新稱呼");
         callGAS('updateMemberName', { userId: userId, newName: newName }).then(res => {
           if (res.success) { 
             alert(res.message); 
             document.getElementById("new-user-name").value = ""; 
-            // 清空選單強制它重新抓取最新名字
             document.getElementById("user-select").value = "";
             document.getElementById("edit-user-select").value = "";
             loadDashboardData(); 
-          } else {
-            alert(res.message);
-          }
+          } else alert(res.message);
         });
       }
 
