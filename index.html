@@ -1,134 +1,3 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>凰貴妃茶堂 - 線上點餐</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <style>
-      /* ================= 全局與基本排版 ================= */
-      body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcf6f2; margin: 0; color: #333; padding-bottom: 80px; }
-      .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; position: relative; }
-      .header { text-align: center; color: #d35400; padding: 20px 15px; border-bottom: 2px solid #f2e2d9; background: #fff; }
-      .header h2 { margin: 0 0 5px 0; font-size: 24px; }
-      .header p { margin: 0; color: #7f8c8d; font-size: 14px; }
-      .welcome-msg { text-align: center; font-weight: bold; color: #2980b9; margin: 15px 0; display: none; }
-      .loading-msg { text-align: center; color: #e67e22; font-weight: bold; padding: 30px 0; }
-      
-      /* ================= 訂單進度看板 ================= */
-      .status-board { background: #fff; border: 2px solid #d35400; border-radius: 10px; padding: 15px; margin: 15px; box-shadow: 0 4px 6px rgba(211,84,0,0.1); }
-      .status-title { color: #d35400; font-weight: bold; font-size: 16px; margin-bottom: 10px; border-bottom: 1px dashed #f2e2d9; padding-bottom: 5px; }
-      .my-order-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; align-items: center; }
-      .my-order-tag { padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 12px; color: white; }
-      .tag-red { background: #e74c3c; } 
-      .tag-orange { background: #f39c12; } 
-      .tag-blue { background: #3498db; }
-
-      /* ================= 菜單列表 ================= */
-      .menu-section { padding: 0 15px; }
-      .category-title { background-color: #d35400; color: white; padding: 8px 12px; border-radius: 6px; margin-top: 20px; font-size: 16px; font-weight: bold; }
-      .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed #eee; }
-      .menu-name { font-weight: bold; font-size: 16px; color: #2c3e50; margin-bottom: 5px; }
-      .menu-price { color: #e74c3c; font-size: 14px; }
-      .btn-select { background-color: #f39c12; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; }
-      
-      /* ================= 底部購物車條 ================= */
-      .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #2c3e50; color: white; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; box-sizing: border-box; z-index: 99; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
-      .btn-checkout { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 16px; cursor: pointer; }
-      
-      /* ================= 彈出視窗 (Modal) ================= */
-      .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
-      .modal-content { background: white; width: 100%; max-width: 600px; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease-out; }
-      @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-      .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
-      .close-btn { background: none; border: none; font-size: 24px; color: #999; cursor: pointer; }
-      
-      /* ================= 客製化選項 ================= */
-      .option-group { margin-bottom: 20px; }
-      .option-title { font-weight: bold; color: #2c3e50; margin-bottom: 10px; font-size: 15px; }
-      .radio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-      .radio-label { display: block; border: 1px solid #ccc; text-align: center; padding: 10px 5px; border-radius: 8px; font-size: 14px; cursor: pointer; }
-      .radio-label input { display: none; }
-      .radio-label input:checked + span { color: #d35400; font-weight: bold; }
-      .radio-label:has(input:checked) { border-color: #d35400; background: #fdf2e9; }
-      
-      /* ================= 按鈕與表單 ================= */
-      .qty-control { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 20px 0; }
-      .qty-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #ccc; background: white; font-size: 20px; color: #333; cursor: pointer; display:flex; align-items:center; justify-content:center; }
-      .btn-add-cart, .btn-submit-order { width: 100%; background: #d35400; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
-      .cart-item { padding: 10px 0; border-bottom: 1px solid #eee; }
-      .cart-item-title { font-weight: bold; display: flex; justify-content: space-between; }
-      .form-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="header">
-        <h2>凰貴妃茶堂</h2>
-        <p>線上專屬點餐系統</p>
-      </div>
-      
-      <div id="welcome-msg" class="welcome-msg"></div>
-
-      <div id="my-orders-board" class="status-board" style="display:none;">
-        <div class="status-title">
-          🔔 我的訂單進度 
-          <span style="font-size:12px; color:#7f8c8d; font-weight:normal; float:right; cursor:pointer; background:#f4f6f7; padding:4px 8px; border-radius:12px;" onclick="fetchMyOrders()">🔄 更新狀態</span>
-        </div>
-        <div id="my-orders-list"></div>
-      </div>
-
-      <div class="menu-section" id="app-content">
-        <div class="loading-msg" id="status-text">🔄 系統連線中，請稍候...</div>
-        <div id="menu-container"></div>
-      </div>
-    </div>
-
-    <div class="cart-bar" id="cart-bar" style="display: none;">
-      <div class="cart-info">🛒 購物車：<span id="cart-count">0</span> 杯 / $<span id="cart-total">0</span></div>
-      <button class="btn-checkout" onclick="openCheckoutModal()">結帳去</button>
-    </div>
-
-    <div class="modal-overlay" id="custom-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 style="margin:0; color:#d35400;" id="modal-item-name">飲品名稱</h3>
-          <button class="close-btn" onclick="closeModal('custom-modal')">×</button>
-        </div>
-        
-        <div id="custom-options-container"></div>
-        
-        <div class="qty-control">
-          <button class="qty-btn" onclick="changeQty(-1)">-</button>
-          <span id="item-qty" style="font-size: 18px; font-weight: bold;">1</span>
-          <button class="qty-btn" onclick="changeQty(1)">+</button>
-        </div>
-        
-        <button class="btn-add-cart" onclick="addToCart()">加入購物車 - $<span id="modal-calc-price">0</span></button>
-      </div>
-    </div>
-
-    <div class="modal-overlay" id="checkout-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 style="margin:0;">訂單確認</h3>
-          <button class="close-btn" onclick="closeModal('checkout-modal')">×</button>
-        </div>
-        
-        <div id="checkout-cart-list" style="margin-bottom: 20px; max-height: 200px; overflow-y: auto;"></div>
-        
-        <div style="text-align: right; font-weight: bold; font-size: 18px; margin-bottom: 20px; color: #d35400;">
-          總金額：$<span id="checkout-total-price">0</span>
-        </div>
-        
-        <div class="option-title">📞 聯絡資訊 (取餐核對用)</div>
-        <input type="text" id="input-lastname" class="form-input" placeholder="您的姓氏 (例：王先生/陳小姐)">
-        <input type="tel" id="input-phone" class="form-input" placeholder="手機末三碼 (例：029)" maxlength="3">
-        
-        <button class="btn-submit-order" id="btn-submit" onclick="submitOrder()">✅ 確認送出訂單</button>
-      </div>
-    </div>
-
     <script>
       // 系統核心變數
       const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
@@ -160,6 +29,9 @@
               // 抓取菜單與個人訂單進度
               fetchData();
               fetchMyOrders(); 
+              
+              // 【新增】每 10 秒自動背景更新顧客的訂單狀態！
+              setInterval(fetchMyOrders, 10000);
             });
           }
         });
@@ -373,7 +245,7 @@
             cart = []; 
             updateCartUI(); 
             closeModal('checkout-modal');
-            fetchMyOrders(); // 送出成功後，立刻刷新顧客的訂單看板
+            fetchMyOrders(); // 送出成功後立刻手動刷新一次
           } else {
             alert("送出失敗：" + res.message);
           }
@@ -382,5 +254,3 @@
         });
       }
     </script>
-  </body>
-</html>
