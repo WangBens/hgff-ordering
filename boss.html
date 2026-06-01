@@ -16,12 +16,12 @@
       .form-control { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
       .btn { color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; }
       .btn-success { background-color: #2ecc71; width: 100%;}
+      .btn-orange { background-color: #f39c12; width: 100%;}
       
-      /* 卡片式訂單設計 */
       .order-card { background: #fafbfc; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 6px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-      .status-new { border-left-color: #e74c3c; } /* 未處理 紅色 */
-      .status-accepted { border-left-color: #f39c12; } /* 已接單 橘色 */
-      .status-ready { border-left-color: #3498db; } /* 製作完成 藍色 */
+      .status-new { border-left-color: #e74c3c; } 
+      .status-accepted { border-left-color: #f39c12; } 
+      .status-ready { border-left-color: #3498db; } 
       
       .card-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: #7f8c8d; }
       .card-customer { font-size: 18px; font-weight: bold; color: #2c3e50; }
@@ -30,8 +30,7 @@
       .card-price { font-size: 18px; font-weight: bold; color: #e74c3c; }
       .action-btns { display: flex; gap: 8px; }
       .btn-action { padding: 8px 15px; border: none; border-radius: 5px; font-weight: bold; color: white; cursor: pointer; font-size: 14px;}
-      .btn-red { background: #e74c3c; } .btn-orange { background: #f39c12; } .btn-blue { background: #3498db; } .btn-green { background: #2ecc71; } .btn-gray { background: #95a5a6; }
-      
+      .btn-red { background: #e74c3c; } .btn-blue { background: #3498db; } .btn-green { background: #2ecc71; } .btn-gray { background: #95a5a6; }
       .auto-refresh-badge { font-size: 12px; font-weight: normal; background: #ecf0f1; padding: 4px 8px; border-radius: 12px; color: #7f8c8d; }
     </style>
   </head>
@@ -51,6 +50,21 @@
           <input type="text" id="topup-note" class="form-control" placeholder="備註" style="flex:3;">
         </div>
         <button class="btn btn-success" onclick="submitTopUp()">確認收款並儲值</button>
+      </div>
+
+      <div class="section">
+        <h3>📝 會員資料管理</h3>
+        <div class="form-group">
+          <label>選擇系統自動註冊的客人：</label>
+          <select id="edit-user-select" class="form-control">
+            <option value="">-- 請選擇會員 --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>將他的名字更新為真實稱呼：</label>
+          <input type="text" id="new-user-name" class="form-control" placeholder="例：王先生 (真實稱呼)">
+        </div>
+        <button class="btn btn-orange" onclick="updateMember()">更新會員資料</button>
       </div>
 
       <div class="section">
@@ -81,7 +95,6 @@
                 if (res.success && res.isAdmin) {
                   document.getElementById("admin-layer").style.display = "block";
                   loadDashboardData();
-                  // 【新增】每 10 秒自動背景刷新一次訂單
                   setInterval(loadDashboardData, 10000); 
                 } else {
                   alert("權限不足！你的 ID: " + profile.userId);
@@ -96,12 +109,21 @@
         callGAS('getAdminDashboardData').then(res => {
           if (!res.success) return;
           
-          // 更新儲值選單 (若未選取才更新，避免打字到一半跳掉)
+          // 更新儲值選單
           var userSelect = document.getElementById("user-select");
           if(userSelect.value === "") {
              userSelect.innerHTML = '<option value="">-- 請選擇顧客 --</option>';
              res.data.users.forEach(user => {
                userSelect.innerHTML += `<option value="${user.userId}">${user.userName} (餘額: ${user.balance})</option>`;
+             });
+          }
+
+          // 更新修改會員選單
+          var editSelect = document.getElementById("edit-user-select");
+          if(editSelect.value === "") {
+             editSelect.innerHTML = '<option value="">-- 請選擇會員 --</option>';
+             res.data.users.forEach(user => {
+               editSelect.innerHTML += `<option value="${user.userId}">${user.userName}</option>`;
              });
           }
 
@@ -117,7 +139,6 @@
             let statusClass = order.status === '未處理' ? 'status-new' : (order.status === '已接單' ? 'status-accepted' : 'status-ready');
             let statusBadge = order.status === '未處理' ? '🔴 新訂單' : (order.status === '已接單' ? '🟠 製作中' : '🔵 可取餐');
             
-            // 決定按鈕狀態
             let actionBtns = "";
             if (order.status === '未處理') {
                actionBtns = `<button class="btn-action btn-orange" onclick="handleOrder('${order.id}', 'accept')">接單</button>
@@ -152,6 +173,29 @@
         if (!confirm("確定儲值 " + amount + " 元？")) return;
         callGAS('adminTopUp', { userId: userId, amount: amount, note: document.getElementById("topup-note").value }).then(res => {
           if (res.success) { alert("儲值成功！"); document.getElementById("topup-amount").value = ""; loadDashboardData(); }
+        });
+      }
+
+      // 送出修改會員姓名指令
+      function updateMember() {
+        var userId = document.getElementById("edit-user-select").value;
+        var newName = document.getElementById("new-user-name").value.trim();
+        
+        if (!userId) return alert("請選擇要修改的會員！");
+        if (!newName) return alert("請輸入新的稱呼！");
+        if (!confirm("確定將名稱更新為「" + newName + "」嗎？")) return;
+
+        callGAS('updateMemberName', { userId: userId, newName: newName }).then(res => {
+          if (res.success) { 
+            alert(res.message); 
+            document.getElementById("new-user-name").value = ""; 
+            // 清空選單強制它重新抓取最新名字
+            document.getElementById("user-select").value = "";
+            document.getElementById("edit-user-select").value = "";
+            loadDashboardData(); 
+          } else {
+            alert(res.message);
+          }
         });
       }
 
