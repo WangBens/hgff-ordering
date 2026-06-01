@@ -1,220 +1,230 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>凰貴妃茶堂 - 線上點餐</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+function doPost(e) {
+  var result = {};
+  
+  try {
+    var body = JSON.parse(e.postData.contents);
+    var action = body.action;
     
-    <style>
-      body {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        padding: 15px;
-        background-color: #fcf6f2; /* 給顧客端一個溫暖的奶茶色背景 */
-        margin: 0;
-        color: #333;
-      }
-      .container {
-        max-width: 600px;
-        margin: 0 auto;
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      }
-      .header {
-        text-align: center;
-        color: #d35400;
-        border-bottom: 2px solid #f2e2d9;
-        padding-bottom: 15px;
-        margin-bottom: 20px;
-      }
-      .header h2 { margin: 0 0 5px 0; font-size: 24px; }
-      .header p { margin: 0; color: #7f8c8d; font-size: 14px; }
+    if (action === 'getMenuAndOptions') {
+      // 【新增】同時取得菜單與客製化選項
+      result = { success: true, data: getMenuAndOptions() };
       
-      /* 歡迎訊息 */
-      .welcome-msg {
-        text-align: center;
-        font-weight: bold;
-        color: #2980b9;
-        margin-bottom: 20px;
-        display: none; /* 登入後才顯示 */
-      }
+    } else if (action === 'submitOrder') {
+      // 【新增】接收前端送來的新訂單
+      result = submitOrder(body.userId, body.lineName, body.lastName, body.phone, body.cart, body.totalPrice);
       
-      /* 載入中狀態 */
-      .loading-msg {
-        text-align: center;
-        color: #e67e22;
-        font-weight: bold;
-        padding: 20px 0;
-      }
+    } else if (action === 'verifyAdmin') {
+      result = { success: true, isAdmin: verifyAdmin(body.userId) };
+    } else if (action === 'getAdminDashboardData') {
+      result = { success: true, data: getAdminDashboardData() };
+    } else if (action === 'adminTopUp') {
+      result = adminTopUp(body.userId, body.amount, body.note);
+    } else if (action === 'processOrderAction') {
+      result = processOrderAction(body.orderId, body.orderAction); 
+    } else {
+      result = { success: false, message: '未知的 API 指令' };
+    }
+    
+  } catch (error) {
+    result = { success: false, message: '後端執行錯誤: ' + error.toString() };
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
 
-      /* 菜單分類樣式 */
-      .category-title {
-        background-color: #d35400;
-        color: white;
-        padding: 8px 12px;
-        border-radius: 6px;
-        margin-top: 20px;
-        font-size: 16px;
-      }
-      .menu-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px dashed #eee;
-      }
-      .menu-name {
-        font-weight: bold;
-        font-size: 16px;
-        color: #2c3e50;
-      }
-      .menu-price {
-        color: #e74c3c;
-        font-size: 14px;
-      }
-      
-      /* 訂購按鈕 (預留給下一步) */
-      .btn-order {
-        background-color: #f39c12;
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-      }
-      .btn-order:hover { background-color: #e67e22; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="header">
-        <h2>凰貴妃茶堂</h2>
-        <p>線上專屬點餐系統</p>
-      </div>
-      
-      <div id="welcome-msg" class="welcome-msg"></div>
+function doGet(e) {
+  return ContentService.createTextOutput("凰貴妃茶堂 API 伺服器運作中。");
+}
 
-      <div id="app-content">
-        <div class="loading-msg" id="status-text">🔄 系統連線中，請稍候...</div>
-        <div id="menu-container"></div>
-      </div>
-    </div>
-
-    <script>
-      // =========================================
-      // 系統核心設定參數
-      // =========================================
-      const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw-EwGrE9UwFhUgl4ePZ1JhVrXoYsK0t5YD5YQkC6oc20DuY6GaUeR6ni3h1j_z_N4t/exec";
-
-      // 共用的 API 呼叫函式 (fetch)
-      async function callGAS(action, payload = {}) {
-        payload.action = action;
-        try {
-          const response = await fetch(GAS_API_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-          });
-          return await response.json();
-        } catch (error) {
-          document.getElementById("status-text").innerText = "⚠️ 網路連線異常，請重新整理";
-          throw error;
-        }
+// =========================================
+// 新增功能：取得菜單與客製化選項
+// =========================================
+function getMenuAndOptions() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var menuSheet = ss.getSheetByName("菜單");
+  var optSheet = ss.getSheetByName("加料與客製化");
+  
+  var menuList = [];
+  var options = { sweetness: [], ice: [], toppings: [] };
+  
+  // 1. 讀取菜單
+  if (menuSheet) {
+    var mData = menuSheet.getDataRange().getValues();
+    for (var i = 1; i < mData.length; i++) {
+      if (mData[i][4] === '上架') {
+        menuList.push({ category: mData[i][0], name: mData[i][1], priceL: Number(mData[i][2]), priceXL: Number(mData[i][3]) });
       }
-
-      window.onload = function() {
-        document.getElementById("status-text").innerText = "啟動 LIFF 模組中...";
-        initializeLiff();
-      };
-
-      function initializeLiff() {
-        liff.init({ liffId: CUSTOMER_LIFF_ID })
-          .then(() => {
-            if (!liff.isLoggedIn()) {
-              liff.login();
-            } else {
-              // 取得顧客的 LINE 暱稱來打招呼
-              liff.getProfile().then(profile => {
-                const welcomeDiv = document.getElementById("welcome-msg");
-                welcomeDiv.innerText = `哈囉，${profile.displayName}！想喝點什麼呢？`;
-                welcomeDiv.style.display = "block";
-                
-                // 開始抓取菜單
-                loadMenuData();
-              });
-            }
-          })
-          .catch((err) => {
-            document.getElementById("status-text").innerHTML = "LIFF 初始化失敗，請確認設定。<br>" + err;
-          });
+    }
+  }
+  
+  // 2. 讀取客製化選項
+  if (optSheet) {
+    var oData = optSheet.getDataRange().getValues();
+    for (var j = 1; j < oData.length; j++) {
+      if (oData[j][3] === '上架') {
+        var type = oData[j][0];
+        var optObj = { name: oData[j][1], price: Number(oData[j][2]) };
+        if (type === '甜度') options.sweetness.push(optObj);
+        else if (type === '冰塊') options.ice.push(optObj);
+        else if (type === '加料') options.toppings.push(optObj);
       }
+    }
+  }
+  
+  return { menu: menuList, options: options };
+}
 
-      // 向後端 GAS 索取菜單資料並渲染到畫面上
-      function loadMenuData() {
-        document.getElementById("status-text").innerText = "📖 讀取最新菜單中...";
-        
-        callGAS('getMenuData')
-          .then(res => {
-            if (res.success) {
-              document.getElementById("status-text").style.display = "none";
-              renderMenu(res.data);
-            } else {
-              document.getElementById("status-text").innerText = "載入菜單失敗：" + res.message;
-            }
-          });
-      }
+// =========================================
+// 新增功能：寫入新訂單到資料庫
+// =========================================
+function submitOrder(userId, lineName, lastName, phone, cart, totalPrice) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var orderSheet = ss.getSheetByName("訂單紀錄");
+  if (!orderSheet) return { success: false, message: "找不到訂單紀錄工作表" };
+  
+  // 產生訂單編號 (利用時間戳記)
+  var orderId = "ORD" + new Date().getTime().toString().slice(-6);
+  var orderTime = new Date();
+  
+  // 組合顧客稱呼
+  var customerName = lastName + " (" + phone + ") [" + lineName + "]";
+  
+  // 將購物車陣列轉換成可讀的文字格式
+  var orderContentText = "";
+  for (var i = 0; i < cart.length; i++) {
+    var item = cart[i];
+    var details = [item.sweetness, item.ice];
+    if (item.toppings.length > 0) details.push("+" + item.toppings.join("、"));
+    
+    orderContentText += "[" + item.size + "] " + item.name + " x" + item.qty + " (" + details.join(", ") + ")\n";
+  }
+  
+  // 寫入 Google Sheet
+  // A:訂單編號, B:時間, C:LINE_ID, D:姓名暱稱, E:訂單內容, F:總金額, G:付款方式, H:狀態
+  orderSheet.appendRow([
+    orderId,
+    orderTime,
+    userId,
+    customerName,
+    orderContentText.trim(),
+    totalPrice,
+    "現場結帳", // 預設付款方式
+    "未處理"
+  ]);
+  
+  return { success: true, message: "訂單已成功送出！" };
+}
 
-      // 將資料陣列轉換成漂亮的 HTML
-      function renderMenu(menuList) {
-        const container = document.getElementById("menu-container");
-        container.innerHTML = "";
-        
-        if (menuList.length === 0) {
-          container.innerHTML = "<p style='text-align:center;'>目前尚無供應品項</p>";
-          return;
-        }
+// =========================================
+// 以下為原本的老闆後台功能，保持不變
+// =========================================
+function verifyAdmin(userId) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("管理員名單");
+  if (!sheet) return false;
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] === userId) return true; 
+  }
+  return false; 
+}
 
-        // 把菜單依照「分類 (category)」分組
-        const groupedMenu = {};
-        menuList.forEach(item => {
-          if (!groupedMenu[item.category]) {
-            groupedMenu[item.category] = [];
-          }
-          groupedMenu[item.category].push(item);
+function getAdminDashboardData() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var orderSheet = ss.getSheetByName("訂單紀錄");
+  var orders = [];
+  if (orderSheet) {
+    var orderData = orderSheet.getDataRange().getValues();
+    for (var i = 1; i < orderData.length; i++) {
+      if (orderData[i][7] === "未處理") {
+        orders.push({
+          id: orderData[i][0],        
+          time: Utilities.formatDate(new Date(orderData[i][1]), "GMT+8", "yyyy/MM/dd HH:mm"), 
+          userId: orderData[i][2],    
+          userName: orderData[i][3],  
+          content: orderData[i][4],   
+          total: Number(orderData[i][5]),     
+          payMethod: orderData[i][6], 
+          status: orderData[i][7]     
         });
+      }
+    }
+  }
+  var userSheet = ss.getSheetByName("會員與餘額");
+  var users = [];
+  if (userSheet) {
+    var userData = userSheet.getDataRange().getValues();
+    for (var j = 1; j < userData.length; j++) {
+      users.push({ userId: userData[j][0], userName: userData[j][1], balance: Number(userData[j][2]) });
+    }
+  }
+  return { orders: orders, users: users };
+}
 
-        // 依序印出分類與品項
-        for (const category in groupedMenu) {
-          // 印出分類標題
-          const catDiv = document.createElement("div");
-          catDiv.className = "category-title";
-          catDiv.innerText = category;
-          container.appendChild(catDiv);
+function adminTopUp(targetUserId, amount, note) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var userSheet = ss.getSheetByName("會員與餘額");
+  var logSheet = ss.getSheetByName("儲值紀錄");
+  if (!userSheet || !logSheet) return { success: false, message: "資料表不存在" };
+  amount = Number(amount);
+  if (isNaN(amount) || amount <= 0) return { success: false, message: "金額錯誤" };
+  var userData = userSheet.getDataRange().getValues();
+  var userRowIndex = -1;
+  var userName = "未知用戶";
+  for (var i = 1; i < userData.length; i++) {
+    if (userData[i][0] === targetUserId) {
+      userRowIndex = i + 1; 
+      userName = userData[i][1];
+      break;
+    }
+  }
+  if (userRowIndex === -1) return { success: false, message: "找不到會員" };
+  var currentBalance = Number(userSheet.getRange(userRowIndex, 3).getValue());
+  var newBalance = currentBalance + amount;
+  userSheet.getRange(userRowIndex, 3).setValue(newBalance);
+  logSheet.appendRow([new Date(), targetUserId, userName, amount, note || "現場現金儲值"]);
+  return { success: true, newBalance: newBalance, userName: userName };
+}
 
-          // 印出該分類下的所有品項
-          groupedMenu[category].forEach(item => {
-            const itemDiv = document.createElement("div");
-            itemDiv.className = "menu-item";
-            
-            // 價格顯示邏輯 (L杯/XL杯)
-            let priceText = "";
-            if (item.priceL > 0) priceText += `L: $${item.priceL} `;
-            if (item.priceXL > 0) priceText += `XL: $${item.priceXL}`;
-            
-            itemDiv.innerHTML = `
-              <div>
-                <div class="menu-name">${item.name}</div>
-                <div class="menu-price">${priceText}</div>
-              </div>
-              <button class="btn-order" onclick="alert('點餐功能即將開放！')">選擇</button>
-            `;
-            container.appendChild(itemDiv);
-          });
+function processOrderAction(orderId, action) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var orderSheet = ss.getSheetByName("訂單紀錄");
+  var userSheet = ss.getSheetByName("會員與餘額");
+  if (!orderSheet) return { success: false, message: "訂單資料表不存在" };
+  var orderData = orderSheet.getDataRange().getValues();
+  var orderRowIndex = -1;
+  var targetOrder = null;
+  for (var i = 1; i < orderData.length; i++) {
+    if (orderData[i][0].toString() === orderId.toString()) {
+      orderRowIndex = i + 1;
+      targetOrder = { userId: orderData[i][2], total: Number(orderData[i][5]), payMethod: orderData[i][6], status: orderData[i][7] };
+      break;
+    }
+  }
+  if (orderRowIndex === -1) return { success: false, message: "找不到訂單" };
+  if (targetOrder.status !== "未處理") return { success: false, message: "該訂單已被處理過" };
+  if (action === 'cancel') {
+    orderSheet.getRange(orderRowIndex, 8).setValue("已取消");
+    return { success: true, message: "訂單已取消" };
+  }
+  if (action === 'complete') {
+    if (targetOrder.payMethod === "餘額扣款") {
+      if (!userSheet) return { success: false, message: "會員資料表不存在" };
+      var userData = userSheet.getDataRange().getValues();
+      var userRowIndex = -1;
+      var currentBalance = 0;
+      for (var j = 1; j < userData.length; j++) {
+        if (userData[j][0] === targetOrder.userId) {
+          userRowIndex = j + 1;
+          currentBalance = Number(userData[j][2]);
+          break;
         }
       }
-    </script>
-  </body>
-</html>
+      if (userRowIndex === -1) return { success: false, message: "扣款失敗" };
+      if (currentBalance < targetOrder.total) return { success: false, message: "餘額不足" };
+      userSheet.getRange(userRowIndex, 3).setValue(currentBalance - targetOrder.total);
+    }
+    orderSheet.getRange(orderRowIndex, 8).setValue("已完成");
+    return { success: true, message: "結帳完成" };
+  }
+  return { success: false, message: "未知指令" };
+}
