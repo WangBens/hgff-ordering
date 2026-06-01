@@ -6,7 +6,7 @@
     <title>凰貴妃茶堂 - 線上點餐</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-      /* ================= 全局與基本排版 ================= */
+      /* 全局與基本排版 */
       body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcf6f2; margin: 0; color: #333; padding-bottom: 80px; }
       .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; position: relative; }
       .header { text-align: center; color: #d35400; padding: 20px 15px; border-bottom: 2px solid #f2e2d9; background: #fff; }
@@ -15,16 +15,14 @@
       .welcome-msg { text-align: center; font-weight: bold; color: #2980b9; margin: 15px 0; display: none; }
       .loading-msg { text-align: center; color: #e67e22; font-weight: bold; padding: 30px 0; }
       
-      /* ================= 訂單進度看板 ================= */
+      /* 訂單進度看板 */
       .status-board { background: #fff; border: 2px solid #d35400; border-radius: 10px; padding: 15px; margin: 15px; box-shadow: 0 4px 6px rgba(211,84,0,0.1); }
       .status-title { color: #d35400; font-weight: bold; font-size: 16px; margin-bottom: 10px; border-bottom: 1px dashed #f2e2d9; padding-bottom: 5px; }
       .my-order-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; align-items: center; }
       .my-order-tag { padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 12px; color: white; }
-      .tag-red { background: #e74c3c; } 
-      .tag-orange { background: #f39c12; } 
-      .tag-blue { background: #3498db; }
+      .tag-red { background: #e74c3c; } .tag-orange { background: #f39c12; } .tag-blue { background: #3498db; }
 
-      /* ================= 菜單列表 ================= */
+      /* 菜單列表 */
       .menu-section { padding: 0 15px; }
       .category-title { background-color: #d35400; color: white; padding: 8px 12px; border-radius: 6px; margin-top: 20px; font-size: 16px; font-weight: bold; }
       .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed #eee; }
@@ -32,18 +30,18 @@
       .menu-price { color: #e74c3c; font-size: 14px; }
       .btn-select { background-color: #f39c12; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; }
       
-      /* ================= 底部購物車條 ================= */
+      /* 底部購物車條 */
       .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #2c3e50; color: white; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; box-sizing: border-box; z-index: 99; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
       .btn-checkout { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 16px; cursor: pointer; }
       
-      /* ================= 彈出視窗 (Modal) ================= */
+      /* 彈出視窗 (Modal) */
       .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
       .modal-content { background: white; width: 100%; max-width: 600px; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease-out; }
       @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
       .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
       .close-btn { background: none; border: none; font-size: 24px; color: #999; cursor: pointer; }
       
-      /* ================= 客製化選項 ================= */
+      /* 客製化選項 */
       .option-group { margin-bottom: 20px; }
       .option-title { font-weight: bold; color: #2c3e50; margin-bottom: 10px; font-size: 15px; }
       .radio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -52,7 +50,7 @@
       .radio-label input:checked + span { color: #d35400; font-weight: bold; }
       .radio-label:has(input:checked) { border-color: #d35400; background: #fdf2e9; }
       
-      /* ================= 按鈕與表單 ================= */
+      /* 按鈕與表單 */
       .qty-control { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 20px 0; }
       .qty-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #ccc; background: white; font-size: 20px; color: #333; cursor: pointer; display:flex; align-items:center; justify-content:center; }
       .btn-add-cart, .btn-submit-order { width: 100%; background: #d35400; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
@@ -95,15 +93,12 @@
           <h3 style="margin:0; color:#d35400;" id="modal-item-name">飲品名稱</h3>
           <button class="close-btn" onclick="closeModal('custom-modal')">×</button>
         </div>
-        
         <div id="custom-options-container"></div>
-        
         <div class="qty-control">
           <button class="qty-btn" onclick="changeQty(-1)">-</button>
           <span id="item-qty" style="font-size: 18px; font-weight: bold;">1</span>
           <button class="qty-btn" onclick="changeQty(1)">+</button>
         </div>
-        
         <button class="btn-add-cart" onclick="addToCart()">加入購物車 - $<span id="modal-calc-price">0</span></button>
       </div>
     </div>
@@ -114,23 +109,18 @@
           <h3 style="margin:0;">訂單確認</h3>
           <button class="close-btn" onclick="closeModal('checkout-modal')">×</button>
         </div>
-        
         <div id="checkout-cart-list" style="margin-bottom: 20px; max-height: 200px; overflow-y: auto;"></div>
-        
         <div style="text-align: right; font-weight: bold; font-size: 18px; margin-bottom: 20px; color: #d35400;">
           總金額：$<span id="checkout-total-price">0</span>
         </div>
-        
         <div class="option-title">📞 聯絡資訊 (取餐核對用)</div>
         <input type="text" id="input-lastname" class="form-input" placeholder="您的姓氏 (例：王先生/陳小姐)">
         <input type="tel" id="input-phone" class="form-input" placeholder="手機末三碼 (例：029)" maxlength="3">
-        
         <button class="btn-submit-order" id="btn-submit" onclick="submitOrder()">✅ 確認送出訂單</button>
       </div>
     </div>
 
     <script>
-      // 系統核心變數
       const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
       const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw-EwGrE9UwFhUgl4ePZ1JhVrXoYsK0t5YD5YQkC6oc20DuY6GaUeR6ni3h1j_z_N4t/exec";
 
@@ -140,7 +130,6 @@
       let currentQty = 1;
       let cart = []; 
 
-      // 呼叫 GAS 後端
       async function callGAS(action, payload = {}) {
         payload.action = action;
         const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
@@ -157,26 +146,21 @@
               document.getElementById("welcome-msg").innerText = `哈囉，${profile.displayName}！想喝點什麼呢？`;
               document.getElementById("welcome-msg").style.display = "block";
               
-              // 抓取菜單與個人訂單進度
               fetchData();
               fetchMyOrders(); 
+              setInterval(fetchMyOrders, 10000); // 每10秒更新進度
             });
           }
         });
       };
 
-      // 抓取個人訂單進度
       function fetchMyOrders() {
         callGAS('getUserOrders', { userId: userProfile.userId }).then(res => {
           if(res.success && res.data.length > 0) {
             let html = "";
             res.data.forEach(o => {
               let tagClass = o.status === '未處理' ? 'tag-red' : (o.status === '已接單' ? 'tag-orange' : 'tag-blue');
-              html += `
-                <div class="my-order-item">
-                  <div>${o.time} 訂單 ($${o.total})</div>
-                  <div class="my-order-tag ${tagClass}">${o.status}</div>
-                </div>`;
+              html += `<div class="my-order-item"><div>${o.time} 訂單 ($${o.total})</div><div class="my-order-tag ${tagClass}">${o.status}</div></div>`;
             });
             document.getElementById("my-orders-list").innerHTML = html;
             document.getElementById("my-orders-board").style.display = "block";
@@ -186,9 +170,12 @@
         });
       }
 
-      // 抓取菜單
       function fetchData() {
-        callGAS('getMenuAndOptions').then(res => {
+        // 傳送 userId 和 lineName，讓後端執行自動註冊
+        callGAS('getMenuAndOptions', { 
+          userId: userProfile.userId, 
+          lineName: userProfile.displayName 
+        }).then(res => {
           if (res.success) {
             sysData = res.data;
             document.getElementById("status-text").style.display = "none";
@@ -197,37 +184,29 @@
         });
       }
 
-      // 渲染主畫面菜單
       function renderMenu() {
         const container = document.getElementById("menu-container");
         const grouped = {};
-        
         sysData.menu.forEach(item => { 
           if (!grouped[item.category]) grouped[item.category] = []; 
           grouped[item.category].push(item); 
         });
-        
         for (const cat in grouped) {
           container.innerHTML += `<div class="category-title">${cat}</div>`;
           grouped[cat].forEach(item => {
             let pText = [];
             if(item.priceL > 0) pText.push(`L:$${item.priceL}`);
             if(item.priceXL > 0) pText.push(`XL:$${item.priceXL}`);
-            
             const itemJson = encodeURIComponent(JSON.stringify(item));
             container.innerHTML += `
               <div class="menu-item">
-                <div>
-                  <div class="menu-name">${item.name}</div>
-                  <div class="menu-price">${pText.join(" | ")}</div>
-                </div>
+                <div><div class="menu-name">${item.name}</div><div class="menu-price">${pText.join(" | ")}</div></div>
                 <button class="btn-select" onclick="openCustomModal('${itemJson}')">選擇</button>
               </div>`;
           });
         }
       }
 
-      // 開啟客製化視窗
       function openCustomModal(itemJsonStr) {
         currentItem = JSON.parse(decodeURIComponent(itemJsonStr));
         currentQty = 1;
@@ -235,8 +214,6 @@
         document.getElementById("modal-item-name").innerText = currentItem.name;
         
         let html = "";
-        
-        // 尺寸
         html += `<div class="option-group"><div class="option-title">容量大小</div><div class="radio-grid">`;
         if (currentItem.priceL > 0) html += `<label class="radio-label"><input type="radio" name="size" value="L" data-price="${currentItem.priceL}" checked onchange="updateModalPrice()"><span>L杯</span></label>`;
         if (currentItem.priceXL > 0) {
@@ -245,21 +222,14 @@
         }
         html += `</div></div>`;
 
-        // 甜度
         html += `<div class="option-group"><div class="option-title">甜度</div><div class="radio-grid">`;
-        sysData.options.sweetness.forEach((opt, idx) => { 
-          html += `<label class="radio-label"><input type="radio" name="sweetness" value="${opt.name}" ${idx===0?'checked':''}><span>${opt.name}</span></label>`; 
-        });
+        sysData.options.sweetness.forEach((opt, idx) => { html += `<label class="radio-label"><input type="radio" name="sweetness" value="${opt.name}" ${idx===0?'checked':''}><span>${opt.name}</span></label>`; });
         html += `</div></div>`;
 
-        // 冰塊
         html += `<div class="option-group"><div class="option-title">冰塊</div><div class="radio-grid">`;
-        sysData.options.ice.forEach((opt, idx) => { 
-          html += `<label class="radio-label"><input type="radio" name="ice" value="${opt.name}" ${idx===0?'checked':''}><span>${opt.name}</span></label>`; 
-        });
+        sysData.options.ice.forEach((opt, idx) => { html += `<label class="radio-label"><input type="radio" name="ice" value="${opt.name}" ${idx===0?'checked':''}><span>${opt.name}</span></label>`; });
         html += `</div></div>`;
         
-        // 加料
         html += `<div class="option-group"><div class="option-title">加料 (可複選)</div><div class="radio-grid">`;
         sysData.options.toppings.forEach(opt => { 
           let pText = opt.price > 0 ? `(+$${opt.price})` : "";
@@ -279,39 +249,22 @@
         document.getElementById("modal-calc-price").innerText = (basePrice + toppingsPrice) * currentQty;
       }
 
-      function changeQty(delta) { 
-        currentQty += delta; 
-        if (currentQty < 1) currentQty = 1; 
-        document.getElementById("item-qty").innerText = currentQty; 
-        updateModalPrice(); 
-      }
-      
+      function changeQty(delta) { currentQty += delta; if (currentQty < 1) currentQty = 1; document.getElementById("item-qty").innerText = currentQty; updateModalPrice(); }
       function closeModal(id) { document.getElementById(id).style.display = "none"; }
 
       function addToCart() {
         let sizeInput = document.querySelector('input[name="size"]:checked');
-        let toppings = []; 
-        let toppingsPrice = 0;
-        document.querySelectorAll('input[name="toppings"]:checked').forEach(cb => { 
-          toppings.push(cb.value); 
-          toppingsPrice += Number(cb.dataset.price); 
-        });
-        
+        let toppings = []; let toppingsPrice = 0;
+        document.querySelectorAll('input[name="toppings"]:checked').forEach(cb => { toppings.push(cb.value); toppingsPrice += Number(cb.dataset.price); });
         let unitPrice = Number(sizeInput.dataset.price) + toppingsPrice;
 
         cart.push({
-          name: currentItem.name, 
-          size: sizeInput.value,
+          name: currentItem.name, size: sizeInput.value,
           sweetness: document.querySelector('input[name="sweetness"]:checked').value,
           ice: document.querySelector('input[name="ice"]:checked').value,
-          toppings: toppings, 
-          qty: currentQty, 
-          unitPrice: unitPrice, 
-          total: unitPrice * currentQty
+          toppings: toppings, qty: currentQty, unitPrice: unitPrice, total: unitPrice * currentQty
         });
-        
-        closeModal('custom-modal'); 
-        updateCartUI();
+        closeModal('custom-modal'); updateCartUI();
       }
 
       function updateCartUI() {
@@ -321,25 +274,15 @@
           cart.forEach(item => { totalQty += item.qty; totalPrice += item.total; });
           document.getElementById("cart-count").innerText = totalQty;
           document.getElementById("cart-total").innerText = totalPrice;
-        } else {
-          document.getElementById("cart-bar").style.display = "none";
-        }
+        } else { document.getElementById("cart-bar").style.display = "none"; }
       }
 
       function openCheckoutModal() {
-        let listHtml = ""; 
-        let finalTotal = 0;
+        let listHtml = ""; let finalTotal = 0;
         cart.forEach(item => {
           finalTotal += item.total;
           let topText = item.toppings.length > 0 ? `+${item.toppings.join('、')}` : "";
-          listHtml += `
-            <div class="cart-item">
-              <div class="cart-item-title">
-                <span>[${item.size}] ${item.name} x${item.qty}</span>
-                <span>$${item.total}</span>
-              </div>
-              <div style="font-size:13px; color:#7f8c8d; margin-top:5px;">${item.sweetness}, ${item.ice} ${topText}</div>
-            </div>`;
+          listHtml += `<div class="cart-item"><div class="cart-item-title"><span>[${item.size}] ${item.name} x${item.qty}</span><span>$${item.total}</span></div><div style="font-size:13px; color:#7f8c8d; margin-top:5px;">${item.sweetness}, ${item.ice} ${topText}</div></div>`;
         });
         document.getElementById("checkout-cart-list").innerHTML = listHtml;
         document.getElementById("checkout-total-price").innerText = finalTotal;
@@ -352,33 +295,19 @@
         if (!lastName) return alert("請填寫您的姓氏！"); 
         if (phone.length !== 3) return alert("請填寫手機末三碼！");
         
-        let finalTotal = 0; 
-        cart.forEach(i => finalTotal += i.total);
-        let payload = { 
-          userId: userProfile.userId, 
-          lineName: userProfile.displayName, 
-          lastName: lastName, 
-          phone: phone, 
-          cart: cart, 
-          totalPrice: finalTotal 
-        };
+        let finalTotal = 0; cart.forEach(i => finalTotal += i.total);
+        let payload = { userId: userProfile.userId, lineName: userProfile.displayName, lastName: lastName, phone: phone, cart: cart, totalPrice: finalTotal };
 
         let btn = document.getElementById("btn-submit");
-        btn.innerText = "⏳ 傳送中..."; 
-        btn.disabled = true;
+        btn.innerText = "⏳ 傳送中..."; btn.disabled = true;
 
         callGAS('submitOrder', payload).then(res => {
           if(res.success) {
             alert("訂單送出成功！");
-            cart = []; 
-            updateCartUI(); 
-            closeModal('checkout-modal');
-            fetchMyOrders(); // 送出成功後，立刻刷新顧客的訂單看板
-          } else {
-            alert("送出失敗：" + res.message);
-          }
-          btn.innerText = "✅ 確認送出訂單"; 
-          btn.disabled = false;
+            cart = []; updateCartUI(); closeModal('checkout-modal');
+            fetchMyOrders(); 
+          } else { alert("送出失敗：" + res.message); }
+          btn.innerText = "✅ 確認送出訂單"; btn.disabled = false;
         });
       }
     </script>
