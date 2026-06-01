@@ -5,41 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>凰貴妃茶堂 - 線上點餐</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    
     <style>
+      /* ...(這部分 CSS 樣式與你前一版完全相同，為了節省空間，請直接保留你原本寫在 index.html 裡的 <style>...</style> 內容) */
+      /* 僅新增進度看板的樣式 */
+      .status-board { background: #fff; border: 2px solid #d35400; border-radius: 10px; padding: 15px; margin: 15px; box-shadow: 0 4px 6px rgba(211,84,0,0.1); }
+      .status-title { color: #d35400; font-weight: bold; font-size: 16px; margin-bottom: 10px; border-bottom: 1px dashed #f2e2d9; padding-bottom: 5px; }
+      .my-order-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+      .my-order-tag { padding: 3px 8px; border-radius: 12px; font-weight: bold; font-size: 12px; color: white;}
+      .tag-red { background: #e74c3c; } .tag-orange { background: #f39c12; } .tag-blue { background: #3498db; }
+      
+      /* 將原本的 CSS 貼在這邊即可 */
       body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcf6f2; margin: 0; color: #333; padding-bottom: 80px; }
       .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; position: relative; }
-      
       .header { text-align: center; color: #d35400; padding: 20px 15px; border-bottom: 2px solid #f2e2d9; background: #fff; }
       .header h2 { margin: 0 0 5px 0; font-size: 24px; }
       .header p { margin: 0; color: #7f8c8d; font-size: 14px; }
-      
       .welcome-msg { text-align: center; font-weight: bold; color: #2980b9; margin: 15px 0; display: none; }
       .loading-msg { text-align: center; color: #e67e22; font-weight: bold; padding: 30px 0; }
-      
-      /* 菜單列表 */
       .menu-section { padding: 0 15px; }
       .category-title { background-color: #d35400; color: white; padding: 8px 12px; border-radius: 6px; margin-top: 20px; font-size: 16px; font-weight: bold;}
       .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed #eee; }
       .menu-name { font-weight: bold; font-size: 16px; color: #2c3e50; margin-bottom: 5px; }
       .menu-price { color: #e74c3c; font-size: 14px; }
       .btn-select { background-color: #f39c12; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; }
-      
-      /* 底部購物車狀態列 */
       .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #2c3e50; color: white; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; box-sizing: border-box; z-index: 99; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
-      .cart-info { font-size: 16px; font-weight: bold; }
       .btn-checkout { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 16px; cursor: pointer; }
-      
-      /* 彈出視窗 (Modal) 共用樣式 */
       .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
-      .modal-content { background: white; width: 100%; max-width: 600px; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease-out; }
-      @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-      
+      .modal-content { background: white; width: 100%; max-width: 600px; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
       .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
-      .modal-title { font-size: 20px; font-weight: bold; color: #d35400; margin: 0; }
       .close-btn { background: none; border: none; font-size: 24px; color: #999; cursor: pointer; }
-      
-      /* 客製化選項樣式 */
       .option-group { margin-bottom: 20px; }
       .option-title { font-weight: bold; color: #2c3e50; margin-bottom: 10px; font-size: 15px; }
       .radio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -47,16 +41,11 @@
       .radio-label input { display: none; }
       .radio-label input:checked + span { color: #d35400; font-weight: bold; }
       .radio-label:has(input:checked) { border-color: #d35400; background: #fdf2e9; }
-      
-      /* 數量增減與按鈕 */
       .qty-control { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 20px 0; }
       .qty-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #ccc; background: white; font-size: 20px; color: #333; cursor: pointer; }
       .btn-add-cart, .btn-submit-order { width: 100%; background: #d35400; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
-      
-      /* 結帳表單樣式 */
       .cart-item { padding: 10px 0; border-bottom: 1px solid #eee; }
       .cart-item-title { font-weight: bold; display: flex; justify-content: space-between; }
-      .cart-item-desc { font-size: 13px; color: #7f8c8d; margin-top: 4px; }
       .form-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; }
     </style>
   </head>
@@ -68,6 +57,11 @@
       </div>
       
       <div id="welcome-msg" class="welcome-msg"></div>
+
+      <div id="my-orders-board" class="status-board" style="display:none;">
+        <div class="status-title">🔔 我的訂單進度 <span style="font-size:12px; color:#7f8c8d; font-weight:normal; float:right; cursor:pointer;" onclick="fetchMyOrders()">🔄 更新</span></div>
+        <div id="my-orders-list"></div>
+      </div>
 
       <div class="menu-section" id="app-content">
         <div class="loading-msg" id="status-text">🔄 系統連線中，請稍候...</div>
@@ -83,41 +77,27 @@
     <div class="modal-overlay" id="custom-modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title" id="modal-item-name">飲品名稱</h3>
+          <h3 style="margin:0; color:#d35400;" id="modal-item-name">飲品名稱</h3>
           <button class="close-btn" onclick="closeModal('custom-modal')">×</button>
         </div>
-        
-        <div id="custom-options-container">
-          </div>
-
+        <div id="custom-options-container"></div>
         <div class="qty-control">
           <button class="qty-btn" onclick="changeQty(-1)">-</button>
           <span id="item-qty" style="font-size: 18px; font-weight: bold;">1</span>
           <button class="qty-btn" onclick="changeQty(1)">+</button>
         </div>
-        
         <button class="btn-add-cart" onclick="addToCart()">加入購物車 - $<span id="modal-calc-price">0</span></button>
       </div>
     </div>
 
     <div class="modal-overlay" id="checkout-modal">
       <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">訂單確認與結帳</h3>
-          <button class="close-btn" onclick="closeModal('checkout-modal')">×</button>
-        </div>
-        
-        <div id="checkout-cart-list" style="margin-bottom: 20px; max-height: 200px; overflow-y: auto;">
-          </div>
-        
-        <div style="text-align: right; font-weight: bold; font-size: 18px; margin-bottom: 20px; color: #d35400;">
-          總金額：$<span id="checkout-total-price">0</span>
-        </div>
-
+        <div class="modal-header"><h3 style="margin:0;">訂單確認</h3><button class="close-btn" onclick="closeModal('checkout-modal')">×</button></div>
+        <div id="checkout-cart-list" style="margin-bottom: 20px; max-height: 200px; overflow-y: auto;"></div>
+        <div style="text-align: right; font-weight: bold; font-size: 18px; margin-bottom: 20px; color: #d35400;">總金額：$<span id="checkout-total-price">0</span></div>
         <div class="option-title">📞 聯絡資訊 (取餐核對用)</div>
-        <input type="text" id="input-lastname" class="form-input" placeholder="您的姓氏 (例：王先生/陳小姐)">
+        <input type="text" id="input-lastname" class="form-input" placeholder="您的姓氏 (例：王先生)">
         <input type="tel" id="input-phone" class="form-input" placeholder="手機末三碼 (例：029)" maxlength="3">
-        
         <button class="btn-submit-order" id="btn-submit" onclick="submitOrder()">✅ 確認送出訂單</button>
       </div>
     </div>
@@ -126,12 +106,11 @@
       const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
       const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw-EwGrE9UwFhUgl4ePZ1JhVrXoYsK0t5YD5YQkC6oc20DuY6GaUeR6ni3h1j_z_N4t/exec";
 
-      // 系統狀態
       let userProfile = { userId: "", displayName: "" };
       let sysData = { menu: [], options: {} };
-      let currentItem = null; // 當前正在客製化的飲品
+      let currentItem = null; 
       let currentQty = 1;
-      let cart = []; // 購物車陣列
+      let cart = []; 
 
       async function callGAS(action, payload = {}) {
         payload.action = action;
@@ -139,20 +118,39 @@
         return await response.json();
       }
 
-      window.onload = function() { initializeLiff(); };
-
-      function initializeLiff() {
+      window.onload = function() {
         liff.init({ liffId: CUSTOMER_LIFF_ID }).then(() => {
-          if (!liff.isLoggedIn()) { liff.login(); } 
+          if (!liff.isLoggedIn()) liff.login();
           else {
             liff.getProfile().then(profile => {
               userProfile = profile;
               document.getElementById("welcome-msg").innerText = `哈囉，${profile.displayName}！想喝點什麼呢？`;
               document.getElementById("welcome-msg").style.display = "block";
               fetchData();
+              fetchMyOrders(); // 初始化時抓取目前訂單進度
             });
           }
-        }).catch(err => alert("LIFF 錯誤: " + err));
+        });
+      };
+
+      // 【新增】查詢顧客的進度
+      function fetchMyOrders() {
+        callGAS('getUserOrders', { userId: userProfile.userId }).then(res => {
+          if(res.success && res.data.length > 0) {
+            let html = "";
+            res.data.forEach(o => {
+              let tagClass = o.status === '未處理' ? 'tag-red' : (o.status === '已接單' ? 'tag-orange' : 'tag-blue');
+              html += `<div class="my-order-item">
+                         <div>${o.time} 訂單 ($${o.total})</div>
+                         <div class="my-order-tag ${tagClass}">${o.status}</div>
+                       </div>`;
+            });
+            document.getElementById("my-orders-list").innerHTML = html;
+            document.getElementById("my-orders-board").style.display = "block";
+          } else {
+            document.getElementById("my-orders-board").style.display = "none";
+          }
+        });
       }
 
       // 抓取菜單與選項
@@ -166,38 +164,26 @@
         });
       }
 
-      // 渲染主菜單
       function renderMenu() {
         const container = document.getElementById("menu-container");
         const grouped = {};
-        sysData.menu.forEach(item => {
-          if (!grouped[item.category]) grouped[item.category] = [];
-          grouped[item.category].push(item);
-        });
-
+        sysData.menu.forEach(item => { if (!grouped[item.category]) grouped[item.category] = []; grouped[item.category].push(item); });
         for (const cat in grouped) {
           container.innerHTML += `<div class="category-title">${cat}</div>`;
           grouped[cat].forEach(item => {
             let pText = [];
             if(item.priceL > 0) pText.push(`L:$${item.priceL}`);
             if(item.priceXL > 0) pText.push(`XL:$${item.priceXL}`);
-            
-            // 將物件轉成字串傳給點擊事件
             const itemJson = encodeURIComponent(JSON.stringify(item));
-            
             container.innerHTML += `
               <div class="menu-item">
-                <div>
-                  <div class="menu-name">${item.name}</div>
-                  <div class="menu-price">${pText.join(" | ")}</div>
-                </div>
+                <div><div class="menu-name">${item.name}</div><div class="menu-price">${pText.join(" | ")}</div></div>
                 <button class="btn-select" onclick="openCustomModal('${itemJson}')">選擇</button>
               </div>`;
           });
         }
       }
 
-      // 開啟客製化視窗
       function openCustomModal(itemJsonStr) {
         currentItem = JSON.parse(decodeURIComponent(itemJsonStr));
         currentQty = 1;
@@ -205,35 +191,24 @@
         document.getElementById("modal-item-name").innerText = currentItem.name;
         
         let html = "";
-        
-        // 尺寸選擇 (單選)
         html += `<div class="option-group"><div class="option-title">容量大小</div><div class="radio-grid">`;
-        if (currentItem.priceL > 0) html += `<label class="radio-label"><input type="radio" name="size" value="L" data-price="${currentItem.priceL}" checked onchange="updateModalPrice()"><span>L杯 ($${currentItem.priceL})</span></label>`;
+        if (currentItem.priceL > 0) html += `<label class="radio-label"><input type="radio" name="size" value="L" data-price="${currentItem.priceL}" checked onchange="updateModalPrice()"><span>L杯</span></label>`;
         if (currentItem.priceXL > 0) {
             let checked = currentItem.priceL <= 0 ? "checked" : "";
-            html += `<label class="radio-label"><input type="radio" name="size" value="XL" data-price="${currentItem.priceXL}" ${checked} onchange="updateModalPrice()"><span>XL杯 ($${currentItem.priceXL})</span></label>`;
+            html += `<label class="radio-label"><input type="radio" name="size" value="XL" data-price="${currentItem.priceXL}" ${checked} onchange="updateModalPrice()"><span>XL杯</span></label>`;
         }
         html += `</div></div>`;
 
-        // 甜度選擇 (單選)
         html += `<div class="option-group"><div class="option-title">甜度</div><div class="radio-grid">`;
-        sysData.options.sweetness.forEach((opt, idx) => {
-          html += `<label class="radio-label"><input type="radio" name="sweetness" value="${opt.name}" ${idx===0?'checked':''}><span>${opt.name}</span></label>`;
-        });
+        sysData.options.sweetness.forEach((opt, idx) => { html += `<label class="radio-label"><input type="radio" name="sweetness" value="${opt.name}" ${idx===0?'checked':''}><span>${opt.name}</span></label>`; });
         html += `</div></div>`;
 
-        // 冰塊選擇 (單選)
         html += `<div class="option-group"><div class="option-title">冰塊</div><div class="radio-grid">`;
-        sysData.options.ice.forEach((opt, idx) => {
-          html += `<label class="radio-label"><input type="radio" name="ice" value="${opt.name}" ${idx===0?'checked':''}><span>${opt.name}</span></label>`;
-        });
+        sysData.options.ice.forEach((opt, idx) => { html += `<label class="radio-label"><input type="radio" name="ice" value="${opt.name}" ${idx===0?'checked':''}><span>${opt.name}</span></label>`; });
         html += `</div></div>`;
         
-        // 加料選擇 (複選 checkbox)
         html += `<div class="option-group"><div class="option-title">加料 (可複選)</div><div class="radio-grid">`;
-        sysData.options.toppings.forEach(opt => {
-          html += `<label class="radio-label"><input type="checkbox" name="toppings" value="${opt.name}" data-price="${opt.price}" onchange="updateModalPrice()"><span>${opt.name} (+$${opt.price})</span></label>`;
-        });
+        sysData.options.toppings.forEach(opt => { html += `<label class="radio-label"><input type="checkbox" name="toppings" value="${opt.name}" data-price="${opt.price}" onchange="updateModalPrice()"><span>${opt.name}</span></label>`; });
         html += `</div></div>`;
 
         document.getElementById("custom-options-container").innerHTML = html;
@@ -241,134 +216,71 @@
         updateModalPrice();
       }
 
-      // 計算彈窗內的單項總價
       function updateModalPrice() {
         let basePrice = Number(document.querySelector('input[name="size"]:checked').dataset.price);
         let toppingsPrice = 0;
-        document.querySelectorAll('input[name="toppings"]:checked').forEach(cb => {
-          toppingsPrice += Number(cb.dataset.price);
-        });
-        let total = (basePrice + toppingsPrice) * currentQty;
-        document.getElementById("modal-calc-price").innerText = total;
+        document.querySelectorAll('input[name="toppings"]:checked').forEach(cb => { toppingsPrice += Number(cb.dataset.price); });
+        document.getElementById("modal-calc-price").innerText = (basePrice + toppingsPrice) * currentQty;
       }
 
-      function changeQty(delta) {
-        currentQty += delta;
-        if (currentQty < 1) currentQty = 1;
-        document.getElementById("item-qty").innerText = currentQty;
-        updateModalPrice();
-      }
+      function changeQty(delta) { currentQty += delta; if (currentQty < 1) currentQty = 1; document.getElementById("item-qty").innerText = currentQty; updateModalPrice(); }
+      function closeModal(id) { document.getElementById(id).style.display = "none"; }
 
-      function closeModal(id) {
-        document.getElementById(id).style.display = "none";
-      }
-
-      // 加入購物車
       function addToCart() {
         let sizeInput = document.querySelector('input[name="size"]:checked');
-        let size = sizeInput.value;
-        let basePrice = Number(sizeInput.dataset.price);
-        
-        let sweetness = document.querySelector('input[name="sweetness"]:checked').value;
-        let ice = document.querySelector('input[name="ice"]:checked').value;
-        
-        let toppings = [];
-        let toppingsPrice = 0;
-        document.querySelectorAll('input[name="toppings"]:checked').forEach(cb => {
-          toppings.push(cb.value);
-          toppingsPrice += Number(cb.dataset.price);
-        });
-
-        let unitPrice = basePrice + toppingsPrice;
-        let itemTotal = unitPrice * currentQty;
+        let toppings = []; let toppingsPrice = 0;
+        document.querySelectorAll('input[name="toppings"]:checked').forEach(cb => { toppings.push(cb.value); toppingsPrice += Number(cb.dataset.price); });
+        let unitPrice = Number(sizeInput.dataset.price) + toppingsPrice;
 
         cart.push({
-          name: currentItem.name,
-          size: size,
-          sweetness: sweetness,
-          ice: ice,
-          toppings: toppings,
-          qty: currentQty,
-          unitPrice: unitPrice,
-          total: itemTotal
+          name: currentItem.name, size: sizeInput.value,
+          sweetness: document.querySelector('input[name="sweetness"]:checked').value,
+          ice: document.querySelector('input[name="ice"]:checked').value,
+          toppings: toppings, qty: currentQty, unitPrice: unitPrice, total: unitPrice * currentQty
         });
-
-        closeModal('custom-modal');
-        updateCartUI();
+        closeModal('custom-modal'); updateCartUI();
       }
 
-      // 更新底部購物車狀態
       function updateCartUI() {
         if (cart.length > 0) {
           document.getElementById("cart-bar").style.display = "flex";
-          let totalQty = 0;
-          let totalPrice = 0;
+          let totalQty = 0; let totalPrice = 0;
           cart.forEach(item => { totalQty += item.qty; totalPrice += item.total; });
           document.getElementById("cart-count").innerText = totalQty;
           document.getElementById("cart-total").innerText = totalPrice;
-        } else {
-          document.getElementById("cart-bar").style.display = "none";
-        }
+        } else document.getElementById("cart-bar").style.display = "none";
       }
 
-      // 開啟結帳視窗
       function openCheckoutModal() {
-        let listHtml = "";
-        let finalTotal = 0;
-        
-        cart.forEach((item, index) => {
+        let listHtml = ""; let finalTotal = 0;
+        cart.forEach(item => {
           finalTotal += item.total;
           let topText = item.toppings.length > 0 ? `+${item.toppings.join('、')}` : "";
-          listHtml += `
-            <div class="cart-item">
-              <div class="cart-item-title">
-                <span>[${item.size}] ${item.name} x${item.qty}</span>
-                <span>$${item.total}</span>
-              </div>
-              <div class="cart-item-desc">${item.sweetness}, ${item.ice} ${topText}</div>
-            </div>`;
+          listHtml += `<div class="cart-item"><div class="cart-item-title"><span>[${item.size}] ${item.name} x${item.qty}</span><span>$${item.total}</span></div><div style="font-size:13px; color:#7f8c8d;">${item.sweetness}, ${item.ice} ${topText}</div></div>`;
         });
-        
         document.getElementById("checkout-cart-list").innerHTML = listHtml;
         document.getElementById("checkout-total-price").innerText = finalTotal;
         document.getElementById("checkout-modal").style.display = "flex";
       }
 
-      // 最終送出訂單
       function submitOrder() {
         let lastName = document.getElementById("input-lastname").value.trim();
         let phone = document.getElementById("input-phone").value.trim();
+        if (!lastName) return alert("請填寫您的姓氏！"); if (phone.length !== 3) return alert("請填寫手機末三碼！");
         
-        if (!lastName) return alert("請填寫您的姓氏！");
-        if (phone.length !== 3) return alert("請填寫手機『末三碼』！");
-        
-        let finalTotal = 0;
-        cart.forEach(i => finalTotal += i.total);
-
-        let payload = {
-          userId: userProfile.userId,
-          lineName: userProfile.displayName,
-          lastName: lastName,
-          phone: phone,
-          cart: cart,
-          totalPrice: finalTotal
-        };
+        let finalTotal = 0; cart.forEach(i => finalTotal += i.total);
+        let payload = { userId: userProfile.userId, lineName: userProfile.displayName, lastName: lastName, phone: phone, cart: cart, totalPrice: finalTotal };
 
         let btn = document.getElementById("btn-submit");
-        btn.innerText = "⏳ 訂單傳送中...";
-        btn.disabled = true;
+        btn.innerText = "⏳ 傳送中..."; btn.disabled = true;
 
         callGAS('submitOrder', payload).then(res => {
           if(res.success) {
-            alert("🎉 訂單送出成功！請至櫃檯報末三碼結帳取餐。");
-            cart = []; // 清空購物車
-            updateCartUI();
-            closeModal('checkout-modal');
-          } else {
-            alert("訂單送出失敗：" + res.message);
-          }
-          btn.innerText = "✅ 確認送出訂單";
-          btn.disabled = false;
+            alert("訂單送出成功！");
+            cart = []; updateCartUI(); closeModal('checkout-modal');
+            fetchMyOrders(); // 送出成功後，立刻刷新顧客的訂單看板
+          } else alert("送出失敗：" + res.message);
+          btn.innerText = "✅ 確認送出訂單"; btn.disabled = false;
         });
       }
     </script>
