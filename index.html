@@ -1,230 +1,376 @@
-function doPost(e) {
-  var result = {};
-  
-  try {
-    var body = JSON.parse(e.postData.contents);
-    var action = body.action;
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>凰貴妃茶堂 - 線上點餐</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
-    if (action === 'getMenuAndOptions') {
-      // 【新增】同時取得菜單與客製化選項
-      result = { success: true, data: getMenuAndOptions() };
+    <style>
+      body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcf6f2; margin: 0; color: #333; padding-bottom: 80px; }
+      .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; position: relative; }
       
-    } else if (action === 'submitOrder') {
-      // 【新增】接收前端送來的新訂單
-      result = submitOrder(body.userId, body.lineName, body.lastName, body.phone, body.cart, body.totalPrice);
+      .header { text-align: center; color: #d35400; padding: 20px 15px; border-bottom: 2px solid #f2e2d9; background: #fff; }
+      .header h2 { margin: 0 0 5px 0; font-size: 24px; }
+      .header p { margin: 0; color: #7f8c8d; font-size: 14px; }
       
-    } else if (action === 'verifyAdmin') {
-      result = { success: true, isAdmin: verifyAdmin(body.userId) };
-    } else if (action === 'getAdminDashboardData') {
-      result = { success: true, data: getAdminDashboardData() };
-    } else if (action === 'adminTopUp') {
-      result = adminTopUp(body.userId, body.amount, body.note);
-    } else if (action === 'processOrderAction') {
-      result = processOrderAction(body.orderId, body.orderAction); 
-    } else {
-      result = { success: false, message: '未知的 API 指令' };
-    }
-    
-  } catch (error) {
-    result = { success: false, message: '後端執行錯誤: ' + error.toString() };
-  }
-  
-  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
-}
+      .welcome-msg { text-align: center; font-weight: bold; color: #2980b9; margin: 15px 0; display: none; }
+      .loading-msg { text-align: center; color: #e67e22; font-weight: bold; padding: 30px 0; }
+      
+      /* 菜單列表 */
+      .menu-section { padding: 0 15px; }
+      .category-title { background-color: #d35400; color: white; padding: 8px 12px; border-radius: 6px; margin-top: 20px; font-size: 16px; font-weight: bold;}
+      .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed #eee; }
+      .menu-name { font-weight: bold; font-size: 16px; color: #2c3e50; margin-bottom: 5px; }
+      .menu-price { color: #e74c3c; font-size: 14px; }
+      .btn-select { background-color: #f39c12; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+      
+      /* 底部購物車狀態列 */
+      .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #2c3e50; color: white; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; box-sizing: border-box; z-index: 99; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+      .cart-info { font-size: 16px; font-weight: bold; }
+      .btn-checkout { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 16px; cursor: pointer; }
+      
+      /* 彈出視窗 (Modal) 共用樣式 */
+      .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
+      .modal-content { background: white; width: 100%; max-width: 600px; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease-out; }
+      @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      
+      .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+      .modal-title { font-size: 20px; font-weight: bold; color: #d35400; margin: 0; }
+      .close-btn { background: none; border: none; font-size: 24px; color: #999; cursor: pointer; }
+      
+      /* 客製化選項樣式 */
+      .option-group { margin-bottom: 20px; }
+      .option-title { font-weight: bold; color: #2c3e50; margin-bottom: 10px; font-size: 15px; }
+      .radio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .radio-label { display: block; border: 1px solid #ccc; text-align: center; padding: 10px 5px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+      .radio-label input { display: none; }
+      .radio-label input:checked + span { color: #d35400; font-weight: bold; }
+      .radio-label:has(input:checked) { border-color: #d35400; background: #fdf2e9; }
+      
+      /* 數量增減與按鈕 */
+      .qty-control { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 20px 0; }
+      .qty-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #ccc; background: white; font-size: 20px; color: #333; cursor: pointer; }
+      .btn-add-cart, .btn-submit-order { width: 100%; background: #d35400; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
+      
+      /* 結帳表單樣式 */
+      .cart-item { padding: 10px 0; border-bottom: 1px solid #eee; }
+      .cart-item-title { font-weight: bold; display: flex; justify-content: space-between; }
+      .cart-item-desc { font-size: 13px; color: #7f8c8d; margin-top: 4px; }
+      .form-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>凰貴妃茶堂</h2>
+        <p>線上專屬點餐系統</p>
+      </div>
+      
+      <div id="welcome-msg" class="welcome-msg"></div>
 
-function doGet(e) {
-  return ContentService.createTextOutput("凰貴妃茶堂 API 伺服器運作中。");
-}
+      <div class="menu-section" id="app-content">
+        <div class="loading-msg" id="status-text">🔄 系統連線中，請稍候...</div>
+        <div id="menu-container"></div>
+      </div>
+    </div>
 
-// =========================================
-// 新增功能：取得菜單與客製化選項
-// =========================================
-function getMenuAndOptions() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var menuSheet = ss.getSheetByName("菜單");
-  var optSheet = ss.getSheetByName("加料與客製化");
-  
-  var menuList = [];
-  var options = { sweetness: [], ice: [], toppings: [] };
-  
-  // 1. 讀取菜單
-  if (menuSheet) {
-    var mData = menuSheet.getDataRange().getValues();
-    for (var i = 1; i < mData.length; i++) {
-      if (mData[i][4] === '上架') {
-        menuList.push({ category: mData[i][0], name: mData[i][1], priceL: Number(mData[i][2]), priceXL: Number(mData[i][3]) });
+    <div class="cart-bar" id="cart-bar" style="display: none;">
+      <div class="cart-info">🛒 購物車：<span id="cart-count">0</span> 杯 / $<span id="cart-total">0</span></div>
+      <button class="btn-checkout" onclick="openCheckoutModal()">結帳去</button>
+    </div>
+
+    <div class="modal-overlay" id="custom-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modal-item-name">飲品名稱</h3>
+          <button class="close-btn" onclick="closeModal('custom-modal')">×</button>
+        </div>
+        
+        <div id="custom-options-container">
+          </div>
+
+        <div class="qty-control">
+          <button class="qty-btn" onclick="changeQty(-1)">-</button>
+          <span id="item-qty" style="font-size: 18px; font-weight: bold;">1</span>
+          <button class="qty-btn" onclick="changeQty(1)">+</button>
+        </div>
+        
+        <button class="btn-add-cart" onclick="addToCart()">加入購物車 - $<span id="modal-calc-price">0</span></button>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="checkout-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">訂單確認與結帳</h3>
+          <button class="close-btn" onclick="closeModal('checkout-modal')">×</button>
+        </div>
+        
+        <div id="checkout-cart-list" style="margin-bottom: 20px; max-height: 200px; overflow-y: auto;">
+          </div>
+        
+        <div style="text-align: right; font-weight: bold; font-size: 18px; margin-bottom: 20px; color: #d35400;">
+          總金額：$<span id="checkout-total-price">0</span>
+        </div>
+
+        <div class="option-title">📞 聯絡資訊 (取餐核對用)</div>
+        <input type="text" id="input-lastname" class="form-input" placeholder="您的姓氏 (例：王先生/陳小姐)">
+        <input type="tel" id="input-phone" class="form-input" placeholder="手機末三碼 (例：029)" maxlength="3">
+        
+        <button class="btn-submit-order" id="btn-submit" onclick="submitOrder()">✅ 確認送出訂單</button>
+      </div>
+    </div>
+
+    <script>
+      const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
+      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw-EwGrE9UwFhUgl4ePZ1JhVrXoYsK0t5YD5YQkC6oc20DuY6GaUeR6ni3h1j_z_N4t/exec";
+
+      // 系統狀態
+      let userProfile = { userId: "", displayName: "" };
+      let sysData = { menu: [], options: {} };
+      let currentItem = null; // 當前正在客製化的飲品
+      let currentQty = 1;
+      let cart = []; // 購物車陣列
+
+      async function callGAS(action, payload = {}) {
+        payload.action = action;
+        const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+        return await response.json();
       }
-    }
-  }
-  
-  // 2. 讀取客製化選項
-  if (optSheet) {
-    var oData = optSheet.getDataRange().getValues();
-    for (var j = 1; j < oData.length; j++) {
-      if (oData[j][3] === '上架') {
-        var type = oData[j][0];
-        var optObj = { name: oData[j][1], price: Number(oData[j][2]) };
-        if (type === '甜度') options.sweetness.push(optObj);
-        else if (type === '冰塊') options.ice.push(optObj);
-        else if (type === '加料') options.toppings.push(optObj);
+
+      window.onload = function() { initializeLiff(); };
+
+      function initializeLiff() {
+        liff.init({ liffId: CUSTOMER_LIFF_ID }).then(() => {
+          if (!liff.isLoggedIn()) { liff.login(); } 
+          else {
+            liff.getProfile().then(profile => {
+              userProfile = profile;
+              document.getElementById("welcome-msg").innerText = `哈囉，${profile.displayName}！想喝點什麼呢？`;
+              document.getElementById("welcome-msg").style.display = "block";
+              fetchData();
+            });
+          }
+        }).catch(err => alert("LIFF 錯誤: " + err));
       }
-    }
-  }
-  
-  return { menu: menuList, options: options };
-}
 
-// =========================================
-// 新增功能：寫入新訂單到資料庫
-// =========================================
-function submitOrder(userId, lineName, lastName, phone, cart, totalPrice) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var orderSheet = ss.getSheetByName("訂單紀錄");
-  if (!orderSheet) return { success: false, message: "找不到訂單紀錄工作表" };
-  
-  // 產生訂單編號 (利用時間戳記)
-  var orderId = "ORD" + new Date().getTime().toString().slice(-6);
-  var orderTime = new Date();
-  
-  // 組合顧客稱呼
-  var customerName = lastName + " (" + phone + ") [" + lineName + "]";
-  
-  // 將購物車陣列轉換成可讀的文字格式
-  var orderContentText = "";
-  for (var i = 0; i < cart.length; i++) {
-    var item = cart[i];
-    var details = [item.sweetness, item.ice];
-    if (item.toppings.length > 0) details.push("+" + item.toppings.join("、"));
-    
-    orderContentText += "[" + item.size + "] " + item.name + " x" + item.qty + " (" + details.join(", ") + ")\n";
-  }
-  
-  // 寫入 Google Sheet
-  // A:訂單編號, B:時間, C:LINE_ID, D:姓名暱稱, E:訂單內容, F:總金額, G:付款方式, H:狀態
-  orderSheet.appendRow([
-    orderId,
-    orderTime,
-    userId,
-    customerName,
-    orderContentText.trim(),
-    totalPrice,
-    "現場結帳", // 預設付款方式
-    "未處理"
-  ]);
-  
-  return { success: true, message: "訂單已成功送出！" };
-}
-
-// =========================================
-// 以下為原本的老闆後台功能，保持不變
-// =========================================
-function verifyAdmin(userId) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("管理員名單");
-  if (!sheet) return false;
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    if (data[i][0] === userId) return true; 
-  }
-  return false; 
-}
-
-function getAdminDashboardData() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var orderSheet = ss.getSheetByName("訂單紀錄");
-  var orders = [];
-  if (orderSheet) {
-    var orderData = orderSheet.getDataRange().getValues();
-    for (var i = 1; i < orderData.length; i++) {
-      if (orderData[i][7] === "未處理") {
-        orders.push({
-          id: orderData[i][0],        
-          time: Utilities.formatDate(new Date(orderData[i][1]), "GMT+8", "yyyy/MM/dd HH:mm"), 
-          userId: orderData[i][2],    
-          userName: orderData[i][3],  
-          content: orderData[i][4],   
-          total: Number(orderData[i][5]),     
-          payMethod: orderData[i][6], 
-          status: orderData[i][7]     
+      // 抓取菜單與選項
+      function fetchData() {
+        callGAS('getMenuAndOptions').then(res => {
+          if (res.success) {
+            sysData = res.data;
+            document.getElementById("status-text").style.display = "none";
+            renderMenu();
+          }
         });
       }
-    }
-  }
-  var userSheet = ss.getSheetByName("會員與餘額");
-  var users = [];
-  if (userSheet) {
-    var userData = userSheet.getDataRange().getValues();
-    for (var j = 1; j < userData.length; j++) {
-      users.push({ userId: userData[j][0], userName: userData[j][1], balance: Number(userData[j][2]) });
-    }
-  }
-  return { orders: orders, users: users };
-}
 
-function adminTopUp(targetUserId, amount, note) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var userSheet = ss.getSheetByName("會員與餘額");
-  var logSheet = ss.getSheetByName("儲值紀錄");
-  if (!userSheet || !logSheet) return { success: false, message: "資料表不存在" };
-  amount = Number(amount);
-  if (isNaN(amount) || amount <= 0) return { success: false, message: "金額錯誤" };
-  var userData = userSheet.getDataRange().getValues();
-  var userRowIndex = -1;
-  var userName = "未知用戶";
-  for (var i = 1; i < userData.length; i++) {
-    if (userData[i][0] === targetUserId) {
-      userRowIndex = i + 1; 
-      userName = userData[i][1];
-      break;
-    }
-  }
-  if (userRowIndex === -1) return { success: false, message: "找不到會員" };
-  var currentBalance = Number(userSheet.getRange(userRowIndex, 3).getValue());
-  var newBalance = currentBalance + amount;
-  userSheet.getRange(userRowIndex, 3).setValue(newBalance);
-  logSheet.appendRow([new Date(), targetUserId, userName, amount, note || "現場現金儲值"]);
-  return { success: true, newBalance: newBalance, userName: userName };
-}
+      // 渲染主菜單
+      function renderMenu() {
+        const container = document.getElementById("menu-container");
+        const grouped = {};
+        sysData.menu.forEach(item => {
+          if (!grouped[item.category]) grouped[item.category] = [];
+          grouped[item.category].push(item);
+        });
 
-function processOrderAction(orderId, action) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var orderSheet = ss.getSheetByName("訂單紀錄");
-  var userSheet = ss.getSheetByName("會員與餘額");
-  if (!orderSheet) return { success: false, message: "訂單資料表不存在" };
-  var orderData = orderSheet.getDataRange().getValues();
-  var orderRowIndex = -1;
-  var targetOrder = null;
-  for (var i = 1; i < orderData.length; i++) {
-    if (orderData[i][0].toString() === orderId.toString()) {
-      orderRowIndex = i + 1;
-      targetOrder = { userId: orderData[i][2], total: Number(orderData[i][5]), payMethod: orderData[i][6], status: orderData[i][7] };
-      break;
-    }
-  }
-  if (orderRowIndex === -1) return { success: false, message: "找不到訂單" };
-  if (targetOrder.status !== "未處理") return { success: false, message: "該訂單已被處理過" };
-  if (action === 'cancel') {
-    orderSheet.getRange(orderRowIndex, 8).setValue("已取消");
-    return { success: true, message: "訂單已取消" };
-  }
-  if (action === 'complete') {
-    if (targetOrder.payMethod === "餘額扣款") {
-      if (!userSheet) return { success: false, message: "會員資料表不存在" };
-      var userData = userSheet.getDataRange().getValues();
-      var userRowIndex = -1;
-      var currentBalance = 0;
-      for (var j = 1; j < userData.length; j++) {
-        if (userData[j][0] === targetOrder.userId) {
-          userRowIndex = j + 1;
-          currentBalance = Number(userData[j][2]);
-          break;
+        for (const cat in grouped) {
+          container.innerHTML += `<div class="category-title">${cat}</div>`;
+          grouped[cat].forEach(item => {
+            let pText = [];
+            if(item.priceL > 0) pText.push(`L:$${item.priceL}`);
+            if(item.priceXL > 0) pText.push(`XL:$${item.priceXL}`);
+            
+            // 將物件轉成字串傳給點擊事件
+            const itemJson = encodeURIComponent(JSON.stringify(item));
+            
+            container.innerHTML += `
+              <div class="menu-item">
+                <div>
+                  <div class="menu-name">${item.name}</div>
+                  <div class="menu-price">${pText.join(" | ")}</div>
+                </div>
+                <button class="btn-select" onclick="openCustomModal('${itemJson}')">選擇</button>
+              </div>`;
+          });
         }
       }
-      if (userRowIndex === -1) return { success: false, message: "扣款失敗" };
-      if (currentBalance < targetOrder.total) return { success: false, message: "餘額不足" };
-      userSheet.getRange(userRowIndex, 3).setValue(currentBalance - targetOrder.total);
-    }
-    orderSheet.getRange(orderRowIndex, 8).setValue("已完成");
-    return { success: true, message: "結帳完成" };
-  }
-  return { success: false, message: "未知指令" };
-}
+
+      // 開啟客製化視窗
+      function openCustomModal(itemJsonStr) {
+        currentItem = JSON.parse(decodeURIComponent(itemJsonStr));
+        currentQty = 1;
+        document.getElementById("item-qty").innerText = currentQty;
+        document.getElementById("modal-item-name").innerText = currentItem.name;
+        
+        let html = "";
+        
+        // 尺寸選擇 (單選)
+        html += `<div class="option-group"><div class="option-title">容量大小</div><div class="radio-grid">`;
+        if (currentItem.priceL > 0) html += `<label class="radio-label"><input type="radio" name="size" value="L" data-price="${currentItem.priceL}" checked onchange="updateModalPrice()"><span>L杯 ($${currentItem.priceL})</span></label>`;
+        if (currentItem.priceXL > 0) {
+            let checked = currentItem.priceL <= 0 ? "checked" : "";
+            html += `<label class="radio-label"><input type="radio" name="size" value="XL" data-price="${currentItem.priceXL}" ${checked} onchange="updateModalPrice()"><span>XL杯 ($${currentItem.priceXL})</span></label>`;
+        }
+        html += `</div></div>`;
+
+        // 甜度選擇 (單選)
+        html += `<div class="option-group"><div class="option-title">甜度</div><div class="radio-grid">`;
+        sysData.options.sweetness.forEach((opt, idx) => {
+          html += `<label class="radio-label"><input type="radio" name="sweetness" value="${opt.name}" ${idx===0?'checked':''}><span>${opt.name}</span></label>`;
+        });
+        html += `</div></div>`;
+
+        // 冰塊選擇 (單選)
+        html += `<div class="option-group"><div class="option-title">冰塊</div><div class="radio-grid">`;
+        sysData.options.ice.forEach((opt, idx) => {
+          html += `<label class="radio-label"><input type="radio" name="ice" value="${opt.name}" ${idx===0?'checked':''}><span>${opt.name}</span></label>`;
+        });
+        html += `</div></div>`;
+        
+        // 加料選擇 (複選 checkbox)
+        html += `<div class="option-group"><div class="option-title">加料 (可複選)</div><div class="radio-grid">`;
+        sysData.options.toppings.forEach(opt => {
+          html += `<label class="radio-label"><input type="checkbox" name="toppings" value="${opt.name}" data-price="${opt.price}" onchange="updateModalPrice()"><span>${opt.name} (+$${opt.price})</span></label>`;
+        });
+        html += `</div></div>`;
+
+        document.getElementById("custom-options-container").innerHTML = html;
+        document.getElementById("custom-modal").style.display = "flex";
+        updateModalPrice();
+      }
+
+      // 計算彈窗內的單項總價
+      function updateModalPrice() {
+        let basePrice = Number(document.querySelector('input[name="size"]:checked').dataset.price);
+        let toppingsPrice = 0;
+        document.querySelectorAll('input[name="toppings"]:checked').forEach(cb => {
+          toppingsPrice += Number(cb.dataset.price);
+        });
+        let total = (basePrice + toppingsPrice) * currentQty;
+        document.getElementById("modal-calc-price").innerText = total;
+      }
+
+      function changeQty(delta) {
+        currentQty += delta;
+        if (currentQty < 1) currentQty = 1;
+        document.getElementById("item-qty").innerText = currentQty;
+        updateModalPrice();
+      }
+
+      function closeModal(id) {
+        document.getElementById(id).style.display = "none";
+      }
+
+      // 加入購物車
+      function addToCart() {
+        let sizeInput = document.querySelector('input[name="size"]:checked');
+        let size = sizeInput.value;
+        let basePrice = Number(sizeInput.dataset.price);
+        
+        let sweetness = document.querySelector('input[name="sweetness"]:checked').value;
+        let ice = document.querySelector('input[name="ice"]:checked').value;
+        
+        let toppings = [];
+        let toppingsPrice = 0;
+        document.querySelectorAll('input[name="toppings"]:checked').forEach(cb => {
+          toppings.push(cb.value);
+          toppingsPrice += Number(cb.dataset.price);
+        });
+
+        let unitPrice = basePrice + toppingsPrice;
+        let itemTotal = unitPrice * currentQty;
+
+        cart.push({
+          name: currentItem.name,
+          size: size,
+          sweetness: sweetness,
+          ice: ice,
+          toppings: toppings,
+          qty: currentQty,
+          unitPrice: unitPrice,
+          total: itemTotal
+        });
+
+        closeModal('custom-modal');
+        updateCartUI();
+      }
+
+      // 更新底部購物車狀態
+      function updateCartUI() {
+        if (cart.length > 0) {
+          document.getElementById("cart-bar").style.display = "flex";
+          let totalQty = 0;
+          let totalPrice = 0;
+          cart.forEach(item => { totalQty += item.qty; totalPrice += item.total; });
+          document.getElementById("cart-count").innerText = totalQty;
+          document.getElementById("cart-total").innerText = totalPrice;
+        } else {
+          document.getElementById("cart-bar").style.display = "none";
+        }
+      }
+
+      // 開啟結帳視窗
+      function openCheckoutModal() {
+        let listHtml = "";
+        let finalTotal = 0;
+        
+        cart.forEach((item, index) => {
+          finalTotal += item.total;
+          let topText = item.toppings.length > 0 ? `+${item.toppings.join('、')}` : "";
+          listHtml += `
+            <div class="cart-item">
+              <div class="cart-item-title">
+                <span>[${item.size}] ${item.name} x${item.qty}</span>
+                <span>$${item.total}</span>
+              </div>
+              <div class="cart-item-desc">${item.sweetness}, ${item.ice} ${topText}</div>
+            </div>`;
+        });
+        
+        document.getElementById("checkout-cart-list").innerHTML = listHtml;
+        document.getElementById("checkout-total-price").innerText = finalTotal;
+        document.getElementById("checkout-modal").style.display = "flex";
+      }
+
+      // 最終送出訂單
+      function submitOrder() {
+        let lastName = document.getElementById("input-lastname").value.trim();
+        let phone = document.getElementById("input-phone").value.trim();
+        
+        if (!lastName) return alert("請填寫您的姓氏！");
+        if (phone.length !== 3) return alert("請填寫手機『末三碼』！");
+        
+        let finalTotal = 0;
+        cart.forEach(i => finalTotal += i.total);
+
+        let payload = {
+          userId: userProfile.userId,
+          lineName: userProfile.displayName,
+          lastName: lastName,
+          phone: phone,
+          cart: cart,
+          totalPrice: finalTotal
+        };
+
+        let btn = document.getElementById("btn-submit");
+        btn.innerText = "⏳ 訂單傳送中...";
+        btn.disabled = true;
+
+        callGAS('submitOrder', payload).then(res => {
+          if(res.success) {
+            alert("🎉 訂單送出成功！請至櫃檯報末三碼結帳取餐。");
+            cart = []; // 清空購物車
+            updateCartUI();
+            closeModal('checkout-modal');
+          } else {
+            alert("訂單送出失敗：" + res.message);
+          }
+          btn.innerText = "✅ 確認送出訂單";
+          btn.disabled = false;
+        });
+      }
+    </script>
+  </body>
+</html>
