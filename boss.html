@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>凰貴妃茶堂 - 店鋪管理系統</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
       body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 15px; background-color: #e8f4f8; margin: 0; color: #333; }
       .container { max-width: 850px; margin: 0 auto 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
@@ -106,7 +107,9 @@
                 document.getElementById("admin-layer").style.display = "block";
                 loadDashboardData();
                 setInterval(loadDashboardData, 10000); 
-              } else alert("權限不足或驗證失敗！");
+              } else {
+                Swal.fire({ icon: 'error', title: '驗證失敗', text: '權限不足或驗證失敗！', confirmButtonColor: '#3085d6' });
+              }
             });
           }
         });
@@ -169,39 +172,68 @@
         var type = document.getElementById("topup-type").value;
         var note = document.getElementById("topup-note").value;
         
-        if (!userId || !amount || amount <= 0) return alert("請選擇會員並輸入正確的金額");
-        let actionStr = type === 'add' ? "儲值" : "扣除";
-        if (!confirm(`確定要對該會員 ${actionStr} ${amount} 元嗎？`)) return;
+        if (!userId || !amount || amount <= 0) {
+          return Swal.fire({ icon: 'warning', title: '提示', text: '請選擇會員並輸入正確的金額', confirmButtonColor: '#3085d6' });
+        }
         
-        callGAS('adminUpdateWallet', { targetUserId: userId, amount: amount, type: type, note: note }).then(res => {
-          if (res.success) { 
-            alert(res.message + "\n最新餘額：" + res.newBalance); 
-            document.getElementById("topup-amount").value = ""; 
-            document.getElementById("topup-note").value = ""; 
-            document.getElementById("user-select").value = "";
-            loadDashboardData(); 
-          } else { alert("操作失敗：" + res.message); }
+        let actionStr = type === 'add' ? "儲值" : "扣除";
+        
+        // 使用 Swal 做非同步的確認視窗
+        Swal.fire({
+          title: '確認帳務操作',
+          text: `確定要對該會員 ${actionStr} ${amount} 元嗎？`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#2ecc71',
+          cancelButtonColor: '#e74c3c',
+          confirmButtonText: '確定執行',
+          cancelButtonText: '取消'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            callGAS('adminUpdateWallet', { targetUserId: userId, amount: amount, type: type, note: note }).then(res => {
+              if (res.success) { 
+                Swal.fire({ icon: 'success', title: '操作成功', text: res.message + "\n最新餘額：" + res.newBalance, confirmButtonColor: '#2ecc71' });
+                document.getElementById("topup-amount").value = ""; 
+                document.getElementById("topup-note").value = ""; 
+                document.getElementById("user-select").value = "";
+                loadDashboardData(); 
+              } else { 
+                Swal.fire({ icon: 'error', title: '操作失敗', text: res.message, confirmButtonColor: '#e74c3c' });
+              }
+            });
+          }
         });
       }
 
       function updateMember() {
         var userId = document.getElementById("edit-user-select").value;
         var newName = document.getElementById("new-user-name").value.trim();
-        if (!userId || !newName) return alert("請選擇會員並輸入新稱呼");
+        
+        if (!userId || !newName) {
+          return Swal.fire({ icon: 'warning', title: '提示', text: '請選擇會員並輸入新稱呼', confirmButtonColor: '#3085d6' });
+        }
+        
         callGAS('updateMemberName', { targetUserId: userId, newName: newName }).then(res => {
           if (res.success) { 
-            alert(res.message); 
+            Swal.fire({ icon: 'success', title: '更新成功', text: res.message, confirmButtonColor: '#2ecc71' });
             document.getElementById("new-user-name").value = ""; 
             document.getElementById("user-select").value = "";
             document.getElementById("edit-user-select").value = "";
             loadDashboardData(); 
-          } else alert(res.message);
+          } else {
+            Swal.fire({ icon: 'error', title: '更新失敗', text: res.message, confirmButtonColor: '#e74c3c' });
+          }
         });
       }
 
       function handleOrder(orderId, action) {
         callGAS('processOrderAction', { orderId: orderId, orderAction: action }).then(res => {
-          if(res.success) loadDashboardData(); else alert(res.message);
+          if(res.success) {
+            Swal.fire({ icon: 'success', title: '操作成功', text: res.message, timer: 1500, showConfirmButton: false });
+            loadDashboardData();
+          } else {
+            Swal.fire({ icon: 'error', title: '操作失敗', text: res.message, confirmButtonColor: '#e74c3c' });
+          }
         });
       }
     </script>
