@@ -6,16 +6,19 @@
     <title>凰貴妃茶堂 - 線上點餐</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-      /* 全局與基本排版 */
       body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcf6f2; margin: 0; color: #333; padding-bottom: 80px; }
       .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; position: relative; }
-      .header { text-align: center; color: #d35400; padding: 20px 15px; border-bottom: 2px solid #f2e2d9; background: #fff; }
+      .header { text-align: center; color: #d35400; padding: 20px 15px; border-bottom: 2px solid #f2e2d9; background: #fff; position: relative; }
       .header h2 { margin: 0 0 5px 0; font-size: 24px; }
       .header p { margin: 0; color: #7f8c8d; font-size: 14px; }
-      .welcome-msg { text-align: center; font-weight: bold; color: #2980b9; margin: 15px 0; display: none; }
+      
+      /* 會員資訊區塊 */
+      .member-info-bar { background: #2c3e50; color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+      .btn-wallet { background: #f39c12; border: none; color: white; padding: 4px 10px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 12px; }
+
       .loading-msg { text-align: center; color: #e67e22; font-weight: bold; padding: 30px 0; }
       
-      /* 訂單進度看板 */
+      /* 進度看板 */
       .status-board { background: #fff; border: 2px solid #d35400; border-radius: 10px; padding: 15px; margin: 15px; box-shadow: 0 4px 6px rgba(211,84,0,0.1); }
       .status-title { color: #d35400; font-weight: bold; font-size: 16px; margin-bottom: 10px; border-bottom: 1px dashed #f2e2d9; padding-bottom: 5px; }
       .my-order-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; align-items: center; }
@@ -37,6 +40,7 @@
       /* 彈出視窗 (Modal) */
       .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
       .modal-content { background: white; width: 100%; max-width: 600px; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease-out; }
+      .modal-content-center { background: white; width: 90%; max-width: 400px; border-radius: 12px; padding: 20px; box-sizing: border-box; text-align: center; align-self: center;}
       @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
       .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
       .close-btn { background: none; border: none; font-size: 24px; color: #999; cursor: pointer; }
@@ -50,13 +54,19 @@
       .radio-label input:checked + span { color: #d35400; font-weight: bold; }
       .radio-label:has(input:checked) { border-color: #d35400; background: #fdf2e9; }
       
-      /* 按鈕與表單 */
+      /* 表單 */
       .qty-control { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 20px 0; }
       .qty-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #ccc; background: white; font-size: 20px; color: #333; cursor: pointer; display:flex; align-items:center; justify-content:center; }
       .btn-add-cart, .btn-submit-order { width: 100%; background: #d35400; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
       .cart-item { padding: 10px 0; border-bottom: 1px solid #eee; }
       .cart-item-title { font-weight: bold; display: flex; justify-content: space-between; }
       .form-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; }
+
+      /* 明細表格 */
+      .history-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px;}
+      .history-table th, .history-table td { border-bottom: 1px solid #eee; padding: 8px 4px; text-align: left;}
+      .text-green { color: #2ecc71; font-weight: bold; }
+      .text-red { color: #e74c3c; font-weight: bold; }
     </style>
   </head>
   <body>
@@ -65,26 +75,49 @@
         <h2>凰貴妃茶堂</h2>
         <p>線上專屬點餐系統</p>
       </div>
-      
-      <div id="welcome-msg" class="welcome-msg"></div>
+
+      <div class="member-info-bar">
+        <span id="welcome-msg">載入中...</span>
+        <button id="btn-show-history" class="btn-wallet" style="display:none;" onclick="openHistoryModal()">交易明細</button>
+      </div>
 
       <div id="my-orders-board" class="status-board" style="display:none;">
         <div class="status-title">
-          🔔 我的訂單進度 
-          <span style="font-size:12px; color:#7f8c8d; font-weight:normal; float:right; cursor:pointer; background:#f4f6f7; padding:4px 8px; border-radius:12px;" onclick="fetchMyOrders()">🔄 更新狀態</span>
+          🔔 製作進度 <span style="font-size:12px; color:#7f8c8d; font-weight:normal; float:right; cursor:pointer;" onclick="fetchUserData()">🔄 更新</span>
         </div>
         <div id="my-orders-list"></div>
       </div>
 
       <div class="menu-section" id="app-content">
-        <div class="loading-msg" id="status-text">🔄 系統連線中，請稍候...</div>
+        <div class="loading-msg" id="status-text">🔄 系統初始化中，請稍候...</div>
         <div id="menu-container"></div>
       </div>
     </div>
 
     <div class="cart-bar" id="cart-bar" style="display: none;">
-      <div class="cart-info">🛒 購物車：<span id="cart-count">0</span> 杯 / $<span id="cart-total">0</span></div>
+      <div class="cart-info">🛒 <span id="cart-count">0</span> 杯 / $<span id="cart-total">0</span></div>
       <button class="btn-checkout" onclick="openCheckoutModal()">結帳去</button>
+    </div>
+
+    <div class="modal-overlay" id="join-modal" style="align-items: center;">
+      <div class="modal-content-center">
+        <h3 style="color:#d35400; margin-top:0;">👋 歡迎光臨！</h3>
+        <p style="color:#7f8c8d; font-size:15px; margin-bottom:25px;">加入專屬會員，可享有儲值錢包付款，並隨時查看歷史交易明細喔！(完全免費)</p>
+        <button class="btn-submit-order" style="margin-bottom:10px;" onclick="joinMember()">✅ 一鍵加入會員</button>
+        <button class="btn-select" style="width:100%; background:#bdc3c7; color:#333;" onclick="skipJoin()">先不要，直接點餐</button>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="history-modal">
+      <div class="modal-content">
+        <div class="modal-header"><h3 style="margin:0;">📔 錢包交易明細</h3><button class="close-btn" onclick="closeModal('history-modal')">×</button></div>
+        <div style="max-height: 60vh; overflow-y: auto;">
+          <table class="history-table">
+            <thead><tr><th>時間</th><th>類型</th><th>金額</th><th>結餘</th></tr></thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <div class="modal-overlay" id="custom-modal">
@@ -95,9 +128,7 @@
         </div>
         <div id="custom-options-container"></div>
         <div class="qty-control">
-          <button class="qty-btn" onclick="changeQty(-1)">-</button>
-          <span id="item-qty" style="font-size: 18px; font-weight: bold;">1</span>
-          <button class="qty-btn" onclick="changeQty(1)">+</button>
+          <button class="qty-btn" onclick="changeQty(-1)">-</button><span id="item-qty" style="font-size: 18px; font-weight: bold;">1</span><button class="qty-btn" onclick="changeQty(1)">+</button>
         </div>
         <button class="btn-add-cart" onclick="addToCart()">加入購物車 - $<span id="modal-calc-price">0</span></button>
       </div>
@@ -105,17 +136,18 @@
 
     <div class="modal-overlay" id="checkout-modal">
       <div class="modal-content">
-        <div class="modal-header">
-          <h3 style="margin:0;">訂單確認</h3>
-          <button class="close-btn" onclick="closeModal('checkout-modal')">×</button>
-        </div>
+        <div class="modal-header"><h3 style="margin:0;">訂單確認</h3><button class="close-btn" onclick="closeModal('checkout-modal')">×</button></div>
         <div id="checkout-cart-list" style="margin-bottom: 20px; max-height: 200px; overflow-y: auto;"></div>
-        <div style="text-align: right; font-weight: bold; font-size: 18px; margin-bottom: 20px; color: #d35400;">
-          總金額：$<span id="checkout-total-price">0</span>
-        </div>
-        <div class="option-title">📞 聯絡資訊 (取餐核對用)</div>
-        <input type="text" id="input-lastname" class="form-input" placeholder="您的姓氏 (例：王先生/陳小姐)">
+        <div style="text-align: right; font-weight: bold; font-size: 18px; margin-bottom: 15px; color: #d35400;">總金額：$<span id="checkout-total-price">0</span></div>
+        
+        <div class="option-title">💰 付款方式</div>
+        <select id="select-paymethod" class="form-input" style="background:#f9f9f9;">
+           </select>
+
+        <div class="option-title">📞 取餐聯絡人</div>
+        <input type="text" id="input-lastname" class="form-input" placeholder="您的姓氏 (例：王先生)">
         <input type="tel" id="input-phone" class="form-input" placeholder="手機末三碼 (例：029)" maxlength="3">
+        
         <button class="btn-submit-order" id="btn-submit" onclick="submitOrder()">✅ 確認送出訂單</button>
       </div>
     </div>
@@ -126,9 +158,9 @@
 
       let userProfile = { userId: "", displayName: "" };
       let sysData = { menu: [], options: {} };
-      let currentItem = null; 
-      let currentQty = 1;
-      let cart = []; 
+      let userData = { isMember: false, balance: 0, name: "" };
+      let myHistory = [];
+      let currentItem = null, currentQty = 1, cart = []; 
 
       async function callGAS(action, payload = {}) {
         payload.action = action;
@@ -138,59 +170,106 @@
 
       window.onload = function() {
         liff.init({ liffId: CUSTOMER_LIFF_ID }).then(() => {
-          if (!liff.isLoggedIn()) {
-            liff.login();
-          } else {
+          if (!liff.isLoggedIn()) liff.login();
+          else {
             liff.getProfile().then(profile => {
               userProfile = profile;
-              document.getElementById("welcome-msg").innerText = `哈囉，${profile.displayName}！想喝點什麼呢？`;
-              document.getElementById("welcome-msg").style.display = "block";
-              
-              fetchData();
-              fetchMyOrders(); 
-              setInterval(fetchMyOrders, 10000); // 每10秒更新進度
+              initSystem();
             });
           }
         });
       };
 
-      function fetchMyOrders() {
-        callGAS('getUserOrders', { userId: userProfile.userId }).then(res => {
-          if(res.success && res.data.length > 0) {
-            let html = "";
-            res.data.forEach(o => {
-              let tagClass = o.status === '未處理' ? 'tag-red' : (o.status === '已接單' ? 'tag-orange' : 'tag-blue');
-              html += `<div class="my-order-item"><div>${o.time} 訂單 ($${o.total})</div><div class="my-order-tag ${tagClass}">${o.status}</div></div>`;
-            });
-            document.getElementById("my-orders-list").innerHTML = html;
-            document.getElementById("my-orders-board").style.display = "block";
-          } else {
-            document.getElementById("my-orders-board").style.display = "none";
+      function initSystem() {
+        callGAS('initUser', { userId: userProfile.userId, lineName: userProfile.displayName }).then(res => {
+          if(res.success) {
+            userData = res.data;
+            if(!userData.isMember) {
+              document.getElementById("join-modal").style.display = "flex";
+            } else {
+              updateMemberUI();
+              loadMenu();
+            }
           }
         });
       }
 
-      function fetchData() {
-        // 傳送 userId 和 lineName，讓後端執行自動註冊
-        callGAS('getMenuAndOptions', { 
-          userId: userProfile.userId, 
-          lineName: userProfile.displayName 
-        }).then(res => {
-          if (res.success) {
-            sysData = res.data;
-            document.getElementById("status-text").style.display = "none";
-            renderMenu();
+      function joinMember() {
+        document.getElementById("join-modal").style.display = "none";
+        document.getElementById("status-text").innerText = "會員建檔中...";
+        callGAS('joinMember', { userId: userProfile.userId, lineName: userProfile.displayName }).then(res => {
+          userData = res.data;
+          alert("🎉 恭喜您成為專屬會員！");
+          updateMemberUI();
+          loadMenu();
+        });
+      }
+
+      function skipJoin() {
+        document.getElementById("join-modal").style.display = "none";
+        updateMemberUI();
+        loadMenu();
+      }
+
+      function updateMemberUI() {
+        if(userData.isMember) {
+          document.getElementById("welcome-msg").innerText = `${userData.name} | 餘額: $${userData.balance}`;
+          document.getElementById("btn-show-history").style.display = "block";
+          fetchUserData(); // 抓明細與訂單
+          setInterval(fetchUserData, 10000); // 會員才自動更新
+        } else {
+          document.getElementById("welcome-msg").innerText = `哈囉，訪客！`;
+        }
+      }
+
+      function fetchUserData() {
+        if(!userData.isMember) return;
+        callGAS('getUserOrdersAndHistory', { userId: userProfile.userId }).then(res => {
+          if(res.success) {
+            myHistory = res.data.history;
+            // 處理訂單進度
+            let orders = res.data.orders;
+            if(orders.length > 0) {
+              let html = "";
+              orders.forEach(o => {
+                let tagClass = o.status === '未處理' ? 'tag-red' : (o.status === '已接單' ? 'tag-orange' : 'tag-blue');
+                html += `<div class="my-order-item"><div>${o.time} 訂單</div><div class="my-order-tag ${tagClass}">${o.status}</div></div>`;
+              });
+              document.getElementById("my-orders-list").innerHTML = html;
+              document.getElementById("my-orders-board").style.display = "block";
+            } else {
+              document.getElementById("my-orders-board").style.display = "none";
+            }
           }
+        });
+      }
+
+      function openHistoryModal() {
+        let tbody = document.getElementById("history-tbody");
+        if(myHistory.length === 0) {
+          tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#999;'>尚無交易紀錄</td></tr>";
+        } else {
+          let html = "";
+          myHistory.forEach(h => {
+            let color = h.amount > 0 ? 'text-green' : 'text-red';
+            let prefix = h.amount > 0 ? '+' : '';
+            html += `<tr><td>${h.time}</td><td>${h.type}</td><td class="${color}">${prefix}${h.amount}</td><td>$${h.balance}</td></tr>`;
+          });
+          tbody.innerHTML = html;
+        }
+        document.getElementById("history-modal").style.display = "flex";
+      }
+
+      function loadMenu() {
+        callGAS('getMenuAndOptions').then(res => {
+          if (res.success) { sysData = res.data; document.getElementById("status-text").style.display = "none"; renderMenu(); }
         });
       }
 
       function renderMenu() {
         const container = document.getElementById("menu-container");
         const grouped = {};
-        sysData.menu.forEach(item => { 
-          if (!grouped[item.category]) grouped[item.category] = []; 
-          grouped[item.category].push(item); 
-        });
+        sysData.menu.forEach(item => { if (!grouped[item.category]) grouped[item.category] = []; grouped[item.category].push(item); });
         for (const cat in grouped) {
           container.innerHTML += `<div class="category-title">${cat}</div>`;
           grouped[cat].forEach(item => {
@@ -208,11 +287,8 @@
       }
 
       function openCustomModal(itemJsonStr) {
-        currentItem = JSON.parse(decodeURIComponent(itemJsonStr));
-        currentQty = 1;
-        document.getElementById("item-qty").innerText = currentQty;
-        document.getElementById("modal-item-name").innerText = currentItem.name;
-        
+        currentItem = JSON.parse(decodeURIComponent(itemJsonStr)); currentQty = 1;
+        document.getElementById("item-qty").innerText = currentQty; document.getElementById("modal-item-name").innerText = currentItem.name;
         let html = "";
         html += `<div class="option-group"><div class="option-title">容量大小</div><div class="radio-grid">`;
         if (currentItem.priceL > 0) html += `<label class="radio-label"><input type="radio" name="size" value="L" data-price="${currentItem.priceL}" checked onchange="updateModalPrice()"><span>L杯</span></label>`;
@@ -221,34 +297,26 @@
             html += `<label class="radio-label"><input type="radio" name="size" value="XL" data-price="${currentItem.priceXL}" ${checked} onchange="updateModalPrice()"><span>XL杯</span></label>`;
         }
         html += `</div></div>`;
-
         html += `<div class="option-group"><div class="option-title">甜度</div><div class="radio-grid">`;
         sysData.options.sweetness.forEach((opt, idx) => { html += `<label class="radio-label"><input type="radio" name="sweetness" value="${opt.name}" ${idx===0?'checked':''}><span>${opt.name}</span></label>`; });
         html += `</div></div>`;
-
         html += `<div class="option-group"><div class="option-title">冰塊</div><div class="radio-grid">`;
         sysData.options.ice.forEach((opt, idx) => { html += `<label class="radio-label"><input type="radio" name="ice" value="${opt.name}" ${idx===0?'checked':''}><span>${opt.name}</span></label>`; });
         html += `</div></div>`;
-        
         html += `<div class="option-group"><div class="option-title">加料 (可複選)</div><div class="radio-grid">`;
         sysData.options.toppings.forEach(opt => { 
           let pText = opt.price > 0 ? `(+$${opt.price})` : "";
           html += `<label class="radio-label"><input type="checkbox" name="toppings" value="${opt.name}" data-price="${opt.price}" onchange="updateModalPrice()"><span>${opt.name} ${pText}</span></label>`; 
         });
         html += `</div></div>`;
-
-        document.getElementById("custom-options-container").innerHTML = html;
-        document.getElementById("custom-modal").style.display = "flex";
-        updateModalPrice();
+        document.getElementById("custom-options-container").innerHTML = html; document.getElementById("custom-modal").style.display = "flex"; updateModalPrice();
       }
 
       function updateModalPrice() {
         let basePrice = Number(document.querySelector('input[name="size"]:checked').dataset.price);
-        let toppingsPrice = 0;
-        document.querySelectorAll('input[name="toppings"]:checked').forEach(cb => { toppingsPrice += Number(cb.dataset.price); });
+        let toppingsPrice = 0; document.querySelectorAll('input[name="toppings"]:checked').forEach(cb => { toppingsPrice += Number(cb.dataset.price); });
         document.getElementById("modal-calc-price").innerText = (basePrice + toppingsPrice) * currentQty;
       }
-
       function changeQty(delta) { currentQty += delta; if (currentQty < 1) currentQty = 1; document.getElementById("item-qty").innerText = currentQty; updateModalPrice(); }
       function closeModal(id) { document.getElementById(id).style.display = "none"; }
 
@@ -257,13 +325,7 @@
         let toppings = []; let toppingsPrice = 0;
         document.querySelectorAll('input[name="toppings"]:checked').forEach(cb => { toppings.push(cb.value); toppingsPrice += Number(cb.dataset.price); });
         let unitPrice = Number(sizeInput.dataset.price) + toppingsPrice;
-
-        cart.push({
-          name: currentItem.name, size: sizeInput.value,
-          sweetness: document.querySelector('input[name="sweetness"]:checked').value,
-          ice: document.querySelector('input[name="ice"]:checked').value,
-          toppings: toppings, qty: currentQty, unitPrice: unitPrice, total: unitPrice * currentQty
-        });
+        cart.push({ name: currentItem.name, size: sizeInput.value, sweetness: document.querySelector('input[name="sweetness"]:checked').value, ice: document.querySelector('input[name="ice"]:checked').value, toppings: toppings, qty: currentQty, unitPrice: unitPrice, total: unitPrice * currentQty });
         closeModal('custom-modal'); updateCartUI();
       }
 
@@ -272,8 +334,7 @@
           document.getElementById("cart-bar").style.display = "flex";
           let totalQty = 0; let totalPrice = 0;
           cart.forEach(item => { totalQty += item.qty; totalPrice += item.total; });
-          document.getElementById("cart-count").innerText = totalQty;
-          document.getElementById("cart-total").innerText = totalPrice;
+          document.getElementById("cart-count").innerText = totalQty; document.getElementById("cart-total").innerText = totalPrice;
         } else { document.getElementById("cart-bar").style.display = "none"; }
       }
 
@@ -286,26 +347,39 @@
         });
         document.getElementById("checkout-cart-list").innerHTML = listHtml;
         document.getElementById("checkout-total-price").innerText = finalTotal;
+        
+        // 判斷付款方式
+        let paySelect = document.getElementById("select-paymethod");
+        paySelect.innerHTML = `<option value="現場結帳">現場結帳</option>`;
+        if(userData.isMember) {
+          if(userData.balance >= finalTotal) {
+            paySelect.innerHTML += `<option value="餘額扣款">餘額扣款 (餘額充足: $${userData.balance})</option>`;
+          } else {
+            paySelect.innerHTML += `<option value="餘額扣款" disabled>餘額扣款 (餘額不足: $${userData.balance})</option>`;
+          }
+        }
         document.getElementById("checkout-modal").style.display = "flex";
       }
 
       function submitOrder() {
         let lastName = document.getElementById("input-lastname").value.trim();
         let phone = document.getElementById("input-phone").value.trim();
-        if (!lastName) return alert("請填寫您的姓氏！"); 
-        if (phone.length !== 3) return alert("請填寫手機末三碼！");
+        let payMethod = document.getElementById("select-paymethod").value;
+        if (!lastName) return alert("請填寫您的姓氏！"); if (phone.length !== 3) return alert("請填寫手機末三碼！");
         
         let finalTotal = 0; cart.forEach(i => finalTotal += i.total);
-        let payload = { userId: userProfile.userId, lineName: userProfile.displayName, lastName: lastName, phone: phone, cart: cart, totalPrice: finalTotal };
+        let payload = { userId: userProfile.userId, lineName: userProfile.displayName, lastName: lastName, phone: phone, cart: cart, totalPrice: finalTotal, payMethod: payMethod };
 
-        let btn = document.getElementById("btn-submit");
-        btn.innerText = "⏳ 傳送中..."; btn.disabled = true;
+        let btn = document.getElementById("btn-submit"); btn.innerText = "⏳ 傳送中..."; btn.disabled = true;
 
         callGAS('submitOrder', payload).then(res => {
           if(res.success) {
             alert("訂單送出成功！");
             cart = []; updateCartUI(); closeModal('checkout-modal');
-            fetchMyOrders(); 
+            
+            // 如果是餘額付款，更新本地端餘額避免重整前有誤差
+            if(payMethod === '餘額扣款') { userData.balance -= finalTotal; updateMemberUI(); }
+            fetchUserData(); 
           } else { alert("送出失敗：" + res.message); }
           btn.innerText = "✅ 確認送出訂單"; btn.disabled = false;
         });
