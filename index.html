@@ -149,8 +149,8 @@
       // ==========================================
       // 設定區塊
       // ==========================================
-      const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC"; // 已寫入
-      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxPOncD4-GgwKTatbEGPrUzCutXDLtrgNij55YfM6cx2j9KFFl_gd-bmNLaE-FKOb8C/exec"; // ⚠️ 需要更換網址
+      const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
+      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw7LwxuG_736bw3JsuNZI71LSFc7XhDBj3Z_PN-xHontP5ENQu-WoEk9cc0u8IQ9p07/exec"; // ⚠️ 請確保這是你最新的網址
 
       let userProfile = { userId: "", displayName: "", idToken: "" };
       let sysData = { menu: [], options: {} };
@@ -262,12 +262,32 @@
           myHistory.forEach(h => {
             let color = h.amount > 0 ? 'text-green' : 'text-red';
             let prefix = h.amount > 0 ? '+' : '';
-            html += `<tr><td>${escapeHTML(h.time)}</td><td>${escapeHTML(h.type)}</td><td class="${color}">${prefix}${h.amount}</td><td>$${h.balance}</td></tr>`;
+            let typeDisplay = escapeHTML(h.type);
+
+            // 【新增】如果是消費扣款，把它變成按鈕，可以查看明細
+            if (h.type === '消費扣款' && h.orderContent) {
+               // 把內容編碼，避免引號導致 HTML 破圖
+               let encodedContent = encodeURIComponent(h.orderContent);
+               typeDisplay = `<button class="btn-wallet" style="background:#3498db; padding:3px 6px;" onclick="showOrderDetails('${encodedContent}')">🔍 明細</button>`;
+            }
+
+            html += `<tr><td>${escapeHTML(h.time)}</td><td>${typeDisplay}</td><td class="${color}">${prefix}${h.amount}</td><td>$${h.balance}</td></tr>`;
           });
           tbody.innerHTML = html;
         }
         document.getElementById("history-modal").style.display = "flex";
       }
+
+      // 【新增】顯示歷史訂單明細的彈窗
+      window.showOrderDetails = function(encodedContent) {
+         // 解碼並把換行符號 \n 轉換為 HTML 的 <br>
+         let content = decodeURIComponent(encodedContent).replace(/\n/g, '<br>');
+         Swal.fire({
+           title: '訂單內容',
+           html: `<div style="text-align:left; font-size:15px; line-height:1.6; background:#f9f9f9; padding:10px; border-radius:8px;">${content}</div>`,
+           confirmButtonColor: '#d35400'
+         });
+      };
 
       function loadMenu() {
         callGAS('getMenuAndOptions').then(res => {
@@ -398,8 +418,17 @@
 
         callGAS('submitOrder', payload).then(res => {
           if(res.success) {
-            Swal.fire({ icon: 'success', title: '訂單完成', text: '訂單已成功送出！', confirmButtonColor: '#d35400' });
+            // 【新增】結帳成功後，判斷是否為會員來顯示餘額
+            let successText = '您的訂單已成功送出！老闆會盡快為您製作。';
+            if (res.isMember) {
+               userData.balance = res.newBalance; // 更新本地端餘額
+               successText += `<br><br><span style="font-weight:bold; color:#d35400;">會員目前餘額：$${res.newBalance}</span>`;
+            }
+            
+            Swal.fire({ icon: 'success', title: '訂單完成', html: successText, confirmButtonColor: '#d35400' });
+            
             cart = []; updateCartUI(); closeModal('checkout-modal');
+            updateMemberUI(); // 更新畫面上方的名字與餘額
             fetchUserData(); 
           } else { 
             Swal.fire({ icon: 'error', title: '送出失敗', text: res.message, confirmButtonColor: '#d35400' });
