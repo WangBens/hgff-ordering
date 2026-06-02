@@ -78,8 +78,8 @@
       // ==========================================
       // 設定區塊
       // ==========================================
-      const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; // 已寫入
-      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxPOncD4-GgwKTatbEGPrUzCutXDLtrgNij55YfM6cx2j9KFFl_gd-bmNLaE-FKOb8C/exec"; // ⚠️ 需要更換網址
+      const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; 
+      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw7LwxuG_736bw3JsuNZI71LSFc7XhDBj3Z_PN-xHontP5ENQu-WoEk9cc0u8IQ9p07/exec"; // ⚠️ 請確保這是你最新的網址
       let adminIdToken = "";
 
       function escapeHTML(str) {
@@ -178,7 +178,6 @@
         
         let actionStr = type === 'add' ? "儲值" : "扣除";
         
-        // 使用 Swal 做非同步的確認視窗
         Swal.fire({
           title: '確認帳務操作',
           text: `確定要對該會員 ${actionStr} ${amount} 元嗎？`,
