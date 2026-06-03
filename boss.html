@@ -183,6 +183,7 @@
       color: white;
       cursor: pointer;
       font-size: 14px;
+      white-space: nowrap;
     }
 
     .btn-gray {
@@ -210,6 +211,31 @@
 
     .list-item span {
       word-break: break-word;
+    }
+
+    /* ✅ 菜單列表專用：讓下架 / 上架按鈕固定在右邊 */
+    .menu-list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+
+    .menu-list-text {
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+      line-height: 1.5;
+    }
+
+    .menu-list-action {
+      margin-left: auto;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: flex-end;
     }
 
     .multi-checkbox-box {
@@ -267,12 +293,22 @@
       }
 
       .btn-action {
-        width: 100%;
+        width: auto;
       }
 
       .list-item {
         flex-direction: column;
         align-items: stretch;
+      }
+
+      /* ✅ 手機版菜單按鈕仍維持右邊 */
+      .menu-list-item {
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .menu-list-action {
+        justify-content: flex-end;
       }
     }
   </style>
@@ -754,9 +790,13 @@
           : '<span style="color:#e74c3c;font-size:12px;">已下架</span>';
 
         menuHtml += `
-          <div class="list-item">
-            <span>🍵 [${escapeHTML(m.category)}] ${safeName} ${sTag}</span>
-            ${btn}
+          <div class="menu-list-item">
+            <div class="menu-list-text">
+              🍵 [${escapeHTML(m.category)}] ${safeName} ${sTag}
+            </div>
+            <div class="menu-list-action">
+              ${btn}
+            </div>
           </div>`;
       });
 
@@ -767,12 +807,14 @@
     function renderPromos(promos) {
       let promoHtml = "";
 
-      promos.forEach(p => {
+      // ✅ 只顯示啟用活動；停用 / 已刪除的活動不顯示
+      let activePromos = (promos || []).filter(p => p.status === "啟用");
+
+      activePromos.forEach(p => {
         let safeIdJS = escapeJS(p.id);
 
-        let btn = p.status === "啟用"
-          ? `<button class="btn-action btn-gray" onclick="togglePromo('${safeIdJS}', '停用')">停用</button>`
-          : `<button class="btn-action" style="background:#2ecc71;" onclick="togglePromo('${safeIdJS}', '啟用')">重新啟用</button>`;
+        // ✅ 按鈕文字改成刪除活動，實際仍呼叫 adminTogglePromo，由 GS 刪除列
+        let btn = `<button class="btn-action btn-gray" onclick="togglePromo('${safeIdJS}', '停用')">刪除活動</button>`;
 
         let itemsFormatted = p.targetType === "指定組合"
           ? String(p.targetName || "").split(",").map(x => x.trim()).filter(x => x).join("、")
@@ -800,22 +842,18 @@
           ? ` <span style="color:#7f8c8d;">${escapeHTML(p.desc)}</span>`
           : "";
 
-        let sTag = p.status === "啟用"
-          ? ""
-          : '<span style="color:#e74c3c;font-size:12px;">已停用</span>';
-
         promoHtml += `
           <div class="list-item">
             <span style="line-height:1.5;">
               🎉 <b>${escapeHTML(tag)}</b>
-              ${escapeHTML(cond)}${sizeTag}${dDesc} ${sTag}
+              ${escapeHTML(cond)}${sizeTag}${dDesc}
             </span>
             ${btn}
           </div>`;
       });
 
       document.getElementById("promo-list").innerHTML =
-        promoHtml || "<div style='padding:10px;text-align:center;'>無活動紀錄</div>";
+        promoHtml || "<div style='padding:10px;text-align:center;'>目前無啟用活動</div>";
     }
 
     function toggleStore(status) {
@@ -1004,11 +1042,12 @@
 
     function togglePromo(id, status) {
       Swal.fire({
-        title: `確定要${status}這個活動嗎？`,
-        text: status === "停用" ? "停用後，消費者端不會再看到此活動。" : "",
+        title: "確定要刪除這個活動嗎？",
+        text: "刪除後會直接從 Google Sheet 移除，無法在後台重新啟用。",
         icon: "warning",
         showCancelButton: true,
-        confirmButtonText: "確定",
+        confirmButtonColor: "#e74c3c",
+        confirmButtonText: "確定刪除",
         cancelButtonText: "取消"
       }).then(r => {
         if (!r.isConfirmed) return;
@@ -1018,7 +1057,7 @@
           status: status
         }).then(res => {
           if (res.success) {
-            Swal.fire("成功", `活動已${status}`, "success");
+            Swal.fire("成功", res.message || "活動已刪除", "success");
             loadDashboardData();
           } else {
             Swal.fire("錯誤", res.message || "操作失敗", "error");
