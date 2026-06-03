@@ -1,200 +1,829 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>凰貴妃茶堂 - 線上點餐</title>
 
-<title>凰貴妃茶堂 - 線上點餐</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<!-- ✅ 修正 LIFF -->
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body {
+      font-family: Arial, "Microsoft JhengHei", sans-serif;
+      background: #fcf6f2;
+      margin: 0;
+      padding-bottom: 90px;
+      color: #333;
+    }
 
-<!-- ✅ 修正 SweetAlert -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    .container {
+      max-width: 640px;
+      margin: auto;
+      background: white;
+      min-height: 100vh;
+    }
 
-<style>
-body {
-  font-family: Arial;
-  background: #fcf6f2;
-  margin: 0;
-}
+    .header {
+      text-align: center;
+      color: #d35400;
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+    }
 
-.container {
-  max-width: 600px;
-  margin: auto;
-  background: white;
-}
+    .header h2 {
+      margin-bottom: 5px;
+    }
 
-.header {
-  text-align: center;
-  color: #d35400;
-  padding: 20px;
-}
+    .member-box {
+      margin: 10px 15px;
+      padding: 12px;
+      background: #fff7ec;
+      border-radius: 10px;
+      border: 1px solid #f5d6a8;
+      font-size: 14px;
+      line-height: 1.6;
+    }
 
-.category-title {
-  background: #d35400;
-  color: white;
-  padding: 10px;
-  margin-top: 15px;
-}
+    .store-closed {
+      margin: 15px;
+      padding: 20px;
+      background: #ffeaea;
+      color: #c0392b;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: bold;
+    }
 
-.menu-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 15px;
-  border-bottom: 1px solid #eee;
-}
+    .promo-box {
+      margin: 10px 15px;
+      padding: 12px;
+      background: #eef9ff;
+      border-left: 5px solid #3498db;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
 
-.menu-name {
-  font-weight: bold;
-}
+    .category-title {
+      background: #d35400;
+      color: white;
+      padding: 10px 15px;
+      margin-top: 15px;
+      font-weight: bold;
+    }
 
-.menu-price {
-  color: red;
-}
+    .menu-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      gap: 10px;
+    }
 
-.btn-select {
-  background: #f39c12;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 10px;
-}
+    .menu-name {
+      font-weight: bold;
+      font-size: 16px;
+    }
 
-.cart-bar {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  padding: 15px;
-  background: #2c3e50;
-  color: white;
-  display: flex;
-  justify-content: space-between;
-}
-</style>
+    .menu-price {
+      color: #e74c3c;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .btn-select {
+      background: #f39c12;
+      color: white;
+      border: none;
+      padding: 9px 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .cart-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #2c3e50;
+      color: white;
+      display: flex;
+      justify-content: center;
+      z-index: 999;
+      box-shadow: 0 -3px 10px rgba(0,0,0,0.15);
+    }
+
+    .cart-inner {
+      max-width: 640px;
+      width: 100%;
+      padding: 12px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-sizing: border-box;
+    }
+
+    .cart-btn {
+      background: #2ecc71;
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .cart-clear {
+      background: #95a5a6;
+      color: white;
+      border: none;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-right: 6px;
+    }
+
+    .form-row {
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .form-row label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 9px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    .cart-list {
+      text-align: left;
+      max-height: 260px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+    }
+
+    .cart-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .cart-remove {
+      float: right;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 3px 8px;
+      cursor: pointer;
+    }
+
+    .history-box {
+      margin: 15px;
+      padding: 12px;
+      background: #fafafa;
+      border-radius: 10px;
+      border: 1px solid #eee;
+    }
+
+    .history-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #2c3e50;
+    }
+
+    .history-item {
+      font-size: 13px;
+      line-height: 1.5;
+      border-bottom: 1px dashed #ddd;
+      padding: 7px 0;
+    }
+  </style>
 </head>
 
 <body>
+  <div class="container">
+    <div class="header">
+      <h2>凰貴妃茶堂</h2>
+      <p>線上點餐系統</p>
+    </div>
 
-<div class="container">
+    <div id="member-box" class="member-box">
+      LINE 驗證中...
+    </div>
 
-  <div class="header">
-    <h2>凰貴妃茶堂</h2>
-    <p>線上點餐系統</p>
+    <div id="promo-area"></div>
+
+    <div id="menu-container">
+      載入中...
+    </div>
+
+    <div id="history-container"></div>
   </div>
 
-  <div id="menu-container">載入中...</div>
+  <div class="cart-bar">
+    <div class="cart-inner">
+      <div>
+        🛒 <span id="cart-count">0</span> 杯
+        ｜預估 $<span id="cart-total">0</span>
+      </div>
+      <div>
+        <button class="cart-clear" onclick="clearCart()">清空</button>
+        <button class="cart-btn" onclick="checkout()">結帳</button>
+      </div>
+    </div>
+  </div>
 
-</div>
+  <script>
+    const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxo41bcyyfmHkSV9hUDSmBwttT929G0_CQzVZ-Em_vsl0fwTrIgBclpVI3mqloX4l-0/exec";
 
-<div class="cart-bar">
-  🛒 <span id="cart-count">0</span>
-  <button onclick="checkout()">結帳</button>
-</div>
+    let idToken = "";
+    let lineProfile = null;
 
-<script>
-const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxo41bcyyfmHkSV9hUDSmBwttT929G0_CQzVZ-Em_vsl0fwTrIgBclpVI3mqloX4l-0/exec";
+    let cart = [];
+    let menuData = [];
+    let optionsData = {
+      sweetness: [],
+      ice: [],
+      toppings: []
+    };
+    let promosData = [];
+    let storeStatus = "營業中";
+    let userInfo = {
+      isMember: false,
+      balance: 0,
+      name: ""
+    };
 
-let cart = [];
-let menuData = [];
-
-// ✅ 修正 fetch
-async function callGAS(action, payload = {}) {
-  payload.action = action;
-
-  const res = await fetch(GAS_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-
-  return await res.json();
-}
-
-window.onload = async function () {
-  try {
-    await liff.init({ liffId: CUSTOMER_LIFF_ID });
-
-    if (!liff.isLoggedIn()) {
-      liff.login();
-      return;
+    function escapeHTML(str) {
+      return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;"
+      }[tag] || tag));
     }
 
-    loadMenu();
+    async function callGAS(action, payload = {}) {
+      payload.action = action;
+      payload.idToken = idToken;
 
-  } catch (e) {
-    Swal.fire("錯誤", "LIFF 初始化失敗", "error");
-  }
-};
+      const res = await fetch(GAS_API_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
 
-// ✅ 載入菜單
-async function loadMenu() {
-  try {
-    const res = await callGAS("getMenuAndOptions");
+      return await res.json();
+    }
 
-    if (!res.success) throw res.message;
+    window.onload = async function () {
+      try {
+        await liff.init({ liffId: CUSTOMER_LIFF_ID });
 
-    menuData = res.data.menu;
-    renderMenu();
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
 
-  } catch (e) {
-    Swal.fire("錯誤", "載入菜單失敗", "error");
-  }
-}
+        idToken = liff.getIDToken();
+        lineProfile = await liff.getProfile();
 
-// ✅ 顯示菜單（含分類顏色）
-function renderMenu() {
-  const container = document.getElementById("menu-container");
-  container.innerHTML = "";
+        await initUser();
+        await loadMenu();
+        await loadUserHistory();
 
-  const grouped = {};
-  menuData.forEach(item => {
-    if (!grouped[item.category]) grouped[item.category] = [];
-    grouped[item.category].push(item);
-  });
+      } catch (e) {
+        console.error(e);
+        Swal.fire("錯誤", "LIFF 初始化失敗，請重新開啟頁面", "error");
+      }
+    };
 
-  for (let cat in grouped) {
-    container.innerHTML += `<div class="category-title">${cat}</div>`;
+    async function initUser() {
+      const res = await callGAS("initUser", {
+        lineName: lineProfile ? lineProfile.displayName : ""
+      });
 
-    grouped[cat].forEach(item => {
-      container.innerHTML += `
-        <div class="menu-item">
-          <div>
-            <div class="menu-name">${item.name}</div>
-            <div class="menu-price">L: $${item.priceL}</div>
-          </div>
-          <button class="btn-select" onclick="addToCart('${item.name}', ${item.priceL})">
-            選擇
+      if (!res.success) {
+        Swal.fire("驗證失敗", res.message || "請重新開啟頁面", "error");
+        return;
+      }
+
+      userInfo = res.data;
+
+      renderMemberBox();
+    }
+
+    function renderMemberBox() {
+      const box = document.getElementById("member-box");
+
+      if (userInfo.isMember) {
+        box.innerHTML = `
+          👤 會員：${escapeHTML(userInfo.name)}<br>
+          💰 餘額：$${Number(userInfo.balance || 0)}
+        `;
+      } else {
+        box.innerHTML = `
+          👋 歡迎 ${escapeHTML(userInfo.name || "顧客")}<br>
+          <button onclick="joinMember()" style="margin-top:8px;background:#d35400;color:white;border:none;padding:8px 12px;border-radius:6px;font-weight:bold;">
+            加入會員
           </button>
+        `;
+      }
+    }
+
+    async function joinMember() {
+      const res = await callGAS("joinMember", {
+        lineName: lineProfile ? lineProfile.displayName : ""
+      });
+
+      if (res.success) {
+        userInfo = res.data;
+        renderMemberBox();
+        Swal.fire("成功", "已加入會員！", "success");
+      } else {
+        Swal.fire("失敗", res.message || "加入會員失敗", "error");
+      }
+    }
+
+    async function loadMenu() {
+      try {
+        const res = await callGAS("getMenuAndOptions");
+
+        if (!res.success) {
+          throw new Error(res.message || "載入失敗");
+        }
+
+        menuData = res.data.menu || [];
+        optionsData = res.data.options || {
+          sweetness: [],
+          ice: [],
+          toppings: []
+        };
+        promosData = res.data.promos || [];
+        storeStatus = res.data.storeStatus || "營業中";
+
+        renderPromos();
+        renderMenu();
+
+      } catch (e) {
+        console.error(e);
+        Swal.fire("錯誤", "載入菜單失敗：" + e.message, "error");
+      }
+    }
+
+    function renderPromos() {
+      const area = document.getElementById("promo-area");
+
+      if (!promosData || promosData.length === 0) {
+        area.innerHTML = "";
+        return;
+      }
+
+      let html = `<div class="promo-box"><b>🎉 目前優惠</b><br>`;
+
+      promosData.forEach(p => {
+        let target = p.targetType === "全館"
+          ? "全館"
+          : `${p.targetType}：${p.targetName}`;
+
+        let condition = "";
+
+        if (p.promoMode === "買X送Y") {
+          condition = `買${p.buyQty}送${p.freeQty}`;
+        } else if (p.promoMode === "組合價") {
+          if (p.targetType === "指定組合") {
+            condition = `套餐價 $${p.comboPrice}`;
+          } else {
+            condition = `任選${p.buyQty}杯 $${p.comboPrice}`;
+          }
+        }
+
+        let size = p.sizeLimit && p.sizeLimit !== "不限" ? `，限 ${p.sizeLimit} 杯` : "";
+
+        html += `• ${escapeHTML(target)}｜${escapeHTML(condition)}${escapeHTML(size)}<br>`;
+      });
+
+      html += `</div>`;
+      area.innerHTML = html;
+    }
+
+    function renderMenu() {
+      const container = document.getElementById("menu-container");
+      container.innerHTML = "";
+
+      if (storeStatus !== "營業中") {
+        container.innerHTML = `<div class="store-closed">目前店鋪休息中，暫停點餐</div>`;
+        return;
+      }
+
+      if (!menuData || menuData.length === 0) {
+        container.innerHTML = `<div style="text-align:center;padding:30px;color:#999;">目前沒有菜單資料</div>`;
+        return;
+      }
+
+      const grouped = {};
+
+      menuData.forEach(item => {
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push(item);
+      });
+
+      for (let cat in grouped) {
+        container.innerHTML += `<div class="category-title">${escapeHTML(cat)}</div>`;
+
+        grouped[cat].forEach(item => {
+          let priceText = [];
+
+          if (Number(item.priceL) > 0) {
+            priceText.push(`L: $${item.priceL}`);
+          }
+
+          if (Number(item.priceXL) > 0) {
+            priceText.push(`XL: $${item.priceXL}`);
+          }
+
+          container.innerHTML += `
+            <div class="menu-item">
+              <div>
+                <div class="menu-name">${escapeHTML(item.name)}</div>
+                <div class="menu-price">${priceText.join(" ｜ ")}</div>
+              </div>
+              <button class="btn-select" onclick="selectItem('${encodeURIComponent(item.name)}')">
+                選擇
+              </button>
+            </div>
+          `;
+        });
+      }
+    }
+
+    async function selectItem(encodedName) {
+      const itemName = decodeURIComponent(encodedName);
+      const item = menuData.find(m => m.name === itemName);
+
+      if (!item) {
+        Swal.fire("錯誤", "找不到商品", "error");
+        return;
+      }
+
+      let sizeOptions = "";
+
+      if (Number(item.priceL) > 0) {
+        sizeOptions += `<option value="L">L 杯 - $${item.priceL}</option>`;
+      }
+
+      if (Number(item.priceXL) > 0) {
+        sizeOptions += `<option value="XL">XL 杯 - $${item.priceXL}</option>`;
+      }
+
+      let sweetnessOptions = optionsData.sweetness.map(o => {
+        return `<option value="${escapeHTML(o.name)}">${escapeHTML(o.name)}</option>`;
+      }).join("");
+
+      let iceOptions = optionsData.ice.map(o => {
+        return `<option value="${escapeHTML(o.name)}">${escapeHTML(o.name)}</option>`;
+      }).join("");
+
+      let toppingOptions = optionsData.toppings.map(o => {
+        return `
+          <label style="display:block;margin:4px 0;">
+            <input type="checkbox" name="topping" value="${escapeHTML(o.name)}">
+            ${escapeHTML(o.name)} +$${Number(o.price || 0)}
+          </label>
+        `;
+      }).join("");
+
+      const html = `
+        <div class="form-row">
+          <label>容量</label>
+          <select id="swal-size" class="form-control">
+            ${sizeOptions}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>甜度</label>
+          <select id="swal-sweetness" class="form-control">
+            ${sweetnessOptions || `<option value="正常甜">正常甜</option>`}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>冰塊</label>
+          <select id="swal-ice" class="form-control">
+            ${iceOptions || `<option value="正常冰">正常冰</option>`}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>數量</label>
+          <input id="swal-qty" class="form-control" type="number" min="1" max="20" value="1">
+        </div>
+
+        <div class="form-row">
+          <label>加料</label>
+          <div style="max-height:120px;overflow-y:auto;border:1px solid #ddd;border-radius:6px;padding:8px;">
+            ${toppingOptions || `<span style="color:#999;">無加料選項</span>`}
+          </div>
         </div>
       `;
-    });
-  }
-}
 
-function addToCart(name, price) {
-  cart.push({ name, price, qty: 1 });
-  updateCart();
-}
+      const result = await Swal.fire({
+        title: item.name,
+        html: html,
+        showCancelButton: true,
+        confirmButtonText: "加入購物車",
+        cancelButtonText: "取消",
+        preConfirm: () => {
+          const size = document.getElementById("swal-size").value;
+          const sweetness = document.getElementById("swal-sweetness").value;
+          const ice = document.getElementById("swal-ice").value;
+          const qty = Number(document.getElementById("swal-qty").value);
 
-function updateCart() {
-  document.getElementById("cart-count").innerText = cart.length;
-}
+          if (!qty || qty <= 0 || qty > 20) {
+            Swal.showValidationMessage("數量必須為 1 到 20");
+            return false;
+          }
 
-function checkout() {
-  if (cart.length === 0) {
-    Swal.fire("提示", "購物車是空的", "warning");
-    return;
-  }
+          const toppings = [];
+          document.querySelectorAll('input[name="topping"]:checked').forEach(cb => {
+            toppings.push(cb.value);
+          });
 
-  Swal.fire("成功", "已送出訂單！", "success");
-  cart = [];
-  updateCart();
-}
-</script>
+          return {
+            name: item.name,
+            size: size,
+            sweetness: sweetness,
+            ice: ice,
+            qty: qty,
+            toppings: toppings
+          };
+        }
+      });
 
+      if (result.isConfirmed && result.value) {
+        cart.push(result.value);
+        updateCart();
+        Swal.fire("已加入", "商品已加入購物車", "success");
+      }
+    }
+
+    function estimateItemPrice(item) {
+      const menuItem = menuData.find(m => m.name === item.name);
+      if (!menuItem) return 0;
+
+      let base = item.size === "XL"
+        ? Number(menuItem.priceXL || 0)
+        : Number(menuItem.priceL || 0);
+
+      let toppingTotal = 0;
+
+      if (Array.isArray(item.toppings)) {
+        item.toppings.forEach(t => {
+          const top = optionsData.toppings.find(o => o.name === t);
+          if (top) toppingTotal += Number(top.price || 0);
+        });
+      }
+
+      return (base + toppingTotal) * Number(item.qty || 1);
+    }
+
+    function updateCart() {
+      let count = 0;
+      let total = 0;
+
+      cart.forEach(item => {
+        count += Number(item.qty || 0);
+        total += estimateItemPrice(item);
+      });
+
+      document.getElementById("cart-count").innerText = count;
+      document.getElementById("cart-total").innerText = total;
+    }
+
+    function clearCart() {
+      if (cart.length === 0) return;
+
+      Swal.fire({
+        title: "確定清空購物車？",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "清空",
+        cancelButtonText: "取消"
+      }).then(r => {
+        if (r.isConfirmed) {
+          cart = [];
+          updateCart();
+        }
+      });
+    }
+
+    function renderCartHTML() {
+      if (cart.length === 0) {
+        return `<div style="color:#999;text-align:center;">購物車是空的</div>`;
+      }
+
+      let html = `<div class="cart-list">`;
+
+      cart.forEach((item, index) => {
+        const toppings = item.toppings && item.toppings.length > 0
+          ? `｜加料：${item.toppings.join("、")}`
+          : "";
+
+        html += `
+          <div class="cart-item">
+            <button class="cart-remove" onclick="removeCartItem(${index})">刪除</button>
+            <b>[${escapeHTML(item.size)}] ${escapeHTML(item.name)}</b> x${item.qty}<br>
+            ${escapeHTML(item.sweetness)}｜${escapeHTML(item.ice)}${escapeHTML(toppings)}
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      return html;
+    }
+
+    function removeCartItem(index) {
+      cart.splice(index, 1);
+      updateCart();
+      checkout();
+    }
+
+    async function checkout() {
+      if (cart.length === 0) {
+        Swal.fire("提示", "購物車是空的", "warning");
+        return;
+      }
+
+      const cartHtml = renderCartHTML();
+
+      const payOptions = userInfo.isMember
+        ? `
+          <option value="現場結帳">現場結帳</option>
+          <option value="餘額扣款">餘額扣款，目前餘額 $${Number(userInfo.balance || 0)}</option>
+        `
+        : `<option value="現場結帳">現場結帳</option>`;
+
+      const html = `
+        ${cartHtml}
+
+        <div class="form-row">
+          <label>姓氏 / 稱呼</label>
+          <input id="order-last-name" class="form-control" placeholder="例如：王、陳、小明">
+        </div>
+
+        <div class="form-row">
+          <label>手機末三碼</label>
+          <input id="order-phone" class="form-control" placeholder="例如：123" maxlength="3">
+        </div>
+
+        <div class="form-row">
+          <label>付款方式</label>
+          <select id="order-pay-method" class="form-control">
+            ${payOptions}
+          </select>
+        </div>
+      `;
+
+      const result = await Swal.fire({
+        title: "確認訂單",
+        html: html,
+        width: 520,
+        showCancelButton: true,
+        confirmButtonText: "送出訂單",
+        cancelButtonText: "返回",
+        preConfirm: () => {
+          const lastName = document.getElementById("order-last-name").value.trim();
+          const phone = document.getElementById("order-phone").value.trim();
+          const payMethod = document.getElementById("order-pay-method").value;
+
+          if (!lastName) {
+            Swal.showValidationMessage("請輸入姓氏或稱呼");
+            return false;
+          }
+
+          if (!/^\d{3}$/.test(phone)) {
+            Swal.showValidationMessage("手機末三碼必須是 3 位數字");
+            return false;
+          }
+
+          return {
+            lastName,
+            phone,
+            payMethod
+          };
+        }
+      });
+
+      if (!result.isConfirmed || !result.value) return;
+
+      try {
+        Swal.fire({
+          title: "送出中...",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+
+        const res = await callGAS("submitOrder", {
+          lineName: lineProfile ? lineProfile.displayName : "",
+          lastName: result.value.lastName,
+          phone: result.value.phone,
+          payMethod: result.value.payMethod,
+          cart: cart
+        });
+
+        if (res.success) {
+          cart = [];
+          updateCart();
+
+          if (typeof res.newBalance !== "undefined") {
+            userInfo.balance = res.newBalance;
+            userInfo.isMember = res.isMember;
+            renderMemberBox();
+          }
+
+          await loadUserHistory();
+
+          Swal.fire("成功", res.message || "訂單已送出", "success");
+        } else {
+          Swal.fire("送出失敗", res.message || "請稍後再試", "error");
+        }
+
+      } catch (e) {
+        console.error(e);
+        Swal.fire("錯誤", "無法送出訂單，請稍後再試", "error");
+      }
+    }
+
+    async function loadUserHistory() {
+      try {
+        const res = await callGAS("getUserOrdersAndHistory");
+
+        if (!res.success) return;
+
+        const orders = res.data.orders || [];
+        const history = res.data.history || [];
+
+        let html = "";
+
+        if (orders.length > 0) {
+          html += `
+            <div class="history-box">
+              <div class="history-title">📋 進行中訂單</div>
+          `;
+
+          orders.forEach(o => {
+            html += `
+              <div class="history-item">
+                #${escapeHTML(o.id)}｜${escapeHTML(o.time)}｜$${o.total}｜${escapeHTML(o.status)}
+              </div>
+            `;
+          });
+
+          html += `</div>`;
+        }
+
+        if (history.length > 0) {
+          html += `
+            <div class="history-box">
+              <div class="history-title">💰 最近交易紀錄</div>
+          `;
+
+          history.slice(0, 5).forEach(h => {
+            html += `
+              <div class="history-item">
+                ${escapeHTML(h.time)}｜${escapeHTML(h.type)}｜${h.amount}｜餘額 $${h.balance}<br>
+                <span style="color:#777;">${escapeHTML(h.note)}</span>
+              </div>
+            `;
+          });
+
+          html += `</div>`;
+        }
+
+        document.getElementById("history-container").innerHTML = html;
+
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  </script>
 </body>
 </html>
