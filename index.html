@@ -59,10 +59,13 @@
       .form-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; }
       .history-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px;}
       .history-table th, .history-table td { border-bottom: 1px solid #eee; padding: 8px 4px; text-align: left;}
+      .text-green { color: #2ecc71; font-weight: bold; }
+      .text-red { color: #e74c3c; font-weight: bold; }
     </style>
   </head>
   <body>
     <div class="container">
+      <!-- 狀態與活動橫幅置頂 -->
       <div id="store-closed-banner" class="store-closed" style="display:none;">⛔ 門市目前休息中，暫不開放點餐 ⛔</div>
       <div id="promo-banner" class="promo-banner" style="display:none;"></div>
       
@@ -92,6 +95,7 @@
       <button class="btn-checkout" id="btn-open-checkout" onclick="openCheckoutModal()">結帳去</button>
     </div>
 
+    <!-- Modals -->
     <div class="modal-overlay" id="join-modal" style="align-items: center;">
       <div class="modal-content-center">
         <h3 style="color:#d35400; margin-top:0;">👋 歡迎光臨！</h3>
@@ -146,12 +150,13 @@
 
     <script>
       const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwH94PKQb-QqyGDy3zywGQCjSmrTzFdVpacif2UUWKXNDkk1nlOw8wE2_WmTqsTQnCW/exec"; 
+      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw8MSgLF3Y879DCxWmRxqsAn6AGW89VHHs09G4LksM1uMB8e76UUZelIL87HhEMeDn7/exec"; 
 
       let userProfile = { userId: "", displayName: "", idToken: "" };
       let sysData = { menu: [], options: {}, storeStatus: "營業中", promos: [] };
       let userData = { isMember: false, balance: 0, name: "" };
       let myHistory = []; let currentItem = null, currentQty = 1, cart = []; 
+      let calculatedTotal = 0; 
 
       function escapeHTML(str) { return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
       async function callGAS(action, payload = {}) { payload.action = action; payload.idToken = userProfile.idToken; const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) }); return await response.json(); }
@@ -176,7 +181,7 @@
       }
 
       function joinMember() {
-        document.getElementById("join-modal").style.display = "none"; document.getElementById("status-text").innerText = "建檔中...";
+        document.getElementById("join-modal").style.display = "none"; document.getElementById("status-text").innerText = "會員建檔中...";
         callGAS('joinMember', { lineName: userProfile.displayName }).then(res => {
           if(res.success){ userData = res.data; Swal.fire('成功', '🎉 恭喜成為專屬會員！', 'success'); updateMemberUI(); loadMenu(); }
         });
@@ -237,17 +242,16 @@
           if (res.success) { 
             sysData = res.data; document.getElementById("status-text").style.display = "none"; 
             
-            // 處理營業狀態
             if(sysData.storeStatus !== '營業中') {
                document.getElementById("store-closed-banner").style.display = "block";
                let btn = document.getElementById("btn-open-checkout");
                btn.style.background = "#95a5a6"; btn.innerText = "休息中"; btn.disabled = true;
             }
-            // 處理活動跑馬燈
+            
             if(sysData.promos && sysData.promos.length > 0) {
                let pTexts = sysData.promos.map(p => {
                  let tag = p.targetType === '全館' ? '【全館】' : `【${p.targetName}】`;
-                 let cond = p.promoMode === '組合價' ? `任選${p.buyQty}杯${p.comboPrice}元` : `買${p.buyQty}送${p.freeQty}`;
+                 let cond = p.promoMode === '組合價' ? `任選${p.buyQty}杯特價${p.comboPrice}元` : `買${p.buyQty}送${p.freeQty}`;
                  let desc = p.desc ? ` - ${p.desc}` : '';
                  return `🎉 ${tag} ${cond}${desc}`;
                }).join(" ｜ ");
@@ -308,11 +312,10 @@
         closeModal('custom-modal'); updateCartUI();
       }
 
-      // 【前端智慧計價引擎】完美同步後端的組合價與買送邏輯
       function calculateCart() {
         let flatItems = []; let originalTotal = 0;
         cart.forEach(item => { for(let i=0; i<item.qty; i++){ flatItems.push({ name: item.name, category: item.category, price: item.unitPrice, usedPromo: false }); originalTotal += item.unitPrice; } });
-        flatItems.sort((a, b) => b.price - a.price); // 貴的優先折抵計算
+        flatItems.sort((a, b) => b.price - a.price); // 貴的優先排序
         let discountAmount = 0;
 
         sysData.promos.forEach(promo => {
