@@ -13,8 +13,12 @@
       font-family: Arial, "Microsoft JhengHei", sans-serif;
       background: #fcf6f2;
       margin: 0;
-      padding-bottom: 90px;
+      padding-bottom: 20px;
       color: #333;
+    }
+
+    body.has-cart {
+      padding-bottom: 95px;
     }
 
     .container {
@@ -43,6 +47,42 @@
       border: 1px solid #f5d6a8;
       font-size: 14px;
       line-height: 1.6;
+    }
+
+    .member-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .member-info {
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .history-btn {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .join-btn {
+      margin-top: 8px;
+      background: #d35400;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
     }
 
     .store-closed {
@@ -111,7 +151,7 @@
       width: 100%;
       background: #2c3e50;
       color: white;
-      display: flex;
+      display: none;
       justify-content: center;
       z-index: 999;
       box-shadow: 0 -3px 10px rgba(0,0,0,0.15);
@@ -125,16 +165,35 @@
       justify-content: space-between;
       align-items: center;
       box-sizing: border-box;
+      gap: 8px;
+    }
+
+    .cart-summary {
+      font-size: 14px;
+      line-height: 1.5;
     }
 
     .cart-btn {
       background: #2ecc71;
       color: white;
       border: none;
-      padding: 9px 18px;
+      padding: 9px 14px;
       border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .cart-view-btn {
+      background: #f39c12;
+      color: white;
+      border: none;
+      padding: 9px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      white-space: nowrap;
+      margin-right: 5px;
     }
 
     .cart-clear {
@@ -145,7 +204,8 @@
       border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
-      margin-right: 6px;
+      margin-right: 5px;
+      white-space: nowrap;
     }
 
     .form-row {
@@ -171,7 +231,7 @@
 
     .cart-list {
       text-align: left;
-      max-height: 260px;
+      max-height: 300px;
       overflow-y: auto;
       margin-bottom: 15px;
     }
@@ -181,16 +241,32 @@
       border-bottom: 1px solid #eee;
       font-size: 14px;
       line-height: 1.5;
+      background: #fff;
     }
 
-    .cart-remove {
-      float: right;
-      background: #e74c3c;
-      color: white;
+    .cart-item-actions {
+      margin-top: 8px;
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+
+    .mini-btn {
       border: none;
-      border-radius: 5px;
-      padding: 3px 8px;
+      border-radius: 6px;
+      padding: 5px 9px;
       cursor: pointer;
+      color: white;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .mini-edit {
+      background: #3498db;
+    }
+
+    .mini-delete {
+      background: #e74c3c;
     }
 
     .history-box {
@@ -212,6 +288,73 @@
       line-height: 1.5;
       border-bottom: 1px dashed #ddd;
       padding: 7px 0;
+    }
+
+    .history-detail-btn {
+      margin-top: 6px;
+      background: #8e44ad;
+      color: white;
+      border: none;
+      padding: 5px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .swal-history-list {
+      text-align: left;
+      max-height: 460px;
+      overflow-y: auto;
+    }
+
+    .swal-history-item {
+      border-bottom: 1px dashed #ddd;
+      padding: 10px 0;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .swal-order-content {
+      text-align: left;
+      white-space: pre-line;
+      background: #fafafa;
+      border: 1px dashed #ccc;
+      padding: 12px;
+      border-radius: 8px;
+      line-height: 1.6;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 520px) {
+      .cart-inner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .cart-actions {
+        display: flex;
+        justify-content: space-between;
+        gap: 5px;
+      }
+
+      .cart-view-btn,
+      .cart-clear,
+      .cart-btn {
+        flex: 1;
+        margin-right: 0;
+        padding-left: 6px;
+        padding-right: 6px;
+      }
+
+      .member-row {
+        align-items: flex-start;
+      }
+
+      .history-btn {
+        padding: 8px;
+      }
     }
   </style>
 </head>
@@ -236,13 +379,15 @@
     <div id="history-container"></div>
   </div>
 
-  <div class="cart-bar">
+  <div id="cart-bar" class="cart-bar">
     <div class="cart-inner">
-      <div>
+      <div class="cart-summary">
         🛒 <span id="cart-count">0</span> 杯
         ｜預估 $<span id="cart-total">0</span>
       </div>
-      <div>
+
+      <div class="cart-actions">
+        <button class="cart-view-btn" onclick="openCartManager()">查看購物車</button>
         <button class="cart-clear" onclick="clearCart()">清空</button>
         <button class="cart-btn" onclick="checkout()">結帳</button>
       </div>
@@ -251,7 +396,7 @@
 
   <script>
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyvp9prySGtnrpqkG5_-lF4cWZCn8b8IeXZINRBw7y3ZSI0DnutCGV4U3iNbM0st9RZ/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyhb4fALeiODPqNndnfSNBImndeIxadDG8rfMYWE4Gr92AjkBnZz0bH6dfWA1B32WMQ/exec";
 
     let idToken = "";
     let lineProfile = null;
@@ -265,11 +410,15 @@
     };
     let promosData = [];
     let storeStatus = "營業中";
+
     let userInfo = {
       isMember: false,
       balance: 0,
       name: ""
     };
+
+    let userOrders = [];
+    let userHistory = [];
 
     function escapeHTML(str) {
       return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({
@@ -279,6 +428,15 @@
         "'": "&#39;",
         '"': "&quot;"
       }[tag] || tag));
+    }
+
+    function escapeJS(str) {
+      return (!str) ? "" : str.toString()
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "\\r");
     }
 
     async function callGAS(action, payload = {}) {
@@ -309,6 +467,8 @@
         await loadMenu();
         await loadUserHistory();
 
+        updateCart();
+
       } catch (e) {
         console.error(e);
         Swal.fire("錯誤", "LIFF 初始化失敗，請重新開啟頁面", "error");
@@ -326,7 +486,6 @@
       }
 
       userInfo = res.data;
-
       renderMemberBox();
     }
 
@@ -335,15 +494,23 @@
 
       if (userInfo.isMember) {
         box.innerHTML = `
-          👤 會員：${escapeHTML(userInfo.name)}<br>
-          💰 餘額：$${Number(userInfo.balance || 0)}
+          <div class="member-row">
+            <div class="member-info">
+              👤 會員：${escapeHTML(userInfo.name)}<br>
+              💰 餘額：$${Number(userInfo.balance || 0)}
+            </div>
+            <button class="history-btn" onclick="openTransactionHistory()">交易明細</button>
+          </div>
         `;
       } else {
         box.innerHTML = `
-          👋 歡迎 ${escapeHTML(userInfo.name || "顧客")}<br>
-          <button onclick="joinMember()" style="margin-top:8px;background:#d35400;color:white;border:none;padding:8px 12px;border-radius:6px;font-weight:bold;">
-            加入會員
-          </button>
+          <div class="member-row">
+            <div class="member-info">
+              👋 歡迎 ${escapeHTML(userInfo.name || "顧客")}<br>
+              尚未加入會員
+            </div>
+          </div>
+          <button class="join-btn" onclick="joinMember()">加入會員</button>
         `;
       }
     }
@@ -356,6 +523,7 @@
       if (res.success) {
         userInfo = res.data;
         renderMemberBox();
+        await loadUserHistory();
         Swal.fire("成功", "已加入會員！", "success");
       } else {
         Swal.fire("失敗", res.message || "加入會員失敗", "error");
@@ -474,43 +642,44 @@
       }
     }
 
-    async function selectItem(encodedName) {
-      const itemName = decodeURIComponent(encodedName);
-      const item = menuData.find(m => m.name === itemName);
-
-      if (!item) {
-        Swal.fire("錯誤", "找不到商品", "error");
-        return;
-      }
+    function buildItemFormHTML(item, existingItem = null, allowZero = false) {
+      let defaultSize = existingItem ? existingItem.size : "";
+      let defaultSweetness = existingItem ? existingItem.sweetness : "";
+      let defaultIce = existingItem ? existingItem.ice : "";
+      let defaultQty = existingItem ? Number(existingItem.qty || 1) : 1;
+      let defaultToppings = existingItem && Array.isArray(existingItem.toppings) ? existingItem.toppings : [];
 
       let sizeOptions = "";
 
       if (Number(item.priceL) > 0) {
-        sizeOptions += `<option value="L">L 杯 - $${item.priceL}</option>`;
+        sizeOptions += `<option value="L" ${defaultSize === "L" ? "selected" : ""}>L 杯 - $${item.priceL}</option>`;
       }
 
       if (Number(item.priceXL) > 0) {
-        sizeOptions += `<option value="XL">XL 杯 - $${item.priceXL}</option>`;
+        sizeOptions += `<option value="XL" ${defaultSize === "XL" ? "selected" : ""}>XL 杯 - $${item.priceXL}</option>`;
       }
 
       let sweetnessOptions = optionsData.sweetness.map(o => {
-        return `<option value="${escapeHTML(o.name)}">${escapeHTML(o.name)}</option>`;
+        let selected = defaultSweetness === o.name ? "selected" : "";
+        return `<option value="${escapeHTML(o.name)}" ${selected}>${escapeHTML(o.name)}</option>`;
       }).join("");
 
       let iceOptions = optionsData.ice.map(o => {
-        return `<option value="${escapeHTML(o.name)}">${escapeHTML(o.name)}</option>`;
+        let selected = defaultIce === o.name ? "selected" : "";
+        return `<option value="${escapeHTML(o.name)}" ${selected}>${escapeHTML(o.name)}</option>`;
       }).join("");
 
       let toppingOptions = optionsData.toppings.map(o => {
+        let checked = defaultToppings.includes(o.name) ? "checked" : "";
         return `
           <label style="display:block;margin:4px 0;">
-            <input type="checkbox" name="topping" value="${escapeHTML(o.name)}">
+            <input type="checkbox" name="topping" value="${escapeHTML(o.name)}" ${checked}>
             ${escapeHTML(o.name)} +$${Number(o.price || 0)}
           </label>
         `;
       }).join("");
 
-      const html = `
+      return `
         <div class="form-row">
           <label>容量</label>
           <select id="swal-size" class="form-control">
@@ -533,8 +702,8 @@
         </div>
 
         <div class="form-row">
-          <label>數量</label>
-          <input id="swal-qty" class="form-control" type="number" min="1" max="20" value="1">
+          <label>數量${allowZero ? "，可填 0 表示刪除" : ""}</label>
+          <input id="swal-qty" class="form-control" type="number" min="${allowZero ? "0" : "1"}" max="20" value="${defaultQty}">
         </div>
 
         <div class="form-row">
@@ -544,37 +713,53 @@
           </div>
         </div>
       `;
+    }
+
+    function readItemFormValue(item) {
+      const size = document.getElementById("swal-size").value;
+      const sweetness = document.getElementById("swal-sweetness").value;
+      const ice = document.getElementById("swal-ice").value;
+      const qty = Number(document.getElementById("swal-qty").value);
+
+      const toppings = [];
+      document.querySelectorAll('input[name="topping"]:checked').forEach(cb => {
+        toppings.push(cb.value);
+      });
+
+      return {
+        name: item.name,
+        size: size,
+        sweetness: sweetness,
+        ice: ice,
+        qty: qty,
+        toppings: toppings
+      };
+    }
+
+    async function selectItem(encodedName) {
+      const itemName = decodeURIComponent(encodedName);
+      const item = menuData.find(m => m.name === itemName);
+
+      if (!item) {
+        Swal.fire("錯誤", "找不到商品", "error");
+        return;
+      }
 
       const result = await Swal.fire({
         title: item.name,
-        html: html,
+        html: buildItemFormHTML(item, null, false),
         showCancelButton: true,
         confirmButtonText: "加入購物車",
         cancelButtonText: "取消",
         preConfirm: () => {
-          const size = document.getElementById("swal-size").value;
-          const sweetness = document.getElementById("swal-sweetness").value;
-          const ice = document.getElementById("swal-ice").value;
-          const qty = Number(document.getElementById("swal-qty").value);
+          const value = readItemFormValue(item);
 
-          if (!qty || qty <= 0 || qty > 20) {
+          if (!value.qty || value.qty <= 0 || value.qty > 20) {
             Swal.showValidationMessage("數量必須為 1 到 20");
             return false;
           }
 
-          const toppings = [];
-          document.querySelectorAll('input[name="topping"]:checked').forEach(cb => {
-            toppings.push(cb.value);
-          });
-
-          return {
-            name: item.name,
-            size: size,
-            sweetness: sweetness,
-            ice: ice,
-            qty: qty,
-            toppings: toppings
-          };
+          return value;
         }
       });
 
@@ -602,12 +787,14 @@
         });
       }
 
-      return (base + toppingTotal) * Number(item.qty || 1);
+      return (base + toppingTotal) * Number(item.qty || 0);
     }
 
     function updateCart() {
       let count = 0;
       let total = 0;
+
+      cart = cart.filter(item => Number(item.qty || 0) > 0);
 
       cart.forEach(item => {
         count += Number(item.qty || 0);
@@ -616,6 +803,16 @@
 
       document.getElementById("cart-count").innerText = count;
       document.getElementById("cart-total").innerText = total;
+
+      const cartBar = document.getElementById("cart-bar");
+
+      if (count > 0) {
+        cartBar.style.display = "flex";
+        document.body.classList.add("has-cart");
+      } else {
+        cartBar.style.display = "none";
+        document.body.classList.remove("has-cart");
+      }
     }
 
     function clearCart() {
@@ -631,11 +828,12 @@
         if (r.isConfirmed) {
           cart = [];
           updateCart();
+          Swal.fire("已清空", "購物車已清空", "success");
         }
       });
     }
 
-    function renderCartHTML() {
+    function renderCartHTML(showActions = true) {
       if (cart.length === 0) {
         return `<div style="color:#999;text-align:center;">購物車是空的</div>`;
       }
@@ -647,11 +845,23 @@
           ? `｜加料：${item.toppings.join("、")}`
           : "";
 
+        const subtotal = estimateItemPrice(item);
+
         html += `
           <div class="cart-item">
-            <button class="cart-remove" onclick="removeCartItem(${index})">刪除</button>
-            <b>[${escapeHTML(item.size)}] ${escapeHTML(item.name)}</b> x${item.qty}<br>
+            <b>[${escapeHTML(item.size)}] ${escapeHTML(item.name)}</b> x${Number(item.qty || 0)}
+            <span style="color:#e74c3c;font-weight:bold;">｜小計 $${subtotal}</span><br>
             ${escapeHTML(item.sweetness)}｜${escapeHTML(item.ice)}${escapeHTML(toppings)}
+            ${
+              showActions
+                ? `
+                  <div class="cart-item-actions">
+                    <button class="mini-btn mini-edit" onclick="editCartItem(${index})">編輯</button>
+                    <button class="mini-btn mini-delete" onclick="deleteCartItem(${index})">刪除</button>
+                  </div>
+                `
+                : ""
+            }
           </div>
         `;
       });
@@ -660,19 +870,113 @@
       return html;
     }
 
-    function removeCartItem(index) {
+    function deleteCartItem(index) {
       cart.splice(index, 1);
       updateCart();
-      checkout();
+
+      if (cart.length === 0) {
+        Swal.close();
+        Swal.fire("已刪除", "購物車目前是空的", "success");
+      } else {
+        openCartManager();
+      }
     }
 
-    async function checkout() {
+    async function editCartItem(index) {
+      const cartItem = cart[index];
+
+      if (!cartItem) return;
+
+      const menuItem = menuData.find(m => m.name === cartItem.name);
+
+      if (!menuItem) {
+        Swal.fire("錯誤", "找不到此商品，可能已下架", "error");
+        return;
+      }
+
+      const result = await Swal.fire({
+        title: "編輯商品",
+        html: buildItemFormHTML(menuItem, cartItem, true),
+        showCancelButton: true,
+        confirmButtonText: "儲存變更",
+        cancelButtonText: "取消",
+        preConfirm: () => {
+          const value = readItemFormValue(menuItem);
+
+          if (value.qty < 0 || value.qty > 20) {
+            Swal.showValidationMessage("數量必須為 0 到 20");
+            return false;
+          }
+
+          return value;
+        }
+      });
+
+      if (!result.isConfirmed || !result.value) {
+        openCartManager();
+        return;
+      }
+
+      if (Number(result.value.qty) === 0) {
+        cart.splice(index, 1);
+      } else {
+        cart[index] = result.value;
+      }
+
+      updateCart();
+
+      if (cart.length === 0) {
+        Swal.fire("已更新", "購物車目前是空的", "success");
+      } else {
+        openCartManager();
+      }
+    }
+
+    async function openCartManager() {
       if (cart.length === 0) {
         Swal.fire("提示", "購物車是空的", "warning");
         return;
       }
 
-      const cartHtml = renderCartHTML();
+      let total = 0;
+      let count = 0;
+
+      cart.forEach(item => {
+        count += Number(item.qty || 0);
+        total += estimateItemPrice(item);
+      });
+
+      await Swal.fire({
+        title: "我的購物車",
+        html: `
+          ${renderCartHTML(true)}
+          <div style="text-align:right;font-weight:bold;color:#e74c3c;margin-top:10px;">
+            共 ${count} 杯｜預估 $${total}
+          </div>
+          <div style="font-size:12px;color:#777;text-align:left;margin-top:8px;">
+            ※ 實際金額會依後台活動優惠重新計算。
+          </div>
+        `,
+        width: 560,
+        showCancelButton: true,
+        confirmButtonText: "前往結帳",
+        cancelButtonText: "繼續點餐"
+      }).then(r => {
+        if (r.isConfirmed) {
+          checkout();
+        }
+      });
+    }
+
+    async function checkout() {
+      updateCart();
+
+      if (cart.length === 0) {
+        Swal.fire("提示", "購物車是空的", "warning");
+        return;
+      }
+
+      const cartHtml = renderCartHTML(false);
 
       const payOptions = userInfo.isMember
         ? `
@@ -778,39 +1082,21 @@
 
         if (!res.success) return;
 
-        const orders = res.data.orders || [];
-        const history = res.data.history || [];
+        userOrders = res.data.orders || [];
+        userHistory = res.data.history || [];
 
         let html = "";
 
-        if (orders.length > 0) {
+        if (userOrders.length > 0) {
           html += `
             <div class="history-box">
               <div class="history-title">📋 進行中訂單</div>
           `;
 
-          orders.forEach(o => {
+          userOrders.forEach(o => {
             html += `
               <div class="history-item">
                 #${escapeHTML(o.id)}｜${escapeHTML(o.time)}｜$${o.total}｜${escapeHTML(o.status)}
-              </div>
-            `;
-          });
-
-          html += `</div>`;
-        }
-
-        if (history.length > 0) {
-          html += `
-            <div class="history-box">
-              <div class="history-title">💰 最近交易紀錄</div>
-          `;
-
-          history.slice(0, 5).forEach(h => {
-            html += `
-              <div class="history-item">
-                ${escapeHTML(h.time)}｜${escapeHTML(h.type)}｜${h.amount}｜餘額 $${h.balance}<br>
-                <span style="color:#777;">${escapeHTML(h.note)}</span>
               </div>
             `;
           });
@@ -823,6 +1109,86 @@
       } catch (e) {
         console.log(e);
       }
+    }
+
+    function openTransactionHistory() {
+      if (!userInfo.isMember) {
+        Swal.fire("提示", "加入會員後才能查看交易明細", "info");
+        return;
+      }
+
+      if (!userHistory || userHistory.length === 0) {
+        Swal.fire("交易明細", "目前沒有交易紀錄", "info");
+        return;
+      }
+
+      let html = `<div class="swal-history-list">`;
+
+      userHistory.forEach((h, index) => {
+        const amount = Number(h.amount || 0);
+        const amountText = amount > 0 ? `+$${amount}` : `-$${Math.abs(amount)}`;
+        const amountColor = amount > 0 ? "#27ae60" : "#e74c3c";
+
+        let detailBtn = "";
+
+        if (h.type === "消費扣款") {
+          detailBtn = `
+            <br>
+            <button class="history-detail-btn" onclick="showPurchaseDetail(${index})">
+              查看購買內容
+            </button>
+          `;
+        }
+
+        html += `
+          <div class="swal-history-item">
+            <b>${escapeHTML(h.time)}</b><br>
+            類別：${escapeHTML(h.type)}<br>
+            金額：<span style="color:${amountColor};font-weight:bold;">${amountText}</span><br>
+            餘額：$${Number(h.balance || 0)}<br>
+            備註：<span style="color:#777;">${escapeHTML(h.note || "")}</span>
+            ${detailBtn}
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+
+      Swal.fire({
+        title: "所有交易明細",
+        html: html,
+        width: 560,
+        confirmButtonText: "關閉"
+      });
+    }
+
+    function showPurchaseDetail(index) {
+      const h = userHistory[index];
+
+      if (!h) {
+        Swal.fire("錯誤", "找不到交易資料", "error");
+        return;
+      }
+
+      const spent = Math.abs(Number(h.amount || 0));
+      const content = h.orderContent
+        ? escapeHTML(h.orderContent)
+        : "目前查不到此筆訂單內容，可能是舊資料或訂單內容未關聯成功。";
+
+      Swal.fire({
+        title: "購買內容",
+        html: `
+          <div class="swal-order-content">${content}</div>
+          <div style="text-align:right;margin-top:12px;font-weight:bold;color:#e74c3c;">
+            本次花費：$${spent}
+          </div>
+          <div style="text-align:right;margin-top:4px;color:#555;">
+            扣款後餘額：$${Number(h.balance || 0)}
+          </div>
+        `,
+        width: 560,
+        confirmButtonText: "關閉"
+      });
     }
   </script>
 </body>
