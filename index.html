@@ -9,16 +9,16 @@
     <style>
       body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcf6f2; margin: 0; color: #333; padding-bottom: 80px; }
       .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; position: relative; }
-      .header { text-align: center; color: #d35400; padding: 20px 15px; border-bottom: 2px solid #f2e2d9; background: #fff; position: relative; }
+      .promo-banner { background: #ffeb3b; color: #d35400; font-weight: bold; text-align: center; padding: 10px; font-size: 15px; border-bottom: 2px solid #f39c12; }
+      .store-closed { background: #e74c3c; color: white; font-weight: bold; text-align: center; padding: 15px; font-size: 16px; }
+      
+      .header { text-align: center; color: #d35400; padding: 20px 15px; border-bottom: 2px solid #f2e2d9; background: #fff; }
       .header h2 { margin: 0 0 5px 0; font-size: 24px; }
+      .header p { margin: 0; color: #7f8c8d; font-size: 14px; }
       
-      .promo-banner { background: #ffeb3b; color: #d35400; font-weight: bold; text-align: center; padding: 8px; font-size: 14px; border-bottom: 1px solid #f39c12; }
-      .store-closed { background: #e74c3c; color: white; font-weight: bold; text-align: center; padding: 12px; font-size: 16px; }
-
       .member-info-bar { background: #2c3e50; color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-      .btn-wallet { background: #f39c12; border: none; color: white; padding: 4px 10px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 12px; }
-      .loading-msg { text-align: center; color: #e67e22; font-weight: bold; padding: 30px 0; }
-      
+      .btn-wallet { background: #f39c12; border: none; color: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 13px; }
+
       .status-board { background: #fff; border: 2px solid #d35400; border-radius: 10px; padding: 15px; margin: 15px; box-shadow: 0 4px 6px rgba(211,84,0,0.1); }
       .status-title { color: #d35400; font-weight: bold; font-size: 16px; margin-bottom: 10px; border-bottom: 1px dashed #f2e2d9; padding-bottom: 5px; }
       .my-order-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; align-items: center; }
@@ -34,6 +34,7 @@
       
       .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #2c3e50; color: white; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; box-sizing: border-box; z-index: 99; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
       .btn-checkout { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 16px; cursor: pointer; }
+      .btn-checkout:disabled { background: #95a5a6; cursor: not-allowed; }
       
       .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
       .modal-content { background: white; width: 100%; max-width: 600px; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease-out; }
@@ -58,13 +59,11 @@
       .form-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; }
       .history-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px;}
       .history-table th, .history-table td { border-bottom: 1px solid #eee; padding: 8px 4px; text-align: left;}
-      .text-green { color: #2ecc71; font-weight: bold; }
-      .text-red { color: #e74c3c; font-weight: bold; }
     </style>
   </head>
   <body>
     <div class="container">
-      <div id="store-closed-banner" class="store-closed" style="display:none;">⛔ 目前休息中，暫不開放點餐 ⛔</div>
+      <div id="store-closed-banner" class="store-closed" style="display:none;">⛔ 門市目前休息中，暫不開放點餐 ⛔</div>
       <div id="promo-banner" class="promo-banner" style="display:none;"></div>
       
       <div class="header">
@@ -83,7 +82,7 @@
       </div>
 
       <div class="menu-section" id="app-content">
-        <div class="loading-msg" id="status-text">🔄 系統初始化中，請稍候...</div>
+        <div style="text-align: center; color: #e67e22; font-weight: bold; padding: 30px 0;" id="status-text">🔄 系統初始化中，請稍候...</div>
         <div id="menu-container"></div>
       </div>
     </div>
@@ -147,13 +146,12 @@
 
     <script>
       const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwkg-epdeiPn22Rj1gNhg0-gclhtwN7DpDeBeC6NG0jj-EVNjBOdqr-GMGcYZ3VagdG/exec"; 
+      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwH94PKQb-QqyGDy3zywGQCjSmrTzFdVpacif2UUWKXNDkk1nlOw8wE2_WmTqsTQnCW/exec"; 
 
       let userProfile = { userId: "", displayName: "", idToken: "" };
       let sysData = { menu: [], options: {}, storeStatus: "營業中", promos: [] };
       let userData = { isMember: false, balance: 0, name: "" };
       let myHistory = []; let currentItem = null, currentQty = 1, cart = []; 
-      let calculatedTotal = 0; // 紀錄算完折扣的總價
 
       function escapeHTML(str) { return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
       async function callGAS(action, payload = {}) { payload.action = action; payload.idToken = userProfile.idToken; const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) }); return await response.json(); }
@@ -163,10 +161,7 @@
         liff.init({ liffId: CUSTOMER_LIFF_ID }).then(() => {
           if (!liff.isLoggedIn()) liff.login();
           else {
-            liff.getProfile().then(profile => {
-              userProfile.userId = profile.userId; userProfile.displayName = profile.displayName; userProfile.idToken = liff.getIDToken(); 
-              initSystem();
-            });
+            liff.getProfile().then(profile => { userProfile.userId = profile.userId; userProfile.displayName = profile.displayName; userProfile.idToken = liff.getIDToken(); initSystem(); });
           }
         });
       };
@@ -175,16 +170,15 @@
         callGAS('initUser', { lineName: userProfile.displayName }).then(res => {
           if(res.success) {
             userData = res.data;
-            if(!userData.isMember) document.getElementById("join-modal").style.display = "flex";
-            else { updateMemberUI(); loadMenu(); }
-          } else { Swal.fire({ icon: 'error', title: '系統提示', text: res.message }); }
+            if(!userData.isMember) document.getElementById("join-modal").style.display = "flex"; else { updateMemberUI(); loadMenu(); }
+          } else Swal.fire({ icon: 'error', title: '系統提示', text: res.message });
         });
       }
 
       function joinMember() {
-        document.getElementById("join-modal").style.display = "none"; document.getElementById("status-text").innerText = "會員建檔中...";
+        document.getElementById("join-modal").style.display = "none"; document.getElementById("status-text").innerText = "建檔中...";
         callGAS('joinMember', { lineName: userProfile.displayName }).then(res => {
-          if(res.success){ userData = res.data; Swal.fire({ icon: 'success', title: '歡迎光臨', text: '🎉 恭喜成為專屬會員！' }); updateMemberUI(); loadMenu(); }
+          if(res.success){ userData = res.data; Swal.fire('成功', '🎉 恭喜成為專屬會員！', 'success'); updateMemberUI(); loadMenu(); }
         });
       }
 
@@ -195,15 +189,14 @@
           document.getElementById("welcome-msg").innerText = `${escapeHTML(userData.name)} | 餘額: $${userData.balance}`;
           document.getElementById("btn-show-history").style.display = "block";
           fetchUserData(); setInterval(fetchUserData, 15000); 
-        } else { document.getElementById("welcome-msg").innerText = `哈囉，訪客！`; }
+        } else document.getElementById("welcome-msg").innerText = `哈囉，訪客！`;
       }
 
       function fetchUserData() {
         if(!userData.isMember) return;
         callGAS('getUserOrdersAndHistory').then(res => {
           if(res.success) {
-            myHistory = res.data.history;
-            let orders = res.data.orders;
+            myHistory = res.data.history; let orders = res.data.orders;
             if(orders.length > 0) {
               let html = "";
               orders.forEach(o => {
@@ -211,7 +204,7 @@
                 html += `<div class="my-order-item"><div>${escapeHTML(o.time)} 訂單</div><div class="my-order-tag ${tagClass}">${escapeHTML(o.status)}</div></div>`;
               });
               document.getElementById("my-orders-list").innerHTML = html; document.getElementById("my-orders-board").style.display = "block";
-            } else { document.getElementById("my-orders-board").style.display = "none"; }
+            } else document.getElementById("my-orders-board").style.display = "none";
           }
         });
       }
@@ -225,8 +218,7 @@
             let color = h.amount > 0 ? 'text-green' : 'text-red';
             let typeDisplay = escapeHTML(h.type);
             if (h.type === '消費扣款' && h.orderContent) {
-               let encodedContent = encodeURIComponent(h.orderContent);
-               typeDisplay = `<button class="btn-wallet" style="background:#3498db; padding:3px 6px;" onclick="showOrderDetails('${encodedContent}')">🔍 明細</button>`;
+               typeDisplay = `<button class="btn-wallet" style="background:#3498db; padding:3px 6px;" onclick="showOrderDetails('${encodeURIComponent(h.orderContent)}')">🔍 明細</button>`;
             }
             html += `<tr><td>${escapeHTML(h.time)}</td><td>${typeDisplay}</td><td class="${color}">${h.amount>0?'+':''}${h.amount}</td><td>$${h.balance}</td></tr>`;
           });
@@ -248,13 +240,17 @@
             // 處理營業狀態
             if(sysData.storeStatus !== '營業中') {
                document.getElementById("store-closed-banner").style.display = "block";
-               document.getElementById("btn-open-checkout").style.background = "#95a5a6";
-               document.getElementById("btn-open-checkout").innerText = "休息中";
-               document.getElementById("btn-open-checkout").disabled = true;
+               let btn = document.getElementById("btn-open-checkout");
+               btn.style.background = "#95a5a6"; btn.innerText = "休息中"; btn.disabled = true;
             }
-            // 處理促銷活動顯示
+            // 處理活動跑馬燈
             if(sysData.promos && sysData.promos.length > 0) {
-               let pTexts = sysData.promos.map(p => `🎉 ${p.desc}`).join(" ｜ ");
+               let pTexts = sysData.promos.map(p => {
+                 let tag = p.targetType === '全館' ? '【全館】' : `【${p.targetName}】`;
+                 let cond = p.promoMode === '組合價' ? `任選${p.buyQty}杯${p.comboPrice}元` : `買${p.buyQty}送${p.freeQty}`;
+                 let desc = p.desc ? ` - ${p.desc}` : '';
+                 return `🎉 ${tag} ${cond}${desc}`;
+               }).join(" ｜ ");
                document.getElementById("promo-banner").innerHTML = `<marquee scrollamount="5">${escapeHTML(pTexts)}</marquee>`;
                document.getElementById("promo-banner").style.display = "block";
             }
@@ -312,28 +308,35 @@
         closeModal('custom-modal'); updateCartUI();
       }
 
-      // 【前端智慧計價引擎】與後端同步的計算邏輯
+      // 【前端智慧計價引擎】完美同步後端的組合價與買送邏輯
       function calculateCart() {
         let flatItems = []; let originalTotal = 0;
-        cart.forEach(item => {
-          for(let i=0; i<item.qty; i++){ flatItems.push({ name: item.name, category: item.category, price: item.unitPrice, usedPromo: false }); originalTotal += item.unitPrice; }
-        });
-        flatItems.sort((a, b) => b.price - a.price); // 貴的排前面
+        cart.forEach(item => { for(let i=0; i<item.qty; i++){ flatItems.push({ name: item.name, category: item.category, price: item.unitPrice, usedPromo: false }); originalTotal += item.unitPrice; } });
+        flatItems.sort((a, b) => b.price - a.price); // 貴的優先折抵計算
         let discountAmount = 0;
 
         sysData.promos.forEach(promo => {
           let matchedIndices = [];
           for(let i=0; i<flatItems.length; i++) {
-            if(!flatItems[i].usedPromo) {
-              if (promo.targetType === '全館' || (promo.targetType === '系列' && flatItems[i].category === promo.targetName) || (promo.targetType === '單品' && flatItems[i].name === promo.targetName)) matchedIndices.push(i);
-            }
+            if(!flatItems[i].usedPromo && (promo.targetType === '全館' || (promo.targetType === '系列' && flatItems[i].category === promo.targetName) || (promo.targetType === '單品' && flatItems[i].name === promo.targetName))) matchedIndices.push(i);
           }
-          let groupSize = promo.buyQty + promo.freeQty;
-          let groups = Math.floor(matchedIndices.length / groupSize);
-          for(let g=0; g<groups; g++) {
-            let currentGroup = matchedIndices.slice(g*groupSize, (g+1)*groupSize);
-            for(let f = promo.buyQty; f < groupSize; f++) { discountAmount += flatItems[currentGroup[f]].price; }
-            currentGroup.forEach(idx => flatItems[idx].usedPromo = true);
+          
+          if (promo.promoMode === '買X送Y' && (promo.buyQty + promo.freeQty) > 0) {
+            let gSize = promo.buyQty + promo.freeQty; let groups = Math.floor(matchedIndices.length / gSize);
+            for(let g=0; g<groups; g++) {
+              let cur = matchedIndices.slice(g*gSize, (g+1)*gSize);
+              for(let f = promo.buyQty; f < gSize; f++) discountAmount += flatItems[cur[f]].price;
+              cur.forEach(idx => flatItems[idx].usedPromo = true);
+            }
+          } else if (promo.promoMode === '組合價' && promo.buyQty > 0) {
+            let groups = Math.floor(matchedIndices.length / promo.buyQty);
+            for(let g=0; g<groups; g++) {
+              let cur = matchedIndices.slice(g*promo.buyQty, (g+1)*promo.buyQty);
+              let sum = 0; cur.forEach(idx => sum += flatItems[idx].price);
+              let disc = sum - promo.comboPrice;
+              if (disc > 0) discountAmount += disc;
+              cur.forEach(idx => flatItems[idx].usedPromo = true);
+            }
           }
         });
         return { original: originalTotal, discount: discountAmount, final: originalTotal - discountAmount };
@@ -345,7 +348,7 @@
           let totalQty = 0; cart.forEach(i => totalQty += i.qty);
           let calc = calculateCart();
           document.getElementById("cart-count").innerText = totalQty; document.getElementById("cart-total").innerText = calc.final;
-        } else { document.getElementById("cart-bar").style.display = "none"; }
+        } else document.getElementById("cart-bar").style.display = "none";
       }
 
       function openCheckoutModal() {
@@ -357,13 +360,12 @@
         document.getElementById("checkout-cart-list").innerHTML = listHtml;
         
         let calc = calculateCart();
-        calculatedTotal = calc.final;
         document.getElementById("checkout-total-price").innerText = calc.final;
         
         if(calc.discount > 0) {
            document.getElementById("checkout-discount-info").innerHTML = `(符合活動，已為您自動折抵 $${calc.discount})`;
            document.getElementById("checkout-discount-info").style.display = "block";
-        } else { document.getElementById("checkout-discount-info").style.display = "none"; }
+        } else document.getElementById("checkout-discount-info").style.display = "none";
         
         let paySelect = document.getElementById("select-paymethod");
         paySelect.innerHTML = `<option value="現場結帳">現場結帳</option>`;
@@ -378,8 +380,8 @@
         let lastName = document.getElementById("input-lastname").value.trim();
         let phone = document.getElementById("input-phone").value.trim();
         let payMethod = document.getElementById("select-paymethod").value;
-        if (!lastName) return Swal.fire({ icon: 'warning', title: '資料未填', text: '請填寫您的姓氏！' });
-        if (!/^\d{3}$/.test(phone)) return Swal.fire({ icon: 'warning', title: '資料錯誤', text: '請填寫手機末三碼！' });
+        if (!lastName) return Swal.fire('資料未填', '請填寫您的姓氏！', 'warning');
+        if (!/^\d{3}$/.test(phone)) return Swal.fire('資料錯誤', '請填寫手機末三碼！', 'warning');
         
         let btn = document.getElementById("btn-submit"); btn.innerText = "⏳ 傳送中..."; btn.disabled = true;
 
@@ -389,9 +391,9 @@
             if (res.isMember) { userData.balance = res.newBalance; successText += `<br><br><span style="font-weight:bold; color:#d35400;">最新餘額：$${res.newBalance}</span>`; }
             Swal.fire({ icon: 'success', title: '訂單完成', html: successText, confirmButtonColor: '#d35400' });
             cart = []; updateCartUI(); closeModal('checkout-modal'); updateMemberUI(); fetchUserData(); 
-          } else { Swal.fire({ icon: 'error', title: '送出失敗', text: res.message }); }
+          } else Swal.fire('送出失敗', res.message, 'error');
           btn.innerText = "✅ 確認送出訂單"; btn.disabled = false;
-        }).catch(err => { Swal.fire({ icon: 'error', title: '連線異常', text: '系統異常請稍後再試' }); btn.innerText = "✅ 確認送出訂單"; btn.disabled = false; });
+        }).catch(err => { Swal.fire('連線異常', '系統異常請稍後再試', 'error'); btn.innerText = "✅ 確認送出訂單"; btn.disabled = false; });
       }
     </script>
   </body>
