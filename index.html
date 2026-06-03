@@ -9,9 +9,14 @@
     <style>
       body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcf6f2; margin: 0; color: #333; padding-bottom: 80px; }
       .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; position: relative; }
-      .promo-banner { background: #ffeb3b; color: #d35400; font-weight: bold; text-align: center; padding: 10px; font-size: 15px; border-bottom: 2px solid #f39c12; }
+      .promo-banner { background: #fff3e0; color: #d35400; font-weight: bold; padding: 12px; font-size: 14px; border-bottom: 2px solid #f39c12; border-left: 5px solid #d35400; text-align: left; line-height: 1.5; }
       .store-closed { background: #e74c3c; color: white; font-weight: bold; text-align: center; padding: 15px; font-size: 16px; }
       
+      /* 新增今日組合頂級區塊樣式 */
+      .combo-box { background: linear-gradient(135deg, #fff9f5 0%, #fff0e6 100%); border: 2px dashed #e67e22; border-radius: 12px; padding: 15px; margin: 15px; box-shadow: 0 4px 10px rgba(230,126,34,0.1); }
+      .combo-title { color: #d35400; font-size: 16px; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+      .combo-item-text { font-size: 14px; color: #2c3e50; line-height: 1.6; background: rgba(255,255,255,0.7); padding: 8px; border-radius: 6px; }
+
       .header { text-align: center; color: #d35400; padding: 20px 15px; border-bottom: 2px solid #f2e2d9; background: #fff; }
       .header h2 { margin: 0 0 5px 0; font-size: 24px; }
       .header p { margin: 0; color: #7f8c8d; font-size: 14px; }
@@ -59,14 +64,17 @@
       .form-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; }
       .history-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px;}
       .history-table th, .history-table td { border-bottom: 1px solid #eee; padding: 8px 4px; text-align: left;}
-      .text-green { color: #2ecc71; font-weight: bold; }
-      .text-red { color: #e74c3c; font-weight: bold; }
     </style>
   </head>
   <body>
     <div class="container">
-      <!-- 狀態與活動橫幅置頂 -->
       <div id="store-closed-banner" class="store-closed" style="display:none;">⛔ 門市目前休息中，暫不開放點餐 ⛔</div>
+      
+      <div id="combo-section" class="combo-box" style="display:none;">
+         <div class="combo-title">👑 今日優惠組合</div>
+         <div id="combo-list-container" class="combo-item-text"></div>
+      </div>
+
       <div id="promo-banner" class="promo-banner" style="display:none;"></div>
       
       <div class="header">
@@ -95,7 +103,6 @@
       <button class="btn-checkout" id="btn-open-checkout" onclick="openCheckoutModal()">結帳去</button>
     </div>
 
-    <!-- Modals -->
     <div class="modal-overlay" id="join-modal" style="align-items: center;">
       <div class="modal-content-center">
         <h3 style="color:#d35400; margin-top:0;">👋 歡迎光臨！</h3>
@@ -135,10 +142,8 @@
       <div class="modal-content">
         <div class="modal-header"><h3 style="margin:0;">訂單確認</h3><button class="close-btn" onclick="closeModal('checkout-modal')">×</button></div>
         <div id="checkout-cart-list" style="margin-bottom: 20px; max-height: 200px; overflow-y: auto;"></div>
-        
         <div id="checkout-discount-info" style="text-align:right; font-size:14px; color:#e74c3c; margin-bottom:5px; display:none;"></div>
         <div style="text-align: right; font-weight: bold; font-size: 20px; margin-bottom: 15px; color: #d35400;">折扣後總計：$<span id="checkout-total-price">0</span></div>
-        
         <div class="option-title">💰 付款方式</div>
         <select id="select-paymethod" class="form-input" style="background:#f9f9f9;"></select>
         <div class="option-title">📞 取餐聯絡人</div>
@@ -150,13 +155,12 @@
 
     <script>
       const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw8MSgLF3Y879DCxWmRxqsAn6AGW89VHHs09G4LksM1uMB8e76UUZelIL87HhEMeDn7/exec"; 
+      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzTDknBrEUIvqhAYwqIe8LM-6_WKfXQmeZjmPv6R50OHWucnfoOlTRLLn8t79isaC5s/exec"; 
 
       let userProfile = { userId: "", displayName: "", idToken: "" };
       let sysData = { menu: [], options: {}, storeStatus: "營業中", promos: [] };
       let userData = { isMember: false, balance: 0, name: "" };
       let myHistory = []; let currentItem = null, currentQty = 1, cart = []; 
-      let calculatedTotal = 0; 
 
       function escapeHTML(str) { return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
       async function callGAS(action, payload = {}) { payload.action = action; payload.idToken = userProfile.idToken; const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) }); return await response.json(); }
@@ -232,11 +236,6 @@
         document.getElementById("history-modal").style.display = "flex";
       }
 
-      window.showOrderDetails = function(encodedContent) {
-         let content = decodeURIComponent(encodedContent).replace(/\n/g, '<br>');
-         Swal.fire({ title: '訂單內容', html: `<div style="text-align:left; font-size:15px; line-height:1.6; background:#f9f9f9; padding:10px; border-radius:8px;">${content}</div>`, confirmButtonColor: '#d35400' });
-      };
-
       function loadMenu() {
         callGAS('getMenuAndOptions').then(res => {
           if (res.success) { 
@@ -248,16 +247,30 @@
                btn.style.background = "#95a5a6"; btn.innerText = "休息中"; btn.disabled = true;
             }
             
-            if(sysData.promos && sysData.promos.length > 0) {
-               let pTexts = sysData.promos.map(p => {
-                 let tag = p.targetType === '全館' ? '【全館】' : `【${p.targetName}】`;
-                 let cond = p.promoMode === '組合價' ? `任選${p.buyQty}杯特價${p.comboPrice}元` : `買${p.buyQty}送${p.freeQty}`;
-                 let desc = p.desc ? ` - ${p.desc}` : '';
-                 return `🎉 ${tag} ${cond}${desc}`;
-               }).join(" ｜ ");
-               document.getElementById("promo-banner").innerHTML = `<marquee scrollamount="5">${escapeHTML(pTexts)}</marquee>`;
+            // 分流渲染促銷：組合套餐置頂 vs 靜態橫幅公告
+            let comboHtml = ""; let bannerHtml = "";
+            sysData.promos.forEach(p => {
+               let sizeText = p.sizeLimit !== '不限' ? `[限${p.sizeLimit}杯型] ` : '';
+               if(p.promoMode === '組合價') {
+                  let itemsFormated = p.targetType === '指定組合' ? p.targetName.split(',').join('、') : p.targetName;
+                  let titleTag = p.targetType === '全館' ? '全館商品' : itemsFormated;
+                  comboHtml += `<div style="margin-bottom:8px;">🔥 <b>${escapeHTML(titleTag)}</b> 任選 ${p.buyQty} 杯${sizeText}➔ <span style="color:#e74c3c; font-weight:bold; font-size:16px;">特價 $${p.comboPrice}</span> ${p.desc?'('+escapeHTML(p.desc)+')':''}</div>`;
+               } else {
+                  let tag = p.targetType === '全館' ? '【全館活動】' : `【${p.targetName}】`;
+                  bannerHtml += `<div>📢 ${tag} 買 ${p.buyQty} 送 ${p.freeQty} ${sizeText}${p.desc?' - '+escapeHTML(p.desc):''}</div>`;
+               }
+            });
+
+            if(comboHtml) {
+               document.getElementById("combo-list-container").innerHTML = comboHtml;
+               document.getElementById("combo-section").style.display = "block";
+            } else document.getElementById("combo-section").style.display = "none";
+
+            if(bannerHtml) {
+               document.getElementById("promo-banner").innerHTML = bannerHtml;
                document.getElementById("promo-banner").style.display = "block";
-            }
+            } else document.getElementById("promo-banner").style.display = "none";
+
             renderMenu(); 
           }
         });
@@ -314,14 +327,26 @@
 
       function calculateCart() {
         let flatItems = []; let originalTotal = 0;
-        cart.forEach(item => { for(let i=0; i<item.qty; i++){ flatItems.push({ name: item.name, category: item.category, price: item.unitPrice, usedPromo: false }); originalTotal += item.unitPrice; } });
-        flatItems.sort((a, b) => b.price - a.price); // 貴的優先排序
+        cart.forEach(item => { for(let i=0; i<item.qty; i++){ flatItems.push({ name: item.name, category: item.category, price: item.unitPrice, size: item.size, usedPromo: false }); originalTotal += item.unitPrice; } });
+        flatItems.sort((a, b) => b.price - a.price); 
         let discountAmount = 0;
 
         sysData.promos.forEach(promo => {
           let matchedIndices = [];
           for(let i=0; i<flatItems.length; i++) {
-            if(!flatItems[i].usedPromo && (promo.targetType === '全館' || (promo.targetType === '系列' && flatItems[i].category === promo.targetName) || (promo.targetType === '單品' && flatItems[i].name === promo.targetName))) matchedIndices.push(i);
+            if(!flatItems[i].usedPromo) {
+               if(promo.sizeLimit !== '不限' && flatItems[i].size !== promo.sizeLimit) continue;
+               
+               let isMatch = false;
+               if(promo.targetType === '全館') isMatch = true;
+               else if(promo.targetType === '系列' && flatItems[i].category === promo.targetName) isMatch = true;
+               else if(promo.targetType === '單品' && flatItems[i].name === promo.targetName) isMatch = true;
+               else if(promo.targetType === '指定組合') {
+                  let allowed = promo.targetName.split(',');
+                  if(allowed.includes(flatItems[i].name)) isMatch = true;
+               }
+               if(isMatch) matchedIndices.push(i);
+            }
           }
           
           if (promo.promoMode === '買X送Y' && (promo.buyQty + promo.freeQty) > 0) {
