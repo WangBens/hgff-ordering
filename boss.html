@@ -1,852 +1,1163 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>凰貴妃茶堂 - 店鋪管理系統</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-      body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 15px; background-color: #e8f4f8; margin: 0; color: #333; }
-      .container { max-width: 850px; margin: 0 auto 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-      .header { text-align: center; color: #2980b9; margin-bottom: 25px; border-bottom: 3px solid #2980b9; padding-bottom: 10px; }
-      .section { margin-top: 20px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fff; }
-      .section h3 { margin-top: 0; color: #2c3e50; border-left: 4px solid #2980b9; padding-left: 10px; display: flex; justify-content: space-between; align-items: center;}
-      .form-group { margin-bottom: 15px; }
-      .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #4f5f6f; font-size:14px;}
-      .form-control { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
-      .btn { color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; }
-      .btn-success { background-color: #2ecc71; width: 100%;}
-      .btn-red { background-color: #e74c3c; width: 100%;}
-      .btn-orange { background-color: #f39c12; width: 100%;}
-      .btn-blue { background-color: #3498db; width: 100%;}
-      
-      .order-card { background: #fafbfc; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 6px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-      .status-new { border-left-color: #e74c3c; }
-      .status-accepted { border-left-color: #f39c12; }
-      .status-ready { border-left-color: #3498db; } 
-      .card-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: #7f8c8d; }
-      .card-customer { font-size: 18px; font-weight: bold; color: #2c3e50; }
-      .card-items { font-size: 16px; margin: 10px 0; line-height: 1.5; white-space: pre-line; background: #fff; padding: 10px; border-radius: 5px; border: 1px dashed #ccc;}
-      .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-      .card-price { font-size: 18px; font-weight: bold; color: #e74c3c; }
-      .action-btns { display: flex; gap: 8px; }
-      .btn-action { padding: 8px 15px; border: none; border-radius: 5px; font-weight: bold; color: white; cursor: pointer; font-size: 14px;}
-      .btn-gray { background: #95a5a6; }
-      .auto-refresh-badge { font-size: 12px; font-weight: normal; background: #ecf0f1; padding: 4px 8px; border-radius: 12px; color: #7f8c8d; }
-      .list-item { display: flex; justify-content: space-between; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; align-items: center; font-size:14px; }
-      .list-item span { word-break: break-word; }
-      
-      .multi-checkbox-box { border: 1px solid #ccc; padding: 10px; border-radius: 6px; max-height: 120px; overflow-y: auto; background: #fafafa; }
-      .checkbox-item { display: inline-flex; align-items: center; margin-right: 15px; margin-bottom: 5px; font-size: 14px; cursor: pointer; }
-      .checkbox-item input { margin-right: 5px; }
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>凰貴妃茶堂 - 店鋪管理系統</title>
 
-      .hint-box {
-        background: #eef7ff;
-        color: #2874a6;
-        border-left: 4px solid #3498db;
-        padding: 10px;
-        border-radius: 6px;
-        font-size: 13px;
-        line-height: 1.5;
-        margin-top: -5px;
-        margin-bottom: 15px;
-        display: none;
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, "Microsoft JhengHei", sans-serif;
+      padding: 15px;
+      background-color: #e8f4f8;
+      margin: 0;
+      color: #333;
+    }
+
+    .container {
+      max-width: 850px;
+      margin: 0 auto 20px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .header {
+      text-align: center;
+      color: #2980b9;
+      margin-bottom: 25px;
+      border-bottom: 3px solid #2980b9;
+      padding-bottom: 10px;
+    }
+
+    .section {
+      margin-top: 20px;
+      padding: 18px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background-color: #fff;
+    }
+
+    .section h3 {
+      margin-top: 0;
+      color: #2c3e50;
+      border-left: 4px solid #2980b9;
+      padding-left: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+      color: #4f5f6f;
+      font-size: 14px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 15px;
+    }
+
+    .btn {
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .btn-success {
+      background-color: #2ecc71;
+      width: 100%;
+    }
+
+    .btn-red {
+      background-color: #e74c3c;
+      width: 100%;
+    }
+
+    .btn-orange {
+      background-color: #f39c12;
+      width: 100%;
+    }
+
+    .btn-blue {
+      background-color: #3498db;
+      width: 100%;
+    }
+
+    .order-card {
+      background: #fafbfc;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 6px solid #ccc;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .status-new {
+      border-left-color: #e74c3c;
+    }
+
+    .status-accepted {
+      border-left-color: #f39c12;
+    }
+
+    .status-ready {
+      border-left-color: #3498db;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #7f8c8d;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .card-customer {
+      font-size: 18px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .card-items {
+      font-size: 16px;
+      margin: 10px 0;
+      line-height: 1.5;
+      white-space: pre-line;
+      background: #fff;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px dashed #ccc;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .card-price {
+      font-size: 18px;
+      font-weight: bold;
+      color: #e74c3c;
+    }
+
+    .action-btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-gray {
+      background: #95a5a6;
+    }
+
+    .auto-refresh-badge {
+      font-size: 12px;
+      font-weight: normal;
+      background: #ecf0f1;
+      padding: 4px 8px;
+      border-radius: 12px;
+      color: #7f8c8d;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .list-item span {
+      word-break: break-word;
+    }
+
+    .multi-checkbox-box {
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 6px;
+      max-height: 120px;
+      overflow-y: auto;
+      background: #fafafa;
+    }
+
+    .checkbox-item {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 15px;
+      margin-bottom: 5px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .checkbox-item input {
+      margin-right: 5px;
+    }
+
+    .hint-box {
+      background: #eef7ff;
+      color: #2874a6;
+      border-left: 4px solid #3498db;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: -5px;
+      margin-bottom: 15px;
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 8px;
       }
-    </style>
-  </head>
-  <body>
-    <div id="loading-layer" class="container">
-      <div style="text-align:center; padding:30px;">🔒 系統安全驗證中...</div>
+
+      .container {
+        padding: 14px;
+      }
+
+      .section {
+        padding: 14px;
+      }
+
+      .form-group[style*="display:flex"],
+      .card-footer,
+      .action-btns {
+        flex-direction: column;
+      }
+
+      .btn-action {
+        width: 100%;
+      }
+
+      .list-item {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loading-layer" class="container">
+    <div style="text-align:center; padding:30px;">🔒 系統安全驗證中...</div>
+  </div>
+
+  <div id="admin-layer" class="container" style="display: none;">
+    <div class="header">
+      <h2>凰貴妃茶堂 店鋪管理</h2>
     </div>
-    
-    <div id="admin-layer" class="container" style="display: none;">
-      <div class="header"><h2>凰貴妃茶堂 店鋪管理</h2></div>
 
-      <div class="section" style="background:#fff3e0; border-color:#f1c40f;">
-        <h3 style="border-left-color:#f39c12;">
-          🏬 門市營業狀態
-          <span id="current-store-status" style="font-weight:normal; font-size:16px;">(讀取中...)</span>
-        </h3>
-        <div style="display:flex; gap:10px;">
-          <button class="btn btn-success" style="flex:1;" onclick="toggleStore('營業中')">🟢 開放點餐</button>
-          <button class="btn btn-red" style="flex:1;" onclick="toggleStore('休息中')">⛔ 關閉點餐</button>
-        </div>
-      </div>
+    <div class="section" style="background:#fff3e0; border-color:#f1c40f;">
+      <h3 style="border-left-color:#f39c12;">
+        🏬 門市營業狀態
+        <span id="current-store-status" style="font-weight:normal; font-size:16px;">(讀取中...)</span>
+      </h3>
 
-      <div class="section">
-        <h3>📋 即時訂單看板 <span class="auto-refresh-badge">每 10 秒自動刷新</span></h3>
-        <div id="orders-container">
-          <div style="text-align:center; color:#999; padding:20px;">載入中...</div>
-        </div>
-      </div>
-
-      <div class="section">
-        <h3>🎉 活動管理 (促銷與組合套餐)</h3>
-
-        <div class="form-group" style="display:flex; gap:10px;">
-          <select id="promo-target-type" class="form-control" style="flex:1;" onchange="updatePromoTargetUI()">
-            <option value="全館">全館活動</option>
-            <option value="系列">指定系列</option>
-            <option value="單品">指定單品活動</option>
-            <option value="指定組合">特定多品組合套餐</option>
-          </select>
-
-          <select id="promo-target-name" class="form-control" style="flex:2; display:none;"></select>
-
-          <select id="promo-size" class="form-control" style="flex:1.2;">
-            <option value="不限">容量：不限杯型</option>
-            <option value="L">容量：限 L 杯</option>
-            <option value="XL">容量：限 XL 杯</option>
-          </select>
-        </div>
-
-        <div class="form-group" id="promo-multi-drinks-group" style="display:none;">
-          <label>請勾選本套餐內含哪些特定飲料（勾選的品項會組成一整組套餐）：</label>
-          <div id="promo-checkbox-list" class="multi-checkbox-box"></div>
-        </div>
-
-        <div id="combo-hint" class="hint-box">
-          💡 特定多品組合套餐說明：你勾選的每一杯會組成「一整組套餐」。
-          例如勾選紅茶、奶茶、綠茶，套餐價輸入 100，消費者點齊這三杯就會自動套用 $100。
-        </div>
-
-        <div class="form-group" style="display:flex; gap:10px;">
-          <select id="promo-mode" class="form-control" style="flex:1;" onchange="updatePromoModeUI()">
-            <option value="買X送Y">買X送Y</option>
-            <option value="組合價">組合價 (套餐)</option>
-          </select>
-          <input type="text" id="promo-desc" class="form-control" placeholder="活動標語 (可不填)" style="flex:2;">
-        </div>
-        
-        <div class="form-group" id="promo-buy-free-ui" style="display:flex; gap:10px; align-items:center;">
-          買 <input type="number" id="promo-buy" class="form-control" placeholder="幾杯" style="width:70px;">
-          送 <input type="number" id="promo-free" class="form-control" placeholder="幾杯" style="width:70px;">
-        </div>
-        
-        <div class="form-group" id="promo-combo-ui" style="display:none; gap:10px; align-items:center;">
-          <span id="promo-combo-qty-label">任選</span>
-          <input type="number" id="promo-combo-qty" class="form-control" placeholder="幾杯" style="width:70px;">
-          <span id="promo-combo-auto-text" style="display:none; color:#2874a6; font-weight:bold;"></span>
-          特價 <input type="number" id="promo-combo-price" class="form-control" placeholder="元" style="width:90px;">
-        </div>
-        
-        <button class="btn btn-blue" onclick="addPromo()">➕ 新增活動</button>
-
-        <div style="margin-top:15px; max-height:220px; overflow-y:auto; border:1px solid #eee; border-radius:5px;" id="promo-list"></div>
-      </div>
-
-      <div class="section">
-        <h3>🍔 菜單快速新增與管理</h3>
-
-        <div class="form-group" style="display:flex; gap:10px;">
-          <input type="text" id="menu-cat" class="form-control" placeholder="分類 (例如: 原茶)" style="flex:1;">
-          <input type="text" id="menu-name" class="form-control" placeholder="品名 (例如: 紅茶)" style="flex:2;">
-        </div>
-
-        <div class="form-group" style="display:flex; gap:10px;">
-          <input type="number" id="menu-pl" class="form-control" placeholder="L杯價格">
-          <input type="number" id="menu-pxl" class="form-control" placeholder="XL杯價格 (無則免填)">
-        </div>
-
-        <button class="btn btn-blue" onclick="addMenu()">➕ 快速上架商品</button>
-        <div style="margin-top:15px; max-height:250px; overflow-y:auto; border:1px solid #eee; border-radius:5px;" id="menu-list"></div>
-      </div>
-
-      <div class="section">
-        <h3>💰 錢包與會員管理</h3>
-
-        <h4 style="margin: 10px 0 5px 0; font-size: 14px; color: #34495e;">儲值與扣款</h4>
-        <div class="form-group">
-          <select id="user-select" class="form-control">
-            <option value="">-- 請選擇會員 --</option>
-          </select>
-        </div>
-
-        <div class="form-group" style="display:flex; gap:10px;">
-          <select id="topup-type" class="form-control" style="flex:1;">
-            <option value="add">➕ 儲值</option>
-            <option value="deduct">➖ 扣款</option>
-          </select>
-          <input type="number" id="topup-amount" class="form-control" placeholder="金額" style="flex:2;">
-        </div>
-
-        <div class="form-group">
-          <input type="text" id="topup-note" class="form-control" placeholder="備註">
-        </div>
-
-        <button class="btn btn-success" style="margin-bottom:20px;" onclick="submitTopUp()">執行帳務變更</button>
-        
-        <hr style="border: 0; border-top: 1px dashed #ccc; margin-bottom: 15px;">
-        
-        <h4 style="margin: 0 0 5px 0; font-size: 14px; color: #34495e;">更新會員稱呼</h4>
-        <div class="form-group">
-          <select id="edit-user-select" class="form-control">
-            <option value="">-- 請選擇會員 --</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <input type="text" id="new-user-name" class="form-control" placeholder="輸入真實稱呼">
-        </div>
-
-        <button class="btn btn-orange" onclick="updateMember()">確認更新名稱</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-success" style="flex:1;" onclick="toggleStore('營業中')">🟢 開放點餐</button>
+        <button class="btn btn-red" style="flex:1;" onclick="toggleStore('休息中')">⛔ 關閉點餐</button>
       </div>
     </div>
 
-    <script>
-      const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxo41bcyyfmHkSV9hUDSmBwttT929G0_CQzVZ-Em_vsl0fwTrIgBclpVI3mqloX4l-0/exec";
+    <div class="section">
+      <h3>
+        📋 即時訂單看板
+        <span class="auto-refresh-badge">每 10 秒自動刷新</span>
+      </h3>
 
-      let adminIdToken = "";
-      let globalMenus = [];
+      <div id="orders-container">
+        <div style="text-align:center; color:#999; padding:20px;">載入中...</div>
+      </div>
+    </div>
 
-      function escapeHTML(str) {
-        return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          "'": '&#39;',
-          '"': '&quot;'
-        }[tag] || tag));
-      }
+    <div class="section">
+      <h3>🎉 活動管理 促銷與組合套餐</h3>
 
-      function escapeJS(str) {
-        return (!str) ? "" : str.toString()
-          .replace(/\\/g, "\\\\")
-          .replace(/'/g, "\\'")
-          .replace(/"/g, '\\"')
-          .replace(/\n/g, "\\n")
-          .replace(/\r/g, "\\r");
-      }
+      <div class="form-group" style="display:flex; gap:10px;">
+        <select id="promo-target-type" class="form-control" style="flex:1;" onchange="updatePromoTargetUI()">
+          <option value="全館">全館活動</option>
+          <option value="系列">指定系列</option>
+          <option value="單品">指定單品活動</option>
+          <option value="指定組合">特定多品組合套餐</option>
+        </select>
 
-      async function callGAS(action, payload = {}) {
-        payload.action = action;
-        payload.idToken = adminIdToken;
+        <select id="promo-target-name" class="form-control" style="flex:2; display:none;"></select>
 
-        const response = await fetch(GAS_API_URL, {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        });
+        <select id="promo-size" class="form-control" style="flex:1.2;">
+          <option value="不限">容量：不限杯型</option>
+          <option value="L">容量：限 L 杯</option>
+          <option value="XL">容量：限 XL 杯</option>
+        </select>
+      </div>
 
-        return await response.json();
-      }
+      <div class="form-group" id="promo-multi-drinks-group" style="display:none;">
+        <label>請勾選本套餐內含哪些特定飲料：</label>
+        <div id="promo-checkbox-list" class="multi-checkbox-box"></div>
+      </div>
 
-      window.onload = function() {
-        liff.init({ liffId: BOSS_LIFF_ID }).then(() => {
-          if (!liff.isLoggedIn()) {
-            liff.login();
-          } else {
-            adminIdToken = liff.getIDToken();
+      <div id="combo-hint" class="hint-box">
+        💡 特定多品組合套餐說明：你勾選的每一杯會組成「一整組套餐」。
+        例如勾選紅茶、奶茶、綠茶，套餐價輸入 100，消費者點齊這三杯就會自動套用 $100。
+      </div>
 
-            callGAS('verifyAdmin').then(res => {
-              document.getElementById("loading-layer").style.display = "none";
+      <div class="form-group" style="display:flex; gap:10px;">
+        <select id="promo-mode" class="form-control" style="flex:1;" onchange="updatePromoModeUI()">
+          <option value="買X送Y">買X送Y</option>
+          <option value="組合價">組合價 套餐</option>
+        </select>
 
-              if (res.success && res.isAdmin) {
-                document.getElementById("admin-layer").style.display = "block";
-                loadDashboardData();
-                setInterval(loadDashboardData, 10000);
-              } else {
-                Swal.fire('拒絕存取', '您不是管理員', 'error');
-              }
-            }).catch(() => {
-              document.getElementById("loading-layer").style.display = "none";
-              Swal.fire('連線失敗', '無法完成管理員驗證，請稍後再試。', 'error');
-            });
-          }
-        }).catch(() => {
+        <input type="text" id="promo-desc" class="form-control" placeholder="活動標語，可不填" style="flex:2;">
+      </div>
+
+      <div class="form-group" id="promo-buy-free-ui" style="display:flex; gap:10px; align-items:center;">
+        買
+        <input type="number" id="promo-buy" class="form-control" placeholder="幾杯" style="width:70px;">
+        送
+        <input type="number" id="promo-free" class="form-control" placeholder="幾杯" style="width:70px;">
+      </div>
+
+      <div class="form-group" id="promo-combo-ui" style="display:none; gap:10px; align-items:center;">
+        <span id="promo-combo-qty-label">任選</span>
+        <input type="number" id="promo-combo-qty" class="form-control" placeholder="幾杯" style="width:70px;">
+        <span id="promo-combo-auto-text" style="display:none; color:#2874a6; font-weight:bold;"></span>
+        特價
+        <input type="number" id="promo-combo-price" class="form-control" placeholder="元" style="width:90px;">
+      </div>
+
+      <button class="btn btn-blue" onclick="addPromo()">➕ 新增活動</button>
+
+      <div style="margin-top:15px; max-height:220px; overflow-y:auto; border:1px solid #eee; border-radius:5px;" id="promo-list"></div>
+    </div>
+
+    <div class="section">
+      <h3>🍔 菜單快速新增與管理</h3>
+
+      <div class="form-group" style="display:flex; gap:10px;">
+        <input type="text" id="menu-cat" class="form-control" placeholder="分類，例如：原茶" style="flex:1;">
+        <input type="text" id="menu-name" class="form-control" placeholder="品名，例如：紅茶" style="flex:2;">
+      </div>
+
+      <div class="form-group" style="display:flex; gap:10px;">
+        <input type="number" id="menu-pl" class="form-control" placeholder="L杯價格">
+        <input type="number" id="menu-pxl" class="form-control" placeholder="XL杯價格，無則免填">
+      </div>
+
+      <button class="btn btn-blue" onclick="addMenu()">➕ 快速上架商品</button>
+
+      <div style="margin-top:15px; max-height:250px; overflow-y:auto; border:1px solid #eee; border-radius:5px;" id="menu-list"></div>
+    </div>
+
+    <div class="section">
+      <h3>💰 錢包與會員管理</h3>
+
+      <h4 style="margin: 10px 0 5px 0; font-size: 14px; color: #34495e;">儲值與扣款</h4>
+
+      <div class="form-group">
+        <select id="user-select" class="form-control">
+          <option value="">-- 請選擇會員 --</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="display:flex; gap:10px;">
+        <select id="topup-type" class="form-control" style="flex:1;">
+          <option value="add">➕ 儲值</option>
+          <option value="deduct">➖ 扣款</option>
+        </select>
+
+        <input type="number" id="topup-amount" class="form-control" placeholder="金額" style="flex:2;">
+      </div>
+
+      <div class="form-group">
+        <input type="text" id="topup-note" class="form-control" placeholder="備註">
+      </div>
+
+      <button class="btn btn-success" style="margin-bottom:20px;" onclick="submitTopUp()">執行帳務變更</button>
+
+      <hr style="border: 0; border-top: 1px dashed #ccc; margin-bottom: 15px;">
+
+      <h4 style="margin: 0 0 5px 0; font-size: 14px; color: #34495e;">更新會員稱呼</h4>
+
+      <div class="form-group">
+        <select id="edit-user-select" class="form-control">
+          <option value="">-- 請選擇會員 --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <input type="text" id="new-user-name" class="form-control" placeholder="輸入真實稱呼">
+      </div>
+
+      <button class="btn btn-orange" onclick="updateMember()">確認更新名稱</button>
+    </div>
+  </div>
+
+  <script>
+    const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxo41bcyyfmHkSV9hUDSmBwttT929G0_CQzVZ-Em_vsl0fwTrIgBclpVI3mqloX4l-0/exec";
+
+    let adminIdToken = "";
+    let globalMenus = [];
+    let dashboardTimer = null;
+    let isLoadingDashboard = false;
+
+    function escapeHTML(str) {
+      return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;"
+      }[tag] || tag));
+    }
+
+    function escapeJS(str) {
+      return (!str) ? "" : str.toString()
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "\\r");
+    }
+
+    async function callGAS(action, payload = {}) {
+      payload.action = action;
+      payload.idToken = adminIdToken;
+
+      const response = await fetch(GAS_API_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      return await response.json();
+    }
+
+    window.onload = function () {
+      liff.init({ liffId: BOSS_LIFF_ID }).then(() => {
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        adminIdToken = liff.getIDToken();
+
+        if (!adminIdToken) {
           document.getElementById("loading-layer").style.display = "none";
-          Swal.fire('LIFF 初始化失敗', '請確認 LIFF ID 與網路狀態。', 'error');
-        });
-      };
-
-      function getSelectedComboDrinkNames() {
-        let checkedDrinks = [];
-
-        document.querySelectorAll('input[name="promo-drinks"]:checked').forEach(cb => {
-          checkedDrinks.push(cb.value);
-        });
-
-        return checkedDrinks;
-      }
-
-      function refreshComboQtyText() {
-        let type = document.getElementById("promo-target-type").value;
-        let mode = document.getElementById("promo-mode").value;
-
-        let qtyInput = document.getElementById("promo-combo-qty");
-        let autoText = document.getElementById("promo-combo-auto-text");
-        let qtyLabel = document.getElementById("promo-combo-qty-label");
-
-        if (type === '指定組合' && mode === '組合價') {
-          let count = getSelectedComboDrinkNames().length;
-          qtyInput.style.display = "none";
-          qtyLabel.style.display = "none";
-          autoText.style.display = "inline-block";
-          autoText.innerText = count > 0 ? `已勾選 ${count} 杯為一組` : "請先勾選套餐品項";
-          qtyInput.value = count > 0 ? count : "";
-        } else {
-          qtyInput.style.display = "inline-block";
-          qtyLabel.style.display = "inline-block";
-          autoText.style.display = "none";
-        }
-      }
-
-      function updatePromoTargetUI() {
-        let type = document.getElementById("promo-target-type").value;
-        let nameSelect = document.getElementById("promo-target-name");
-        let multiGroup = document.getElementById("promo-multi-drinks-group");
-        let promoMode = document.getElementById("promo-mode");
-        let comboHint = document.getElementById("combo-hint");
-
-        if (type === '全館') {
-          nameSelect.style.display = 'none';
-          multiGroup.style.display = 'none';
-          comboHint.style.display = 'none';
-          updatePromoModeUI();
+          Swal.fire("驗證失敗", "無法取得 LINE ID Token，請重新開啟。", "error");
           return;
         }
 
-        if (type === '指定組合') {
-          nameSelect.style.display = 'none';
-          multiGroup.style.display = 'block';
-          comboHint.style.display = 'block';
+        callGAS("verifyAdmin").then(res => {
+          document.getElementById("loading-layer").style.display = "none";
 
-          // 指定組合套餐預設切成組合價
-          promoMode.value = '組合價';
+          if (res.success && res.isAdmin) {
+            document.getElementById("admin-layer").style.display = "block";
+            loadDashboardData();
 
-          let chkContainer = document.getElementById("promo-checkbox-list");
-          chkContainer.innerHTML = "";
+            if (dashboardTimer) {
+              clearInterval(dashboardTimer);
+            }
 
-          if (!globalMenus || globalMenus.length === 0) {
-            chkContainer.innerHTML = "<div style='color:#999;'>目前沒有菜單資料，請先新增商品。</div>";
+            dashboardTimer = setInterval(loadDashboardData, 10000);
           } else {
-            globalMenus
-              .filter(m => m.status === '上架')
-              .forEach(m => {
-                chkContainer.innerHTML += `
-                  <label class="checkbox-item">
-                    <input type="checkbox" name="promo-drinks" value="${escapeHTML(m.name)}" onchange="refreshComboQtyText()">
-                    <span>${escapeHTML(m.name)}</span>
-                  </label>`;
-              });
+            Swal.fire("拒絕存取", "您不是管理員", "error");
           }
+        }).catch(err => {
+          console.error(err);
+          document.getElementById("loading-layer").style.display = "none";
+          Swal.fire("連線失敗", "無法完成管理員驗證，請稍後再試。", "error");
+        });
+      }).catch(err => {
+        console.error(err);
+        document.getElementById("loading-layer").style.display = "none";
+        Swal.fire("LIFF 初始化失敗", "請確認 LIFF ID 與網路狀態。", "error");
+      });
+    };
 
-          updatePromoModeUI();
-          refreshComboQtyText();
-          return;
-        }
+    function getSelectedComboDrinkNames() {
+      let checkedDrinks = [];
 
-        comboHint.style.display = 'none';
-        multiGroup.style.display = 'none';
-        nameSelect.style.display = 'block';
-        nameSelect.innerHTML = '';
+      document.querySelectorAll('input[name="promo-drinks"]:checked').forEach(cb => {
+        checkedDrinks.push(cb.value);
+      });
 
-        if (type === '系列') {
-          let categories = [...new Set(globalMenus.map(m => m.category).filter(c => c))];
+      return checkedDrinks;
+    }
 
-          categories.forEach(c => {
-            nameSelect.innerHTML += `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`;
-          });
+    function refreshComboQtyText() {
+      let type = document.getElementById("promo-target-type").value;
+      let mode = document.getElementById("promo-mode").value;
+
+      let qtyInput = document.getElementById("promo-combo-qty");
+      let autoText = document.getElementById("promo-combo-auto-text");
+      let qtyLabel = document.getElementById("promo-combo-qty-label");
+
+      if (type === "指定組合" && mode === "組合價") {
+        let count = getSelectedComboDrinkNames().length;
+
+        qtyInput.style.display = "none";
+        qtyLabel.style.display = "none";
+        autoText.style.display = "inline-block";
+        autoText.innerText = count > 0 ? `已勾選 ${count} 杯為一組` : "請先勾選套餐品項";
+        qtyInput.value = count > 0 ? count : "";
+      } else {
+        qtyInput.style.display = "inline-block";
+        qtyLabel.style.display = "inline-block";
+        autoText.style.display = "none";
+      }
+    }
+
+    function updatePromoTargetUI() {
+      let type = document.getElementById("promo-target-type").value;
+      let nameSelect = document.getElementById("promo-target-name");
+      let multiGroup = document.getElementById("promo-multi-drinks-group");
+      let promoMode = document.getElementById("promo-mode");
+      let comboHint = document.getElementById("combo-hint");
+
+      if (type === "全館") {
+        nameSelect.style.display = "none";
+        multiGroup.style.display = "none";
+        comboHint.style.display = "none";
+        updatePromoModeUI();
+        return;
+      }
+
+      if (type === "指定組合") {
+        nameSelect.style.display = "none";
+        multiGroup.style.display = "block";
+        comboHint.style.display = "block";
+        promoMode.value = "組合價";
+
+        let chkContainer = document.getElementById("promo-checkbox-list");
+        chkContainer.innerHTML = "";
+
+        if (!globalMenus || globalMenus.length === 0) {
+          chkContainer.innerHTML = "<div style='color:#999;'>目前沒有菜單資料，請先新增商品。</div>";
         } else {
           globalMenus
-            .filter(m => m.status === '上架')
+            .filter(m => m.status === "上架")
             .forEach(m => {
-              nameSelect.innerHTML += `<option value="${escapeHTML(m.name)}">${escapeHTML(m.name)}</option>`;
+              chkContainer.innerHTML += `
+                <label class="checkbox-item">
+                  <input type="checkbox" name="promo-drinks" value="${escapeHTML(m.name)}" onchange="refreshComboQtyText()">
+                  <span>${escapeHTML(m.name)}</span>
+                </label>`;
             });
         }
 
         updatePromoModeUI();
-      }
-
-      function updatePromoModeUI() {
-        let mode = document.getElementById("promo-mode").value;
-        let targetType = document.getElementById("promo-target-type").value;
-
-        document.getElementById("promo-buy-free-ui").style.display = mode === '買X送Y' ? 'flex' : 'none';
-        document.getElementById("promo-combo-ui").style.display = mode === '組合價' ? 'flex' : 'none';
-
-        // 指定組合不建議用買X送Y，因為這裡的需求是固定套餐價
-        if (targetType === '指定組合' && mode !== '組合價') {
-          Swal.fire('提醒', '特定多品組合套餐建議使用「組合價」，系統已自動切換。', 'info');
-          document.getElementById("promo-mode").value = '組合價';
-          document.getElementById("promo-buy-free-ui").style.display = 'none';
-          document.getElementById("promo-combo-ui").style.display = 'flex';
-        }
-
         refreshComboQtyText();
+        return;
       }
 
-      function loadDashboardData() {
-        callGAS('getAdminDashboardData').then(res => {
-          if (!res.success) return;
+      comboHint.style.display = "none";
+      multiGroup.style.display = "none";
+      nameSelect.style.display = "block";
+      nameSelect.innerHTML = "";
 
-          globalMenus = res.data.menus || [];
+      if (type === "系列") {
+        let categories = [...new Set(globalMenus.map(m => m.category).filter(c => c))];
 
-          document.getElementById("current-store-status").innerText = `(${escapeHTML(res.data.storeStatus)})`;
-          document.getElementById("current-store-status").style.color = res.data.storeStatus === '營業中' ? '#2ecc71' : '#e74c3c';
-
-          let uHtml = '<option value="">-- 請選擇會員 --</option>';
-          res.data.users.forEach(user => {
-            uHtml += `<option value="${escapeHTML(user.userId)}">${escapeHTML(user.userName)}</option>`;
+        categories.forEach(c => {
+          nameSelect.innerHTML += `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`;
+        });
+      } else {
+        globalMenus
+          .filter(m => m.status === "上架")
+          .forEach(m => {
+            nameSelect.innerHTML += `<option value="${escapeHTML(m.name)}">${escapeHTML(m.name)}</option>`;
           });
-
-          let uBalHtml = '<option value="">-- 請選擇會員 --</option>';
-          res.data.users.forEach(user => {
-            uBalHtml += `<option value="${escapeHTML(user.userId)}">${escapeHTML(user.userName)} (餘額: $${user.balance})</option>`;
-          });
-
-          if (document.getElementById("user-select").value === "") {
-            document.getElementById("user-select").innerHTML = uBalHtml;
-          }
-
-          if (document.getElementById("edit-user-select").value === "") {
-            document.getElementById("edit-user-select").innerHTML = uHtml;
-          }
-
-          renderOrders(res.data.orders || []);
-          renderMenus(res.data.menus || []);
-          renderPromos(res.data.promos || []);
-
-          // 若目前停留在指定組合，刷新菜單後保持勾選區域可用
-          if (document.getElementById("promo-target-type").value === '指定組合') {
-            updatePromoTargetUI();
-          }
-
-        }).catch(e => console.log(e));
       }
 
-      function renderOrders(orders) {
-        var container = document.getElementById("orders-container");
+      updatePromoModeUI();
+    }
 
-        if (orders.length === 0) {
-          container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">目前無未處理訂單</div>';
+    function updatePromoModeUI() {
+      let mode = document.getElementById("promo-mode").value;
+      let targetType = document.getElementById("promo-target-type").value;
+
+      document.getElementById("promo-buy-free-ui").style.display = mode === "買X送Y" ? "flex" : "none";
+      document.getElementById("promo-combo-ui").style.display = mode === "組合價" ? "flex" : "none";
+
+      if (targetType === "指定組合" && mode !== "組合價") {
+        Swal.fire("提醒", "特定多品組合套餐建議使用「組合價」，系統已自動切換。", "info");
+        document.getElementById("promo-mode").value = "組合價";
+        document.getElementById("promo-buy-free-ui").style.display = "none";
+        document.getElementById("promo-combo-ui").style.display = "flex";
+      }
+
+      refreshComboQtyText();
+    }
+
+    function loadDashboardData() {
+      if (isLoadingDashboard) return;
+
+      isLoadingDashboard = true;
+
+      callGAS("getAdminDashboardData").then(res => {
+        if (!res.success) {
+          console.warn(res.message || "後台資料讀取失敗");
           return;
         }
 
-        container.innerHTML = "";
+        globalMenus = res.data.menus || [];
 
-        orders.forEach(order => {
-          let statusClass = order.status === '未處理' ? 'status-new' : (order.status === '已接單' ? 'status-accepted' : 'status-ready');
-          let statusBadge = order.status === '未處理' ? '🔴 新訂單' : (order.status === '已接單' ? '🟠 製作中' : '🔵 可取餐');
-          let actionBtns = "";
+        document.getElementById("current-store-status").innerText = `(${escapeHTML(res.data.storeStatus)})`;
+        document.getElementById("current-store-status").style.color =
+          res.data.storeStatus === "營業中" ? "#2ecc71" : "#e74c3c";
 
-          if (order.status === '未處理') {
-            actionBtns = `
-              <button class="btn-action" style="background:#f39c12;" onclick="handleOrder('${escapeJS(order.id)}', 'accept')">接單</button>
-              <button class="btn-action btn-gray" onclick="handleOrder('${escapeJS(order.id)}', 'cancel')">取消退款</button>`;
-          } else if (order.status === '已接單') {
-            actionBtns = `<button class="btn-action" style="background:#3498db;" onclick="handleOrder('${escapeJS(order.id)}', 'ready')">製作完成</button>`;
-          } else if (order.status === '製作完成') {
-            actionBtns = `<button class="btn-action" style="background:#2ecc71;" onclick="handleOrder('${escapeJS(order.id)}', 'complete')">💵 完成結帳</button>`;
-          }
+        renderUserSelects(res.data.users || []);
+        renderOrders(res.data.orders || []);
+        renderMenus(res.data.menus || []);
+        renderPromos(res.data.promos || []);
 
-          container.innerHTML += `
-            <div class="order-card ${statusClass}">
-              <div class="card-header">
-                <span>${escapeHTML(order.time)}</span>
-                <span style="font-weight:bold;">${statusBadge}</span>
-              </div>
-              <div class="card-customer">🙋‍♂️ ${escapeHTML(order.userName)}</div>
-              <div class="card-items">${escapeHTML(order.content)}</div>
-              <div class="card-footer">
-                <div class="card-price">
-                  $${order.total}
-                  <span style="font-size:13px; color:#7f8c8d;">(${escapeHTML(order.payMethod)})</span>
-                </div>
-                <div class="action-btns">${actionBtns}</div>
-              </div>
-            </div>`;
-        });
+        if (document.getElementById("promo-target-type").value === "指定組合") {
+          updatePromoTargetUI();
+        }
+      }).catch(e => {
+        console.error(e);
+      }).finally(() => {
+        isLoadingDashboard = false;
+      });
+    }
+
+    function renderUserSelects(users) {
+      const currentWalletUser = document.getElementById("user-select").value;
+      const currentEditUser = document.getElementById("edit-user-select").value;
+
+      let walletHtml = '<option value="">-- 請選擇會員 --</option>';
+      let editHtml = '<option value="">-- 請選擇會員 --</option>';
+
+      users.forEach(user => {
+        walletHtml += `<option value="${escapeHTML(user.userId)}">${escapeHTML(user.userName)} 餘額: $${Number(user.balance || 0)}</option>`;
+        editHtml += `<option value="${escapeHTML(user.userId)}">${escapeHTML(user.userName)}</option>`;
+      });
+
+      document.getElementById("user-select").innerHTML = walletHtml;
+      document.getElementById("edit-user-select").innerHTML = editHtml;
+
+      document.getElementById("user-select").value = currentWalletUser;
+      document.getElementById("edit-user-select").value = currentEditUser;
+    }
+
+    function renderOrders(orders) {
+      var container = document.getElementById("orders-container");
+
+      if (orders.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">目前無未處理訂單</div>';
+        return;
       }
 
-      function renderMenus(menus) {
-        let menuHtml = "";
+      container.innerHTML = "";
 
-        menus.forEach(m => {
-          let safeName = escapeHTML(m.name);
-          let safeNameJS = escapeJS(m.name);
+      orders.forEach(order => {
+        let statusClass = order.status === "未處理"
+          ? "status-new"
+          : order.status === "已接單"
+            ? "status-accepted"
+            : "status-ready";
 
-          let btn = m.status === '上架'
-            ? `<button class="btn-action btn-red" onclick="toggleMenu('${safeNameJS}', '下架')">下架</button>`
-            : `<button class="btn-action" style="background:#2ecc71;" onclick="toggleMenu('${safeNameJS}', '上架')">重新上架</button>`;
+        let statusBadge = order.status === "未處理"
+          ? "🔴 新訂單"
+          : order.status === "已接單"
+            ? "🟠 製作中"
+            : "🔵 可取餐";
 
-          let sTag = m.status === '上架' ? '' : '<span style="color:#e74c3c;font-size:12px;">(已下架)</span>';
+        let actionBtns = "";
 
-          menuHtml += `
-            <div class="list-item">
-              <span>🍵 [${escapeHTML(m.category)}] ${safeName} ${sTag}</span>
-              ${btn}
-            </div>`;
-        });
-
-        document.getElementById("menu-list").innerHTML = menuHtml || "<div style='padding:10px;text-align:center;'>無商品資料</div>";
-      }
-
-      function renderPromos(promos) {
-        let promoHtml = "";
-
-        promos.forEach(p => {
-          let safeIdJS = escapeJS(p.id);
-
-          let btn = p.status === '啟用'
-            ? `<button class="btn-action btn-gray" onclick="togglePromo('${safeIdJS}', '停用')">停用</button>`
-            : `<button class="btn-action" style="background:#2ecc71;" onclick="togglePromo('${safeIdJS}', '啟用')">重新啟用</button>`;
-
-          let itemsFormatted = p.targetType === '指定組合'
-            ? String(p.targetName || '').split(',').map(x => x.trim()).filter(x => x).join('、')
-            : p.targetName;
-
-          let tag = p.targetType === '全館'
-            ? '全館'
-            : `[${p.targetType}] ${itemsFormatted}`;
-
-          let cond = "";
-
-          if (p.targetType === '指定組合' && p.promoMode === '組合價') {
-            cond = `套餐價 $${p.comboPrice}`;
-          } else if (p.promoMode === '組合價') {
-            cond = `任選${p.buyQty}杯 $${p.comboPrice}`;
-          } else {
-            cond = `買${p.buyQty}送${p.freeQty}`;
-          }
-
-          let sizeTag = p.sizeLimit !== '不限'
-            ? ` <span style="color:#2980b9;">[限${escapeHTML(p.sizeLimit)}杯]</span>`
-            : '';
-
-          let dDesc = p.desc
-            ? ` <span style="color:#7f8c8d;">(${escapeHTML(p.desc)})</span>`
-            : '';
-
-          let sTag = p.status === '啟用'
-            ? ''
-            : '<span style="color:#e74c3c;font-size:12px;">(已停用)</span>';
-
-          promoHtml += `
-            <div class="list-item">
-              <span style="line-height:1.5;">
-                🎉 <b>${escapeHTML(tag)}</b>
-                ${escapeHTML(cond)}${sizeTag}${dDesc} ${sTag}
-              </span>
-              ${btn}
-            </div>`;
-        });
-
-        document.getElementById("promo-list").innerHTML = promoHtml || "<div style='padding:10px;text-align:center;'>無活動紀錄</div>";
-      }
-
-      function toggleStore(status) {
-        Swal.fire({
-          title: `確定要將門市設為「${status}」嗎？`,
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: '確定',
-          cancelButtonText: '取消'
-        }).then((r) => {
-          if (r.isConfirmed) {
-            callGAS('adminToggleStore', { status: status }).then(res => {
-              Swal.fire('成功', res.message, 'success');
-              loadDashboardData();
-            });
-          }
-        });
-      }
-
-      function addMenu() {
-        let c = document.getElementById("menu-cat").value.trim();
-        let n = document.getElementById("menu-name").value.trim();
-        let pl = document.getElementById("menu-pl").value;
-        let pxl = document.getElementById("menu-pxl").value;
-
-        if (!c || !n || !pl) {
-          return Swal.fire('資料不完整', '請填寫分類、品名與 L 杯價格', 'warning');
+        if (order.status === "未處理") {
+          actionBtns = `
+            <button class="btn-action" style="background:#f39c12;" onclick="handleOrder('${escapeJS(order.id)}', 'accept')">接單</button>
+            <button class="btn-action btn-gray" onclick="handleOrder('${escapeJS(order.id)}', 'cancel')">取消退款</button>`;
+        } else if (order.status === "已接單") {
+          actionBtns = `<button class="btn-action" style="background:#3498db;" onclick="handleOrder('${escapeJS(order.id)}', 'ready')">製作完成</button>`;
+        } else if (order.status === "製作完成") {
+          actionBtns = `<button class="btn-action" style="background:#2ecc71;" onclick="handleOrder('${escapeJS(order.id)}', 'complete')">💵 完成結帳</button>`;
         }
 
-        callGAS('adminAddMenuItem', {
-          category: c,
-          name: n,
-          priceL: pl,
-          priceXL: pxl
-        }).then(res => {
-          if (res.success) {
-            Swal.fire('新增成功', '商品已成功上架！', 'success');
-            document.getElementById("menu-name").value = '';
-            document.getElementById("menu-pl").value = '';
-            document.getElementById("menu-pxl").value = '';
-            loadDashboardData();
-          } else {
-            Swal.fire('新增失敗', res.message || '請稍後再試', 'error');
-          }
-        });
-      }
-      
-      function toggleMenu(name, status) {
-        Swal.fire({
-          title: `確定要把「${name}」${status}嗎？`,
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: '確定',
-          cancelButtonText: '取消'
-        }).then((r) => {
-          if (r.isConfirmed) {
-            callGAS('adminToggleMenuItem', {
-              name: name,
-              status: status
-            }).then(res => {
-              if (res.success) {
-                Swal.fire('成功', `已成功${status}`, 'success');
-                loadDashboardData();
-              } else {
-                Swal.fire('錯誤', res.message || '操作失敗', 'error');
-              }
-            });
-          }
-        });
-      }
+        container.innerHTML += `
+          <div class="order-card ${statusClass}">
+            <div class="card-header">
+              <span>${escapeHTML(order.time)}</span>
+              <span style="font-weight:bold;">${statusBadge}</span>
+            </div>
 
-      function addPromo() {
-        let tType = document.getElementById("promo-target-type").value;
-        let pMode = document.getElementById("promo-mode").value;
-        let desc = document.getElementById("promo-desc").value.trim();
-        let sizeLimit = document.getElementById("promo-size").value;
+            <div class="card-customer">🙋‍♂️ ${escapeHTML(order.userName)}</div>
 
-        let tName = "";
+            <div class="card-items">${escapeHTML(order.content)}</div>
 
-        if (tType === '指定組合') {
-          let checkedDrinks = getSelectedComboDrinkNames();
+            <div class="card-footer">
+              <div class="card-price">
+                $${Number(order.total || 0)}
+                <span style="font-size:13px; color:#7f8c8d;">(${escapeHTML(order.payMethod)})</span>
+              </div>
 
-          if (checkedDrinks.length === 0) {
-            return Swal.fire('設定錯誤', '請至少勾選一項組合內含的飲料！', 'warning');
-          }
+              <div class="action-btns">${actionBtns}</div>
+            </div>
+          </div>`;
+      });
+    }
 
-          if (pMode !== '組合價') {
-            return Swal.fire('設定錯誤', '特定多品組合套餐請使用「組合價」模式。', 'warning');
-          }
+    function renderMenus(menus) {
+      let menuHtml = "";
 
-          tName = checkedDrinks.join(',');
-        } else if (tType === '全館') {
-          tName = "";
+      menus.forEach(m => {
+        let safeName = escapeHTML(m.name);
+        let safeNameJS = escapeJS(m.name);
+
+        let btn = m.status === "上架"
+          ? `<button class="btn-action btn-red" onclick="toggleMenu('${safeNameJS}', '下架')">下架</button>`
+          : `<button class="btn-action" style="background:#2ecc71;" onclick="toggleMenu('${safeNameJS}', '上架')">重新上架</button>`;
+
+        let sTag = m.status === "上架"
+          ? ""
+          : '<span style="color:#e74c3c;font-size:12px;">已下架</span>';
+
+        menuHtml += `
+          <div class="list-item">
+            <span>🍵 [${escapeHTML(m.category)}] ${safeName} ${sTag}</span>
+            ${btn}
+          </div>`;
+      });
+
+      document.getElementById("menu-list").innerHTML =
+        menuHtml || "<div style='padding:10px;text-align:center;'>無商品資料</div>";
+    }
+
+    function renderPromos(promos) {
+      let promoHtml = "";
+
+      promos.forEach(p => {
+        let safeIdJS = escapeJS(p.id);
+
+        let btn = p.status === "啟用"
+          ? `<button class="btn-action btn-gray" onclick="togglePromo('${safeIdJS}', '停用')">停用</button>`
+          : `<button class="btn-action" style="background:#2ecc71;" onclick="togglePromo('${safeIdJS}', '啟用')">重新啟用</button>`;
+
+        let itemsFormatted = p.targetType === "指定組合"
+          ? String(p.targetName || "").split(",").map(x => x.trim()).filter(x => x).join("、")
+          : p.targetName;
+
+        let tag = p.targetType === "全館"
+          ? "全館"
+          : `[${p.targetType}] ${itemsFormatted}`;
+
+        let cond = "";
+
+        if (p.targetType === "指定組合" && p.promoMode === "組合價") {
+          cond = `套餐價 $${p.comboPrice}`;
+        } else if (p.promoMode === "組合價") {
+          cond = `任選${p.buyQty}杯 $${p.comboPrice}`;
         } else {
-          tName = document.getElementById("promo-target-name").value;
-
-          if (!tName) {
-            return Swal.fire('資料不完整', '請選擇活動目標。', 'warning');
-          }
+          cond = `買${p.buyQty}送${p.freeQty}`;
         }
 
-        let bQty = pMode === '買X送Y'
-          ? document.getElementById("promo-buy").value
-          : document.getElementById("promo-combo-qty").value;
+        let sizeTag = p.sizeLimit !== "不限"
+          ? ` <span style="color:#2980b9;">[限${escapeHTML(p.sizeLimit)}杯]</span>`
+          : "";
 
-        let fQty = document.getElementById("promo-free").value;
-        let cPrice = document.getElementById("promo-combo-price").value;
+        let dDesc = p.desc
+          ? ` <span style="color:#7f8c8d;">${escapeHTML(p.desc)}</span>`
+          : "";
 
-        // 特定多品組合套餐：杯數由勾選數量自動決定
-        if (tType === '指定組合' && pMode === '組合價') {
-          bQty = tName.split(',').filter(x => x.trim()).length;
-          fQty = 0;
-        }
+        let sTag = p.status === "啟用"
+          ? ""
+          : '<span style="color:#e74c3c;font-size:12px;">已停用</span>';
 
-        if (pMode === '買X送Y') {
-          if (!bQty || !fQty) {
-            return Swal.fire('資料不完整', '請填寫買幾送幾。', 'warning');
-          }
+        promoHtml += `
+          <div class="list-item">
+            <span style="line-height:1.5;">
+              🎉 <b>${escapeHTML(tag)}</b>
+              ${escapeHTML(cond)}${sizeTag}${dDesc} ${sTag}
+            </span>
+            ${btn}
+          </div>`;
+      });
 
-          if (Number(bQty) <= 0 || Number(fQty) <= 0) {
-            return Swal.fire('資料錯誤', '買幾送幾的數量必須大於 0。', 'warning');
-          }
-        }
+      document.getElementById("promo-list").innerHTML =
+        promoHtml || "<div style='padding:10px;text-align:center;'>無活動紀錄</div>";
+    }
 
-        if (pMode === '組合價') {
-          if (!cPrice) {
-            return Swal.fire('資料不完整', '請填寫套餐價格。', 'warning');
-          }
+    function toggleStore(status) {
+      Swal.fire({
+        title: `確定要將門市設為「${status}」嗎？`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "確定",
+        cancelButtonText: "取消"
+      }).then(r => {
+        if (!r.isConfirmed) return;
 
-          if (Number(cPrice) <= 0) {
-            return Swal.fire('資料錯誤', '套餐價格必須大於 0。', 'warning');
-          }
-
-          if (tType !== '指定組合' && (!bQty || Number(bQty) <= 0)) {
-            return Swal.fire('資料不完整', '請填寫任選幾杯。', 'warning');
-          }
-        }
-
-        callGAS('adminAddPromo', {
-          desc: desc,
-          targetType: tType,
-          targetName: tName,
-          promoMode: pMode,
-          buyQty: bQty,
-          freeQty: fQty,
-          comboPrice: cPrice,
-          sizeLimit: sizeLimit
-        }).then(res => {
+        callGAS("adminToggleStore", { status: status }).then(res => {
           if (res.success) {
-            Swal.fire('成功', '活動已建立並啟用！', 'success');
-
-            document.getElementById("promo-desc").value = "";
-            document.getElementById("promo-buy").value = "";
-            document.getElementById("promo-free").value = "";
-            document.getElementById("promo-combo-qty").value = "";
-            document.getElementById("promo-combo-price").value = "";
-
-            document.querySelectorAll('input[name="promo-drinks"]:checked').forEach(cb => {
-              cb.checked = false;
-            });
-
-            refreshComboQtyText();
+            Swal.fire("成功", res.message || "狀態已更新", "success");
             loadDashboardData();
           } else {
-            Swal.fire('建立失敗', res.message || '活動建立失敗', 'error');
+            Swal.fire("錯誤", res.message || "操作失敗", "error");
           }
         }).catch(() => {
-          Swal.fire('連線失敗', '無法建立活動，請稍後再試。', 'error');
+          Swal.fire("連線失敗", "請稍後再試。", "error");
         });
+      });
+    }
+
+    function addMenu() {
+      let c = document.getElementById("menu-cat").value.trim();
+      let n = document.getElementById("menu-name").value.trim();
+      let pl = document.getElementById("menu-pl").value;
+      let pxl = document.getElementById("menu-pxl").value;
+
+      if (!c || !n || !pl) {
+        return Swal.fire("資料不完整", "請填寫分類、品名與 L 杯價格", "warning");
       }
 
-      function togglePromo(id, status) {
-        Swal.fire({
-          title: `確定要${status}這個活動嗎？`,
-          text: status === '停用' ? '停用後，消費者端不會再看到此活動。' : '',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: '確定',
-          cancelButtonText: '取消'
-        }).then((r) => {
-          if (r.isConfirmed) {
-            callGAS('adminTogglePromo', {
-              promoId: id,
-              status: status
-            }).then(res => {
-              if (res.success) {
-                Swal.fire('成功', `活動已${status}`, 'success');
-                loadDashboardData();
-              } else {
-                Swal.fire('錯誤', res.message || '操作失敗', 'error');
-              }
-            });
-          }
-        });
+      if (Number(pl) <= 0 && Number(pxl || 0) <= 0) {
+        return Swal.fire("資料錯誤", "至少要有一種杯型價格大於 0", "warning");
       }
 
-      function submitTopUp() {
-        let u = document.getElementById("user-select").value;
-        let a = document.getElementById("topup-amount").value;
-        let t = document.getElementById("topup-type").value;
-        let n = document.getElementById("topup-note").value;
+      callGAS("adminAddMenuItem", {
+        category: c,
+        name: n,
+        priceL: pl,
+        priceXL: pxl
+      }).then(res => {
+        if (res.success) {
+          Swal.fire("新增成功", "商品已成功上架！", "success");
 
-        if (!u || !a) {
-          return Swal.fire('錯誤', '請選擇會員與金額', 'warning');
-        }
+          document.getElementById("menu-name").value = "";
+          document.getElementById("menu-pl").value = "";
+          document.getElementById("menu-pxl").value = "";
 
-        if (Number(a) <= 0) {
-          return Swal.fire('錯誤', '金額必須大於 0', 'warning');
-        }
-
-        Swal.fire({
-          title: '確認帳務操作',
-          text: `確定要執行嗎？`,
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: '確定',
-          cancelButtonText: '取消'
-        }).then((r) => {
-          if (r.isConfirmed) {
-            callGAS('adminUpdateWallet', {
-              targetUserId: u,
-              amount: a,
-              type: t,
-              note: n
-            }).then(res => {
-              if (res.success) {
-                Swal.fire('成功', res.message, 'success');
-                document.getElementById("topup-amount").value = "";
-                document.getElementById("topup-note").value = "";
-                document.getElementById("user-select").value = "";
-                loadDashboardData();
-              } else {
-                Swal.fire('錯誤', res.message, 'error');
-              }
-            });
-          }
-        });
-      }
-
-      function updateMember() {
-        let u = document.getElementById("edit-user-select").value;
-        let n = document.getElementById("new-user-name").value.trim();
-
-        if (!u || !n) {
-          return Swal.fire('錯誤', '請選擇會員與新稱呼', 'warning');
-        }
-
-        Swal.fire({
-          title: '確認變更名稱',
-          text: `確定要更新他的名字嗎？`,
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: '確定',
-          cancelButtonText: '取消'
-        }).then((r) => {
-          if (r.isConfirmed) {
-            callGAS('updateMemberName', {
-              targetUserId: u,
-              newName: n
-            }).then(res => {
-              if (res.success) {
-                Swal.fire('成功', '會員稱呼已全面更新', 'success');
-                document.getElementById("new-user-name").value = "";
-                document.getElementById("edit-user-select").value = "";
-                document.getElementById("user-select").innerHTML = "";
-                document.getElementById("edit-user-select").innerHTML = "";
-                loadDashboardData();
-              } else {
-                Swal.fire('錯誤', res.message || '更新失敗', 'error');
-              }
-            });
-          }
-        });
-      }
-
-      function handleOrder(orderId, action) {
-        if (action === 'cancel') {
-          Swal.fire({
-            title: '確定要取消這筆訂單嗎？',
-            text: '若為餘額付款將會自動退款！',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#e74c3c',
-            confirmButtonText: '確定取消',
-            cancelButtonText: '返回'
-          }).then((r) => {
-            if (r.isConfirmed) {
-              callGAS('processOrderAction', {
-                orderId: orderId,
-                orderAction: action
-              }).then(res => {
-                if (res.success) {
-                  Swal.fire('成功', res.message, 'success');
-                  loadDashboardData();
-                } else {
-                  Swal.fire('錯誤', res.message, 'error');
-                }
-              });
-            }
-          });
+          loadDashboardData();
         } else {
-          callGAS('processOrderAction', {
+          Swal.fire("新增失敗", res.message || "請稍後再試", "error");
+        }
+      }).catch(() => {
+        Swal.fire("連線失敗", "無法新增商品，請稍後再試。", "error");
+      });
+    }
+
+    function toggleMenu(name, status) {
+      Swal.fire({
+        title: `確定要把「${name}」${status}嗎？`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "確定",
+        cancelButtonText: "取消"
+      }).then(r => {
+        if (!r.isConfirmed) return;
+
+        callGAS("adminToggleMenuItem", {
+          name: name,
+          status: status
+        }).then(res => {
+          if (res.success) {
+            Swal.fire("成功", `已成功${status}`, "success");
+            loadDashboardData();
+          } else {
+            Swal.fire("錯誤", res.message || "操作失敗", "error");
+          }
+        }).catch(() => {
+          Swal.fire("連線失敗", "請稍後再試。", "error");
+        });
+      });
+    }
+
+    function addPromo() {
+      let tType = document.getElementById("promo-target-type").value;
+      let pMode = document.getElementById("promo-mode").value;
+      let desc = document.getElementById("promo-desc").value.trim();
+      let sizeLimit = document.getElementById("promo-size").value;
+
+      let tName = "";
+
+      if (tType === "指定組合") {
+        let checkedDrinks = getSelectedComboDrinkNames();
+
+        if (checkedDrinks.length === 0) {
+          return Swal.fire("設定錯誤", "請至少勾選一項組合內含的飲料！", "warning");
+        }
+
+        if (pMode !== "組合價") {
+          return Swal.fire("設定錯誤", "特定多品組合套餐請使用「組合價」模式。", "warning");
+        }
+
+        tName = checkedDrinks.join(",");
+      } else if (tType === "全館") {
+        tName = "";
+      } else {
+        tName = document.getElementById("promo-target-name").value;
+
+        if (!tName) {
+          return Swal.fire("資料不完整", "請選擇活動目標。", "warning");
+        }
+      }
+
+      let bQty = pMode === "買X送Y"
+        ? document.getElementById("promo-buy").value
+        : document.getElementById("promo-combo-qty").value;
+
+      let fQty = document.getElementById("promo-free").value;
+      let cPrice = document.getElementById("promo-combo-price").value;
+
+      if (tType === "指定組合" && pMode === "組合價") {
+        bQty = tName.split(",").filter(x => x.trim()).length;
+        fQty = 0;
+      }
+
+      if (pMode === "買X送Y") {
+        if (!bQty || !fQty) {
+          return Swal.fire("資料不完整", "請填寫買幾送幾。", "warning");
+        }
+
+        if (Number(bQty) <= 0 || Number(fQty) <= 0) {
+          return Swal.fire("資料錯誤", "買幾送幾的數量必須大於 0。", "warning");
+        }
+      }
+
+      if (pMode === "組合價") {
+        if (!cPrice) {
+          return Swal.fire("資料不完整", "請填寫套餐價格。", "warning");
+        }
+
+        if (Number(cPrice) <= 0) {
+          return Swal.fire("資料錯誤", "套餐價格必須大於 0。", "warning");
+        }
+
+        if (tType !== "指定組合" && (!bQty || Number(bQty) <= 0)) {
+          return Swal.fire("資料不完整", "請填寫任選幾杯。", "warning");
+        }
+      }
+
+      callGAS("adminAddPromo", {
+        desc: desc,
+        targetType: tType,
+        targetName: tName,
+        promoMode: pMode,
+        buyQty: bQty,
+        freeQty: fQty,
+        comboPrice: cPrice,
+        sizeLimit: sizeLimit
+      }).then(res => {
+        if (res.success) {
+          Swal.fire("成功", "活動已建立並啟用！", "success");
+
+          document.getElementById("promo-desc").value = "";
+          document.getElementById("promo-buy").value = "";
+          document.getElementById("promo-free").value = "";
+          document.getElementById("promo-combo-qty").value = "";
+          document.getElementById("promo-combo-price").value = "";
+
+          document.querySelectorAll('input[name="promo-drinks"]:checked').forEach(cb => {
+            cb.checked = false;
+          });
+
+          refreshComboQtyText();
+          loadDashboardData();
+        } else {
+          Swal.fire("建立失敗", res.message || "活動建立失敗", "error");
+        }
+      }).catch(() => {
+        Swal.fire("連線失敗", "無法建立活動，請稍後再試。", "error");
+      });
+    }
+
+    function togglePromo(id, status) {
+      Swal.fire({
+        title: `確定要${status}這個活動嗎？`,
+        text: status === "停用" ? "停用後，消費者端不會再看到此活動。" : "",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "確定",
+        cancelButtonText: "取消"
+      }).then(r => {
+        if (!r.isConfirmed) return;
+
+        callGAS("adminTogglePromo", {
+          promoId: id,
+          status: status
+        }).then(res => {
+          if (res.success) {
+            Swal.fire("成功", `活動已${status}`, "success");
+            loadDashboardData();
+          } else {
+            Swal.fire("錯誤", res.message || "操作失敗", "error");
+          }
+        }).catch(() => {
+          Swal.fire("連線失敗", "請稍後再試。", "error");
+        });
+      });
+    }
+
+    function submitTopUp() {
+      let u = document.getElementById("user-select").value;
+      let a = document.getElementById("topup-amount").value;
+      let t = document.getElementById("topup-type").value;
+      let n = document.getElementById("topup-note").value;
+
+      if (!u || !a) {
+        return Swal.fire("錯誤", "請選擇會員與金額", "warning");
+      }
+
+      if (Number(a) <= 0) {
+        return Swal.fire("錯誤", "金額必須大於 0", "warning");
+      }
+
+      Swal.fire({
+        title: "確認帳務操作",
+        text: "確定要執行嗎？",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "確定",
+        cancelButtonText: "取消"
+      }).then(r => {
+        if (!r.isConfirmed) return;
+
+        callGAS("adminUpdateWallet", {
+          targetUserId: u,
+          amount: a,
+          type: t,
+          note: n
+        }).then(res => {
+          if (res.success) {
+            Swal.fire("成功", res.message, "success");
+
+            document.getElementById("topup-amount").value = "";
+            document.getElementById("topup-note").value = "";
+            document.getElementById("user-select").value = "";
+
+            loadDashboardData();
+          } else {
+            Swal.fire("錯誤", res.message || "操作失敗", "error");
+          }
+        }).catch(() => {
+          Swal.fire("連線失敗", "請稍後再試。", "error");
+        });
+      });
+    }
+
+    function updateMember() {
+      let u = document.getElementById("edit-user-select").value;
+      let n = document.getElementById("new-user-name").value.trim();
+
+      if (!u || !n) {
+        return Swal.fire("錯誤", "請選擇會員與新稱呼", "warning");
+      }
+
+      Swal.fire({
+        title: "確認變更名稱",
+        text: "確定要更新他的名字嗎？",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "確定",
+        cancelButtonText: "取消"
+      }).then(r => {
+        if (!r.isConfirmed) return;
+
+        callGAS("updateMemberName", {
+          targetUserId: u,
+          newName: n
+        }).then(res => {
+          if (res.success) {
+            Swal.fire("成功", "會員稱呼已更新", "success");
+
+            document.getElementById("new-user-name").value = "";
+            document.getElementById("edit-user-select").value = "";
+
+            loadDashboardData();
+          } else {
+            Swal.fire("錯誤", res.message || "更新失敗", "error");
+          }
+        }).catch(() => {
+          Swal.fire("連線失敗", "請稍後再試。", "error");
+        });
+      });
+    }
+
+    function handleOrder(orderId, action) {
+      if (action === "cancel") {
+        Swal.fire({
+          title: "確定要取消這筆訂單嗎？",
+          text: "若為餘額付款將會自動退款！",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#e74c3c",
+          confirmButtonText: "確定取消",
+          cancelButtonText: "返回"
+        }).then(r => {
+          if (!r.isConfirmed) return;
+
+          callGAS("processOrderAction", {
             orderId: orderId,
             orderAction: action
           }).then(res => {
             if (res.success) {
+              Swal.fire("成功", res.message, "success");
               loadDashboardData();
             } else {
-              Swal.fire('錯誤', res.message, 'error');
+              Swal.fire("錯誤", res.message || "操作失敗", "error");
             }
+          }).catch(() => {
+            Swal.fire("連線失敗", "請稍後再試。", "error");
           });
-        }
+        });
+
+        return;
       }
-    </script>
-  </body>
+
+      callGAS("processOrderAction", {
+        orderId: orderId,
+        orderAction: action
+      }).then(res => {
+        if (res.success) {
+          loadDashboardData();
+        } else {
+          Swal.fire("錯誤", res.message || "操作失敗", "error");
+        }
+      }).catch(() => {
+        Swal.fire("連線失敗", "請稍後再試。", "error");
+      });
+    }
+  </script>
+</body>
 </html>
