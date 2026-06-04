@@ -111,7 +111,7 @@
   <script>
     // ⚠️ 記得替換成你最新的 GAS 網址
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxo41bcyyfmHkSV9hUDSmBwttT929G0_CQzVZ-Em_vsl0fwTrIgBclpVI3mqloX4l-0/exec";
+    const GAS_API_URL = "https://quiet-sun-3888.wangbens0829.workers.dev/";
 
     let idToken = ""; let lineProfile = null; let cart = []; let currentOrders = [];
     let menuData = []; let optionsData = { sweetness: [], ice: [], toppings: [] }; let promosData = []; let storeStatus = "營業中";
@@ -121,12 +121,32 @@
     function escapeJS(str) { return (!str) ? "" : str.toString().replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r"); }
 
     async function callGAS(action, payload = {}, options = {}) {
-      payload.action = action; payload.idToken = idToken;
-      if (options.loading) Swal.fire({ title: options.loadingText || "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      payload.action = action;
+      payload.idToken = idToken;
+
+      if (options.loading) {
+        Swal.fire({
+          title: options.loadingText || "處理中...",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+      }
+
       try {
-        const res = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(payload) });
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": "abc123"   // 🔑 必須和 Worker 一樣
+          },
+          body: JSON.stringify(payload)
+        });
+
         return await res.json();
-      } catch (err) { return { success: false, message: "連線失敗，請稍後再試。" }; }
+
+      } catch (err) {
+        return { success: false, message: "連線失敗，請稍後再試。" };
+      }
     }
 
     window.onload = async function () {
