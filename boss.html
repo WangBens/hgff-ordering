@@ -21,16 +21,17 @@
     .btn-orange { background-color: #f39c12; }
     .btn-blue { background-color: #3498db; }
     
-    .order-card { background: #fafbfc; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 6px solid #ccc; }
+    /* 訂單看板優化：更緊湊、省空間 */
+    .order-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px; border-left: 5px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .status-new { border-left-color: #e74c3c; }
     .status-accepted { border-left-color: #f39c12; }
     .status-ready { border-left-color: #3498db; }
     
-    .card-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: #7f8c8d; }
-    .card-customer { font-size: 16px; font-weight: bold; color: #2c3e50; }
-    .card-items { font-size: 15px; margin: 10px 0; line-height: 1.5; white-space: pre-line; background: #fff; padding: 10px; border-radius: 5px; border: 1px dashed #ccc; }
-    .action-btns { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; margin-top:10px;}
-    .btn-action { flex: 1; padding: 10px; border: none; border-radius: 5px; font-weight: bold; color: white; cursor: pointer; font-size: 14px; text-align: center; }
+    .card-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; color: #7f8c8d; }
+    .card-customer { font-size: 14px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; }
+    .card-items { margin: 0 0 10px 0; background: #fafbfc; padding: 5px 8px; border-radius: 6px; border: 1px solid #eee; }
+    .action-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn-action { padding: 6px 14px; border: none; border-radius: 5px; font-weight: bold; color: white; cursor: pointer; font-size: 13px; }
     .btn-gray { background: #95a5a6; }
     
     .list-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }
@@ -129,25 +130,38 @@
   </div>
 
   <script>
-    // ⚠️ 記得替換成你最新的 GAS 網址 ⚠️
+    // ⚠️ 請確保這是你最新的 GAS 網址 ⚠️
     const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; 
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw_WDlljEiUfB9KenD8Hyt98X3-3jROh3lpHjRdI143OIIRB9iWwMttvdRZ_ESv5TTW/exec"; 
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzr1_m2TvvBynTaUIXRATA6XMOjXp5wk6w9IY6D-FbkWuImo_NTyku6vPpyR1-jGooJ/exec"; 
     
     let adminIdToken = ""; let globalMenus = []; let myLineUserId = "";
 
     function escapeHTML(str) { return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
-    async function callGAS(action, payload = {}) { 
-      payload.action = action; payload.idToken = adminIdToken; 
+    
+    async function callGAS(action, payload = {}) {
+      payload.action = action;
+      payload.idToken = adminIdToken;
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-      const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) }); 
-      return await response.json(); 
+
+      const adminActions = ["getAdminDashboardData", "adminUpdateWallet", "updateMemberName", "processOrderAction", "adminToggleStore", "adminAddMenuItem", "adminToggleMenuItem", "adminAddPromo", "adminTogglePromo"];
+      if (adminActions.includes(action)) { payload.adminKey = "my_super_secret_987654"; }
+
+      try {
+        const response = await fetch(GAS_API_URL, { method: 'POST', headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        return await response.json();
+      } catch (err) {
+        console.error("API錯誤", err); Swal.fire("錯誤", "伺服器連線失敗", "error"); return { success: false };
+      }
     }
 
     window.onload = function() {
       liff.init({ liffId: BOSS_LIFF_ID }).then(() => {
         if (!liff.isLoggedIn()) { liff.login(); return; }
         adminIdToken = liff.getIDToken();
-        liff.getProfile().then(profile => { myLineUserId = profile.userId; }).catch(e => console.log("獲取 LINE 資訊失敗", e));
+        
+        liff.getProfile().then(profile => { 
+          myLineUserId = profile.userId; 
+        }).catch(e => console.log("獲取 LINE 資訊失敗，但可忽略", e));
 
         callGAS('verifyAdmin').then(res => {
           document.getElementById("loading-layer").style.display = "none";
@@ -156,9 +170,8 @@
             loadDashboardData(); setInterval(loadDashboardData, 10000); 
           } else {
             Swal.fire({
-               icon: 'error', 
-               title: '您尚未擁有管理員權限', 
-               html: `請將以下您的專屬 LINE ID 複製並貼上到 Google Sheet 的「管理員名單」中：<br><br><b style="color:#e74c3c; user-select:all; word-break:break-all;">${myLineUserId}</b>`,
+               icon: 'error', title: '您尚未擁有管理員權限', 
+               html: `請將您的專屬 LINE ID 貼到 Google Sheet 的「管理員名單」A 欄中：<br><br><b style="color:#e74c3c; user-select:all; word-break:break-all;">${myLineUserId || "載入 ID 失敗，請重整網頁"}</b>`,
                confirmButtonText: '我知道了'
             });
           }
@@ -215,75 +228,43 @@
             let statusClass = order.status === '未處理' ? 'status-new' : (order.status === '已接單' ? 'status-accepted' : 'status-ready');
             let statusBadge = order.status === '未處理' ? '🔴 新訂單' : (order.status === '已接單' ? '🟠 製作中' : '🔵 可取餐');
             
-            // 按鈕狀態判斷
             let actionBtns = "";
             if (order.status === '未處理') actionBtns = `<button class="btn-action" style="background:#f39c12;" onclick="handleOrder('${order.id}', 'accept')">接單</button><button class="btn-action btn-gray" onclick="handleOrder('${order.id}', 'cancel')">取消</button>`;
             else if (order.status === '已接單') actionBtns = `<button class="btn-action" style="background:#3498db;" onclick="handleOrder('${order.id}', 'ready')">製作完成</button>`;
-            else if (order.status === '製作完成') actionBtns = `<button class="btn-action" style="background:#2ecc71;" onclick="handleOrder('${order.id}', 'complete')">結帳</button>`;
+            else if (order.status === '製作完成') actionBtns = `<button class="btn-action" style="background:#2ecc71;" onclick="handleOrder('${order.id}', 'complete')">結案</button>`;
 
-            // ====== 🥤 訂單明細排版優化開始 ======
-            let itemsHtml = order.content.split('\n').filter(line => line.trim() !== '').map(line => {
-                // 解析格式：[L] 珍珠奶茶 x2 (正常甜, 正常冰, +布丁)
+            // ====== 🥤 訂單明細排版優化：像點餐機收據般緊湊 ======
+            let itemsHtml = order.content.split('\n').filter(line => line.trim() !== '' && !line.includes('活動折扣') && !line.includes('折抵')).map(line => {
                 let match = line.match(/^\[(.*?)\]\s+(.*?)\s+x(\d+)\s*\((.*?)\)$/);
                 if (match) {
-                    let size = match[1];
-                    let name = match[2];
-                    let qty = match[3];
-                    let details = match[4]; // 甜度, 冰塊, +配料
-                    
-                    // 若數量大於 1，將數量標紅放大，提醒老闆
-                    let qtyStyle = qty > 1 ? 'color: #e74c3c; font-size: 18px; font-weight: 900;' : 'font-weight: bold; color: #333;';
-                    
+                    let size = match[1], name = match[2], qty = match[3], details = match[4];
+                    let qtyStyle = qty > 1 ? 'color: #e74c3c; font-size: 15px; font-weight: 900;' : 'font-weight: bold; color: #333; font-size: 13px;';
                     return `
-                    <div style="padding: 10px; border-bottom: 1px dashed #eee; background: #fff;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <span style="font-size: 16px; font-weight: bold; color: #2c3e50;">
-                                <span style="background: #34495e; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 5px;">${size}杯</span>
-                                ${escapeHTML(name)}
+                    <div style="padding: 6px 4px; border-bottom: 1px dashed #ddd;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <span style="font-weight: bold; color: #2c3e50; font-size: 14px;">
+                                <span style="background: #34495e; color: white; padding: 2px 5px; border-radius: 4px; font-size: 11px; margin-right: 5px;">${size}</span>${escapeHTML(name)}
                             </span>
                             <span style="${qtyStyle}">x${qty}</span>
                         </div>
-                        <div style="font-size: 14px; color: #d35400; font-weight: bold; background: #fff3e0; padding: 5px 8px; border-radius: 4px; display: inline-block;">
-                            📝 ${escapeHTML(details)}
+                        <div style="font-size: 12px; color: #d35400; margin-top: 4px; font-weight: bold; margin-left: 2px;">
+                            ↳ ${escapeHTML(details)}
                         </div>
                     </div>`;
-                } else {
-                    // 若有非標準格式的文字，則作為備用輸出
-                    return `<div style="padding: 10px; border-bottom: 1px dashed #eee;">☕ ${escapeHTML(line)}</div>`;
                 }
+                return ""; // 隱藏無法解析或不需要的行 (如折扣資訊)
             }).join('');
 
-            // ====== 💰 總金額與付款方式區塊 ======
-            let payMethodColor = order.payMethod === '餘額扣款' ? '#27ae60' : '#8e44ad'; // 餘額扣款顯示綠色，現場結帳顯示紫色
-            let paymentHtml = `
-              <div style="display: flex; justify-content: space-between; align-items: center; background: #ecf0f1; padding: 10px 15px; border-radius: 6px; margin-top: 10px;">
-                <div style="font-size: 14px; color: #7f8c8d;">
-                  支付：<span style="font-weight: bold; color: ${payMethodColor};">${escapeHTML(order.payMethod)}</span>
-                </div>
-                <div style="font-size: 15px; color: #333;">
-                  總計：<span style="font-weight: bold; color: #c0392b; font-size: 18px;">$${order.total}</span>
-                </div>
-              </div>
-            `;
-
-            // ====== 渲染卡片 ======
             container.innerHTML += `
               <div class="order-card ${statusClass}">
                 <div class="card-header"><span>🕒 ${escapeHTML(order.time)}</span><span style="font-weight:bold;">${statusBadge}</span></div>
-                <div class="card-customer" style="margin-bottom: 8px;">🙋‍♂️ ${escapeHTML(order.userName)}</div>
-                
-                <div class="card-items" style="padding: 0; background: #fff; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; margin: 10px 0;">
-                    ${itemsHtml}
-                </div>
-                
-                ${paymentHtml}
-                
+                <div class="card-customer">🙋‍♂️ ${escapeHTML(order.userName)}</div>
+                <div class="card-items">${itemsHtml}</div>
                 <div class="action-btns">${actionBtns}</div>
               </div>`;
           });
         }
 
-        // 商品渲染
         let menuHtml = "";
         res.data.menus.forEach(m => {
            let btn = m.status === '上架' ? `<button class="btn-action btn-red" style="padding:6px;width:70px;" onclick="toggleMenu('${escapeHTML(m.name)}', '下架')">下架</button>` : `<button class="btn-action btn-success" style="padding:6px;width:70px;" onclick="toggleMenu('${escapeHTML(m.name)}', '上架')">上架</button>`;
@@ -292,7 +273,6 @@
         });
         document.getElementById("menu-list").innerHTML = menuHtml || "<div style='text-align:center;'>無商品資料</div>";
 
-        // 活動渲染
         let promoHtml = "";
         res.data.promos.forEach(p => {
            let btn = `<button class="btn-action btn-gray" style="padding:6px;width:70px;" onclick="togglePromo('${escapeHTML(p.id)}', '停用')">停用</button>`;
@@ -381,3 +361,5 @@
   </script>
 </body>
 </html>
+
+GS裡面如果要把停用下架的功能寫出來讓它會在Google Sheet改變要怎麼寫
