@@ -56,6 +56,12 @@
     .price-line { display: flex; justify-content: space-between; gap: 10px; }
     .discount-text { color: #27ae60; font-weight: bold; }
     .final-price { color: #e74c3c; font-weight: bold; }
+
+    /* 邀請加入會員 Modal 專用樣式 */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content-center { background: white; width: 90%; max-width: 400px; border-radius: 12px; padding: 25px; box-sizing: border-box; text-align: center; }
+    .btn-submit-order { width: 100%; background: #d35400; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    .btn-skip { width: 100%; background: #bdc3c7; color: #333; border: none; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -91,9 +97,21 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="join-modal">
+    <div class="modal-content-center">
+      <h3 style="color:#d35400; margin-top:0;">👋 歡迎光臨！</h3>
+      <p style="color:#7f8c8d; font-size:15px; margin-bottom:25px; line-height: 1.5;">
+        加入專屬會員，可享有儲值錢包付款與歷史明細查詢喔！(完全免費)
+      </p>
+      <button class="btn-submit-order" onclick="joinMemberFromModal()">✅ 一鍵加入會員</button>
+      <button class="btn-skip" onclick="skipJoin()">先不要，直接點餐</button>
+    </div>
+  </div>
+
   <script>
+    // ⚠️ 記得替換成你最新的 GAS 網址
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbykQQXfiZMMrO-ghPpRiRAViOrlhhPDEXYoaVT8iE-BLXuuxqrLiqcrbhmb76OpLiXq/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxo41bcyyfmHkSV9hUDSmBwttT929G0_CQzVZ-Em_vsl0fwTrIgBclpVI3mqloX4l-0/exec";
 
     let idToken = ""; let lineProfile = null; let cart = []; let currentOrders = [];
     let menuData = []; let optionsData = { sweetness: [], ice: [], toppings: [] }; let promosData = []; let storeStatus = "營業中";
@@ -121,8 +139,6 @@
         idToken = liff.getIDToken(); 
         lineProfile = await liff.getProfile();
         await initUser(); 
-        await loadMenu(); 
-        await fetchUserData();
       } catch (e) { 
         console.error("LIFF 錯誤訊息：", e);
         Swal.fire({
@@ -135,7 +151,41 @@
 
     async function initUser() {
       const res = await callGAS("initUser", { lineName: lineProfile ? lineProfile.displayName : "" });
-      if (res.success) { userInfo = res.data; renderMemberBox(); }
+      if (res.success) { 
+        userInfo = res.data; 
+        renderMemberBox(); 
+        
+        // 判斷是否為新訪客，是的話就跳出邀請 Modal
+        if (!userInfo.isMember) {
+          document.getElementById("join-modal").style.display = "flex";
+        } else {
+           // 是會員就直接載入後續資料
+           await loadMenu(); 
+           await fetchUserData();
+        }
+      }
+    }
+
+    // Modal 中的加入會員按鈕
+    async function joinMemberFromModal() {
+      document.getElementById("join-modal").style.display = "none";
+      const res = await callGAS("joinMember", { lineName: lineProfile ? lineProfile.displayName : "" }, { loading: true, loadingText: "建檔中..." });
+      if (res.success) { 
+        userInfo = res.data; 
+        renderMemberBox(); 
+        Swal.fire({title: "成功", text: "🎉 恭喜成為專屬會員！", icon: "success", timer: 1500, showConfirmButton: false});
+        await loadMenu(); 
+        await fetchUserData();
+      } else {
+        Swal.fire("失敗", res.message, "error");
+      }
+    }
+
+    // Modal 中的先不要按鈕
+    async function skipJoin() {
+      document.getElementById("join-modal").style.display = "none";
+      await loadMenu();
+      await fetchUserData();
     }
 
     function renderMemberBox() {
@@ -276,14 +326,8 @@
           bannerHtml += `📢 ${tag} 買${p.buyQty}送${p.freeQty} ${sizeText} ${p.desc?' - '+escapeHTML(p.desc):''}<br>`;
         }
       });
-      if(comboHtml) container.innerHTML += `<div class="combo-series-box"><div class="combo-series-title">👑 今日優惠組合</div>${comboHtml}</div>`;
-      
-      if(bannerHtml) { 
-         document.getElementById("promo-banner").innerHTML = `<marquee scrollamount="5">${bannerHtml}</marquee>`; 
-         document.getElementById("promo-banner").style.display = "block"; 
-      } else {
-         document.getElementById("promo-banner").style.display = "none";
-      }
+      if(comboHtml) container.innerHTML += `<div class="combo-series-box"><div class="combo-series-title">👑 今日套餐組合</div>${comboHtml}</div>`;
+      if(bannerHtml) { document.getElementById("promo-banner").innerHTML = bannerHtml; document.getElementById("promo-banner").style.display = "block"; }
 
       // 2. 渲染下方常規菜單分類
       const grouped = {};
