@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<head  <meta name="viewport" content="width=device-width, initial-scale=1"><head>
   <title>凰貴妃茶堂 - 店鋪管理系統</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -213,7 +211,6 @@
       word-break: break-word;
     }
 
-    /* ✅ 菜單列表專用：讓下架 / 上架按鈕固定在右邊 */
     .menu-list-item {
       display: flex;
       align-items: center;
@@ -301,7 +298,6 @@
         align-items: stretch;
       }
 
-      /* ✅ 手機版菜單按鈕仍維持右邊 */
       .menu-list-item {
         flex-direction: row;
         align-items: center;
@@ -476,6 +472,7 @@
     let globalMenus = [];
     let dashboardTimer = null;
     let isLoadingDashboard = false;
+    let isProcessingAction = false;
 
     function escapeHTML(str) {
       return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({
@@ -496,16 +493,72 @@
         .replace(/\r/g, "\\r");
     }
 
-    async function callGAS(action, payload = {}) {
+    function showGasLoading(text = "資料傳輸中...") {
+      isProcessingAction = true;
+
+      Swal.fire({
+        title: text,
+        html: "資料正在傳送到 GAS，請稍候...",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+    }
+
+    async function callGAS(action, payload = {}, options = {}) {
       payload.action = action;
       payload.idToken = adminIdToken;
 
-      const response = await fetch(GAS_API_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
+      if (options.loading) {
+        showGasLoading(options.loadingText || "資料傳輸中...");
+      }
 
-      return await response.json();
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        return await response.json();
+
+      } catch (err) {
+        console.error(err);
+        return {
+          success: false,
+          message: "連線失敗，請稍後再試。"
+        };
+      }
+    }
+
+    async function showResultAndReload(res, successTitle = "成功", reload = true) {
+      if (res && res.success) {
+        await Swal.fire({
+          title: successTitle,
+          text: res.message || "操作完成",
+          icon: "success",
+          confirmButtonText: "確定",
+          allowOutsideClick: false
+        });
+
+        isProcessingAction = false;
+
+        if (reload) {
+          loadDashboardData();
+        }
+
+      } else {
+        await Swal.fire({
+          title: "操作失敗",
+          text: res && res.message ? res.message : "請稍後再試",
+          icon: "error",
+          confirmButtonText: "確定"
+        });
+
+        isProcessingAction = false;
+      }
     }
 
     window.onload = function () {
@@ -666,7 +719,7 @@
     }
 
     function loadDashboardData() {
-      if (isLoadingDashboard) return;
+      if (isLoadingDashboard || isProcessingAction) return;
 
       isLoadingDashboard = true;
 
@@ -807,13 +860,11 @@
     function renderPromos(promos) {
       let promoHtml = "";
 
-      // ✅ 只顯示啟用活動；停用 / 已刪除的活動不顯示
       let activePromos = (promos || []).filter(p => p.status === "啟用");
 
       activePromos.forEach(p => {
         let safeIdJS = escapeJS(p.id);
 
-        // ✅ 按鈕文字改成刪除活動，實際仍呼叫 adminTogglePromo，由 GS 刪除列
         let btn = `<button class="btn-action btn-gray" onclick="togglePromo('${safeIdJS}', '停用')">刪除活動</button>`;
 
         let itemsFormatted = p.targetType === "指定組合"
@@ -863,23 +914,21 @@
         showCancelButton: true,
         confirmButtonText: "確定",
         cancelButtonText: "取消"
-      }).then(r => {
+      }).then(async r => {
         if (!r.isConfirmed) return;
 
-        callGAS("adminToggleStore", { status: status }).then(res => {
-          if (res.success) {
-            Swal.fire("成功", res.message || "狀態已更新", "success");
-            loadDashboardData();
-          } else {
-            Swal.fire("錯誤", res.message || "操作失敗", "error");
-          }
-        }).catch(() => {
-          Swal.fire("連線失敗", "請稍後再試。", "error");
+        const res = await callGAS("adminToggleStore", {
+          status: status
+        }, {
+          loading: true,
+          loadingText: "門市狀態更新中..."
         });
+
+        await showResultAndReload(res, "狀態已更新");
       });
     }
 
-    function addMenu() {
+    async function addMenu() {
       let c = document.getElementById("menu-cat").value.trim();
       let n = document.getElementById("menu-name").value.trim();
       let pl = document.getElementById("menu-pl").value;
@@ -893,26 +942,23 @@
         return Swal.fire("資料錯誤", "至少要有一種杯型價格大於 0", "warning");
       }
 
-      callGAS("adminAddMenuItem", {
+      const res = await callGAS("adminAddMenuItem", {
         category: c,
         name: n,
         priceL: pl,
         priceXL: pxl
-      }).then(res => {
-        if (res.success) {
-          Swal.fire("新增成功", "商品已成功上架！", "success");
-
-          document.getElementById("menu-name").value = "";
-          document.getElementById("menu-pl").value = "";
-          document.getElementById("menu-pxl").value = "";
-
-          loadDashboardData();
-        } else {
-          Swal.fire("新增失敗", res.message || "請稍後再試", "error");
-        }
-      }).catch(() => {
-        Swal.fire("連線失敗", "無法新增商品，請稍後再試。", "error");
+      }, {
+        loading: true,
+        loadingText: "商品資料傳輸中..."
       });
+
+      if (res.success) {
+        document.getElementById("menu-name").value = "";
+        document.getElementById("menu-pl").value = "";
+        document.getElementById("menu-pxl").value = "";
+      }
+
+      await showResultAndReload(res, "新增成功");
     }
 
     function toggleMenu(name, status) {
@@ -922,26 +968,22 @@
         showCancelButton: true,
         confirmButtonText: "確定",
         cancelButtonText: "取消"
-      }).then(r => {
+      }).then(async r => {
         if (!r.isConfirmed) return;
 
-        callGAS("adminToggleMenuItem", {
+        const res = await callGAS("adminToggleMenuItem", {
           name: name,
           status: status
-        }).then(res => {
-          if (res.success) {
-            Swal.fire("成功", `已成功${status}`, "success");
-            loadDashboardData();
-          } else {
-            Swal.fire("錯誤", res.message || "操作失敗", "error");
-          }
-        }).catch(() => {
-          Swal.fire("連線失敗", "請稍後再試。", "error");
+        }, {
+          loading: true,
+          loadingText: "商品狀態更新中..."
         });
+
+        await showResultAndReload(res, "商品狀態已更新");
       });
     }
 
-    function addPromo() {
+    async function addPromo() {
       let tType = document.getElementById("promo-target-type").value;
       let pMode = document.getElementById("promo-mode").value;
       let desc = document.getElementById("promo-desc").value.trim();
@@ -961,8 +1003,10 @@
         }
 
         tName = checkedDrinks.join(",");
+
       } else if (tType === "全館") {
         tName = "";
+
       } else {
         tName = document.getElementById("promo-target-name").value;
 
@@ -1007,7 +1051,7 @@
         }
       }
 
-      callGAS("adminAddPromo", {
+      const res = await callGAS("adminAddPromo", {
         desc: desc,
         targetType: tType,
         targetName: tName,
@@ -1016,28 +1060,26 @@
         freeQty: fQty,
         comboPrice: cPrice,
         sizeLimit: sizeLimit
-      }).then(res => {
-        if (res.success) {
-          Swal.fire("成功", "活動已建立並啟用！", "success");
-
-          document.getElementById("promo-desc").value = "";
-          document.getElementById("promo-buy").value = "";
-          document.getElementById("promo-free").value = "";
-          document.getElementById("promo-combo-qty").value = "";
-          document.getElementById("promo-combo-price").value = "";
-
-          document.querySelectorAll('input[name="promo-drinks"]:checked').forEach(cb => {
-            cb.checked = false;
-          });
-
-          refreshComboQtyText();
-          loadDashboardData();
-        } else {
-          Swal.fire("建立失敗", res.message || "活動建立失敗", "error");
-        }
-      }).catch(() => {
-        Swal.fire("連線失敗", "無法建立活動，請稍後再試。", "error");
+      }, {
+        loading: true,
+        loadingText: "活動資料傳輸中..."
       });
+
+      if (res.success) {
+        document.getElementById("promo-desc").value = "";
+        document.getElementById("promo-buy").value = "";
+        document.getElementById("promo-free").value = "";
+        document.getElementById("promo-combo-qty").value = "";
+        document.getElementById("promo-combo-price").value = "";
+
+        document.querySelectorAll('input[name="promo-drinks"]:checked').forEach(cb => {
+          cb.checked = false;
+        });
+
+        refreshComboQtyText();
+      }
+
+      await showResultAndReload(res, "活動建立成功");
     }
 
     function togglePromo(id, status) {
@@ -1049,22 +1091,18 @@
         confirmButtonColor: "#e74c3c",
         confirmButtonText: "確定刪除",
         cancelButtonText: "取消"
-      }).then(r => {
+      }).then(async r => {
         if (!r.isConfirmed) return;
 
-        callGAS("adminTogglePromo", {
+        const res = await callGAS("adminTogglePromo", {
           promoId: id,
           status: status
-        }).then(res => {
-          if (res.success) {
-            Swal.fire("成功", res.message || "活動已刪除", "success");
-            loadDashboardData();
-          } else {
-            Swal.fire("錯誤", res.message || "操作失敗", "error");
-          }
-        }).catch(() => {
-          Swal.fire("連線失敗", "請稍後再試。", "error");
+        }, {
+          loading: true,
+          loadingText: "活動刪除中..."
         });
+
+        await showResultAndReload(res, "活動已刪除");
       });
     }
 
@@ -1089,29 +1127,26 @@
         showCancelButton: true,
         confirmButtonText: "確定",
         cancelButtonText: "取消"
-      }).then(r => {
+      }).then(async r => {
         if (!r.isConfirmed) return;
 
-        callGAS("adminUpdateWallet", {
+        const res = await callGAS("adminUpdateWallet", {
           targetUserId: u,
           amount: a,
           type: t,
           note: n
-        }).then(res => {
-          if (res.success) {
-            Swal.fire("成功", res.message, "success");
-
-            document.getElementById("topup-amount").value = "";
-            document.getElementById("topup-note").value = "";
-            document.getElementById("user-select").value = "";
-
-            loadDashboardData();
-          } else {
-            Swal.fire("錯誤", res.message || "操作失敗", "error");
-          }
-        }).catch(() => {
-          Swal.fire("連線失敗", "請稍後再試。", "error");
+        }, {
+          loading: true,
+          loadingText: "帳務資料傳輸中..."
         });
+
+        if (res.success) {
+          document.getElementById("topup-amount").value = "";
+          document.getElementById("topup-note").value = "";
+          document.getElementById("user-select").value = "";
+        }
+
+        await showResultAndReload(res, "帳務更新成功");
       });
     }
 
@@ -1130,26 +1165,23 @@
         showCancelButton: true,
         confirmButtonText: "確定",
         cancelButtonText: "取消"
-      }).then(r => {
+      }).then(async r => {
         if (!r.isConfirmed) return;
 
-        callGAS("updateMemberName", {
+        const res = await callGAS("updateMemberName", {
           targetUserId: u,
           newName: n
-        }).then(res => {
-          if (res.success) {
-            Swal.fire("成功", "會員稱呼已更新", "success");
-
-            document.getElementById("new-user-name").value = "";
-            document.getElementById("edit-user-select").value = "";
-
-            loadDashboardData();
-          } else {
-            Swal.fire("錯誤", res.message || "更新失敗", "error");
-          }
-        }).catch(() => {
-          Swal.fire("連線失敗", "請稍後再試。", "error");
+        }, {
+          loading: true,
+          loadingText: "會員資料更新中..."
         });
+
+        if (res.success) {
+          document.getElementById("new-user-name").value = "";
+          document.getElementById("edit-user-select").value = "";
+        }
+
+        await showResultAndReload(res, "會員稱呼已更新");
       });
     }
 
@@ -1163,22 +1195,18 @@
           confirmButtonColor: "#e74c3c",
           confirmButtonText: "確定取消",
           cancelButtonText: "返回"
-        }).then(r => {
+        }).then(async r => {
           if (!r.isConfirmed) return;
 
-          callGAS("processOrderAction", {
+          const res = await callGAS("processOrderAction", {
             orderId: orderId,
             orderAction: action
-          }).then(res => {
-            if (res.success) {
-              Swal.fire("成功", res.message, "success");
-              loadDashboardData();
-            } else {
-              Swal.fire("錯誤", res.message || "操作失敗", "error");
-            }
-          }).catch(() => {
-            Swal.fire("連線失敗", "請稍後再試。", "error");
+          }, {
+            loading: true,
+            loadingText: "訂單取消處理中..."
           });
+
+          await showResultAndReload(res, "訂單已取消");
         });
 
         return;
@@ -1187,16 +1215,14 @@
       callGAS("processOrderAction", {
         orderId: orderId,
         orderAction: action
-      }).then(res => {
-        if (res.success) {
-          loadDashboardData();
-        } else {
-          Swal.fire("錯誤", res.message || "操作失敗", "error");
-        }
-      }).catch(() => {
-        Swal.fire("連線失敗", "請稍後再試。", "error");
+      }, {
+        loading: true,
+        loadingText: "訂單狀態更新中..."
+      }).then(async res => {
+        await showResultAndReload(res, "訂單狀態已更新");
       });
     }
   </script>
 </body>
 </html>
+  <meta charset="utf-8">
