@@ -111,7 +111,7 @@
   <script>
     // ⚠️ 記得替換成你最新的 GAS 網址
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://quiet-sun-3888.wangbens0829.workers.dev/";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwpmN99nac2lG2KoEU4KaWfHss2GUPNLYtUX17c3e94Ge2PPgC1ELQ3uwDuG9x1MCQT/exec";
 
     let idToken = ""; let lineProfile = null; let cart = []; let currentOrders = [];
     let menuData = []; let optionsData = { sweetness: [], ice: [], toppings: [] }; let promosData = []; let storeStatus = "營業中";
@@ -121,9 +121,15 @@
     function escapeJS(str) { return (!str) ? "" : str.toString().replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r"); }
 
     async function callGAS(action, payload = {}, options = {}) {
+
+      // ✅ 必填參數
       payload.action = action;
       payload.idToken = idToken;
 
+      // ✅ ✅ ✅ 新增 requestId（防重複請求）
+      payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+
+      // ✅ Loading UI（保留你原本功能）
       if (options.loading) {
         Swal.fire({
           title: options.loadingText || "處理中...",
@@ -136,18 +142,33 @@
         const res = await fetch(GAS_API_URL, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            "x-api-key": "abc123"   // 🔑 必須和 Worker 一樣
+            "Content-Type": "application/json"
           },
           body: JSON.stringify(payload)
         });
 
-        return await res.json();
+        const data = await res.json();
+
+        // ✅ 安全錯誤處理
+        if (!data.success && data.message) {
+          console.warn("API錯誤:", data.message);
+        }
+
+        return data;
 
       } catch (err) {
-        return { success: false, message: "連線失敗，請稍後再試。" };
+        console.error("API錯誤:", err);
+
+        Swal.fire({
+          icon: "error",
+          title: "連線失敗",
+          text: "無法連接伺服器"
+        });
+
+          return { success: false };
       }
     }
+
 
     window.onload = async function () {
       try {
