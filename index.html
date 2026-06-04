@@ -95,6 +95,60 @@
       line-height: 1.6;
     }
 
+    .combo-series-box {
+      margin: 10px 15px;
+      padding: 12px;
+      background: #fff8e8;
+      border-left: 5px solid #f39c12;
+      border-radius: 10px;
+    }
+
+    .combo-series-title {
+      font-weight: bold;
+      color: #d35400;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .combo-card {
+      background: white;
+      border: 1px solid #f5d6a8;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .combo-card-name {
+      font-weight: bold;
+      color: #2c3e50;
+      line-height: 1.5;
+    }
+
+    .combo-card-price {
+      color: #e74c3c;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    .combo-card-desc {
+      font-size: 13px;
+      color: #777;
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+
+    .combo-card button {
+      margin-top: 10px;
+      width: 100%;
+      background: #f39c12;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
     .store-closed {
       margin: 15px;
       padding: 20px;
@@ -511,16 +565,42 @@
       }[tag] || tag));
     }
 
-    async function callGAS(action, payload = {}) {
+    function showGasLoading(text = "資料傳輸中...") {
+      Swal.fire({
+        title: text,
+        html: "資料正在傳送到店鋪系統，請稍候...",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+    }
+
+    async function callGAS(action, payload = {}, options = {}) {
       payload.action = action;
       payload.idToken = idToken;
 
-      const res = await fetch(GAS_API_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
+      if (options.loading) {
+        showGasLoading(options.loadingText || "資料傳輸中...");
+      }
 
-      return await res.json();
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        return await res.json();
+
+      } catch (err) {
+        console.error(err);
+        return {
+          success: false,
+          message: "連線失敗，請稍後再試。"
+        };
+      }
     }
 
     window.onload = async function () {
@@ -590,13 +670,24 @@
     async function joinMember() {
       const res = await callGAS("joinMember", {
         lineName: lineProfile ? lineProfile.displayName : ""
+      }, {
+        loading: true,
+        loadingText: "會員資料建立中..."
       });
 
       if (res.success) {
         userInfo = res.data;
         renderMemberBox();
         await loadUserHistory();
-        Swal.fire("成功", "已加入會員！", "success");
+
+        await Swal.fire({
+          title: "成功",
+          text: "已加入會員！",
+          icon: "success",
+          confirmButtonText: "確定",
+          allowOutsideClick: false
+        });
+
       } else {
         Swal.fire("失敗", res.message || "加入會員失敗", "error");
       }
@@ -664,6 +755,56 @@
       area.innerHTML = html;
     }
 
+    function getTodayComboPromos() {
+      return (promosData || []).filter(p => {
+        return p.targetType === "指定組合" && p.promoMode === "組合價";
+      });
+    }
+
+    function renderTodayComboSeriesHTML() {
+      const combos = getTodayComboPromos();
+
+      if (!combos || combos.length === 0) {
+        return "";
+      }
+
+      let html = `
+        <div class="combo-series-box">
+          <div class="combo-series-title">🔥 今日套餐系列</div>
+      `;
+
+      combos.forEach(p => {
+        const items = String(p.targetName || "")
+          .split(",")
+          .map(x => x.trim())
+          .filter(x => x);
+
+        const itemText = items.join(" + ");
+        const sizeText = p.sizeLimit && p.sizeLimit !== "不限"
+          ? `限 ${p.sizeLimit} 杯`
+          : "不限杯型";
+
+        html += `
+          <div class="combo-card">
+            <div class="combo-card-name">${escapeHTML(itemText)}</div>
+            <div class="combo-card-price">套餐價 $${Number(p.comboPrice || 0)}</div>
+            <div class="combo-card-desc">
+              ${escapeHTML(sizeText)}
+              ${p.desc ? "｜" + escapeHTML(p.desc) : ""}
+              <br>
+              ※ 每杯可分別選甜度、冰塊與加料，加料另計。
+            </div>
+            <button onclick="selectComboPromo('${encodeURIComponent(p.id)}')">
+              選擇此套餐
+            </button>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      return html;
+    }
+
     function renderMenu() {
       const container = document.getElementById("menu-container");
       container.innerHTML = "";
@@ -677,6 +818,8 @@
         container.innerHTML = `<div style="text-align:center;padding:30px;color:#999;">目前沒有菜單資料</div>`;
         return;
       }
+
+      container.innerHTML += renderTodayComboSeriesHTML();
 
       const grouped = {};
 
@@ -745,7 +888,7 @@
       el.innerText = next;
     }
 
-    function buildItemFormHTML(item, existingItem = null, allowZero = false) {
+    function buildItemFormHTML(item, existingItem = null, allowZero = false, forcedSize = "") {
       let defaultSize = existingItem ? existingItem.size : "";
       let defaultSweetness = existingItem ? existingItem.sweetness : "";
       let defaultIce = existingItem ? existingItem.ice : "";
@@ -756,22 +899,46 @@
 
       let sizeHtml = "";
 
-      if (Number(item.priceL) > 0) {
-        sizeHtml += makeChoiceRadio(
-          "swal-size",
-          "L",
-          `L 杯 $${item.priceL}`,
-          defaultSize === "L" || !defaultSize
-        );
+      if (forcedSize === "L") {
+        if (Number(item.priceL) > 0) {
+          sizeHtml += makeChoiceRadio(
+            "swal-size",
+            "L",
+            `L 杯 $${item.priceL}`,
+            true
+          );
+        }
+      } else if (forcedSize === "XL") {
+        if (Number(item.priceXL) > 0) {
+          sizeHtml += makeChoiceRadio(
+            "swal-size",
+            "XL",
+            `XL 杯 $${item.priceXL}`,
+            true
+          );
+        }
+      } else {
+        if (Number(item.priceL) > 0) {
+          sizeHtml += makeChoiceRadio(
+            "swal-size",
+            "L",
+            `L 杯 $${item.priceL}`,
+            defaultSize === "L" || !defaultSize
+          );
+        }
+
+        if (Number(item.priceXL) > 0) {
+          sizeHtml += makeChoiceRadio(
+            "swal-size",
+            "XL",
+            `XL 杯 $${item.priceXL}`,
+            defaultSize === "XL"
+          );
+        }
       }
 
-      if (Number(item.priceXL) > 0) {
-        sizeHtml += makeChoiceRadio(
-          "swal-size",
-          "XL",
-          `XL 杯 $${item.priceXL}`,
-          defaultSize === "XL"
-        );
+      if (!sizeHtml) {
+        sizeHtml = `<span style="color:#e74c3c;">此商品目前沒有可用容量</span>`;
       }
 
       let sweetnessList = optionsData.sweetness.length > 0
@@ -900,6 +1067,127 @@
         updateCart();
         Swal.fire("已加入", "商品已加入購物車", "success");
       }
+    }
+
+    async function selectComboPromo(encodedPromoId) {
+      const promoId = decodeURIComponent(encodedPromoId);
+      const promo = promosData.find(p => String(p.id) === String(promoId));
+
+      if (!promo) {
+        Swal.fire("錯誤", "找不到此套餐活動", "error");
+        return;
+      }
+
+      const itemNames = String(promo.targetName || "")
+        .split(",")
+        .map(x => x.trim())
+        .filter(x => x);
+
+      if (itemNames.length === 0) {
+        Swal.fire("錯誤", "此套餐沒有設定品項", "error");
+        return;
+      }
+
+      const comboItems = [];
+      const forcedSize = promo.sizeLimit && promo.sizeLimit !== "不限"
+        ? promo.sizeLimit
+        : "";
+
+      for (let i = 0; i < itemNames.length; i++) {
+        const itemName = itemNames[i];
+        const menuItem = menuData.find(m => m.name === itemName);
+
+        if (!menuItem) {
+          Swal.fire("錯誤", `套餐品項「${itemName}」目前不存在或已下架`, "error");
+          return;
+        }
+
+        if (forcedSize === "L" && Number(menuItem.priceL) <= 0) {
+          Swal.fire("錯誤", `「${itemName}」沒有 L 杯價格，無法套用此套餐`, "error");
+          return;
+        }
+
+        if (forcedSize === "XL" && Number(menuItem.priceXL) <= 0) {
+          Swal.fire("錯誤", `「${itemName}」沒有 XL 杯價格，無法套用此套餐`, "error");
+          return;
+        }
+
+        const defaultItem = forcedSize
+          ? {
+              name: menuItem.name,
+              size: forcedSize,
+              sweetness: "",
+              ice: "",
+              qty: 1,
+              toppings: []
+            }
+          : null;
+
+        const result = await Swal.fire({
+          title: `套餐第 ${i + 1} 杯：${menuItem.name}`,
+          html: `
+            <div style="text-align:left;background:#fff8e8;border-left:4px solid #f39c12;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;">
+              目前正在設定套餐：${escapeHTML(itemNames.join(" + "))}<br>
+              套餐價 $${Number(promo.comboPrice || 0)}，加料另計。
+            </div>
+            ${buildItemFormHTML(menuItem, defaultItem, false, forcedSize)}
+          `,
+          width: 560,
+          showCancelButton: true,
+          confirmButtonText: i === itemNames.length - 1 ? "加入套餐" : "下一杯",
+          cancelButtonText: "取消",
+          allowOutsideClick: false,
+          preConfirm: () => {
+            const value = readItemFormValue(menuItem);
+
+            if (!value.qty || value.qty <= 0) {
+              Swal.showValidationMessage("套餐每杯數量固定為 1");
+              return false;
+            }
+
+            value.qty = 1;
+
+            if (forcedSize && value.size !== forcedSize) {
+              Swal.showValidationMessage(`此套餐限 ${forcedSize} 杯`);
+              return false;
+            }
+
+            return value;
+          }
+        });
+
+        if (!result.isConfirmed || !result.value) {
+          Swal.fire("已取消", "尚未加入套餐", "info");
+          return;
+        }
+
+        comboItems.push(result.value);
+      }
+
+      comboItems.forEach(item => {
+        cart.push(item);
+      });
+
+      updateCart();
+
+      await Swal.fire({
+        title: "已加入套餐",
+        html: `
+          <div style="text-align:left;line-height:1.6;">
+            ${comboItems.map(x => {
+              const tops = x.toppings && x.toppings.length > 0
+                ? `｜加料：${escapeHTML(x.toppings.join("、"))}`
+                : "";
+              return `• [${escapeHTML(x.size)}] ${escapeHTML(x.name)}｜${escapeHTML(x.sweetness)}｜${escapeHTML(x.ice)}${tops}`;
+            }).join("<br>")}
+          </div>
+          <div style="margin-top:10px;color:#777;font-size:13px;">
+            ※ 實際結帳金額會由後端依套餐與加料重新計算。
+          </div>
+        `,
+        icon: "success",
+        confirmButtonText: "確定"
+      });
     }
 
     function estimateItemPrice(item) {
@@ -1171,18 +1459,15 @@
       if (!result.isConfirmed || !result.value) return;
 
       try {
-        Swal.fire({
-          title: "送出中...",
-          allowOutsideClick: false,
-          didOpen: () => Swal.showLoading()
-        });
-
         const res = await callGAS("submitOrder", {
           lineName: lineProfile ? lineProfile.displayName : "",
           lastName: result.value.lastName,
           phone: result.value.phone,
           payMethod: result.value.payMethod,
           cart: cart
+        }, {
+          loading: true,
+          loadingText: "訂單資料傳輸中..."
         });
 
         if (res.success) {
@@ -1197,7 +1482,14 @@
 
           await loadUserHistory();
 
-          Swal.fire("成功", res.message || "訂單已送出", "success");
+          await Swal.fire({
+            title: "成功",
+            text: res.message || "訂單已送出",
+            icon: "success",
+            confirmButtonText: "確定",
+            allowOutsideClick: false
+          });
+
         } else {
           Swal.fire("送出失敗", res.message || "請稍後再試", "error");
         }
