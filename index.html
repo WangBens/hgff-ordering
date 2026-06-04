@@ -7,42 +7,39 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
-    body { font-family: Arial, "Microsoft JhengHei", sans-serif; background: #fcf6f2; margin: 0; padding-bottom: 95px; color: #333; }
-    .container { max-width: 640px; margin: auto; background: white; min-height: 100vh; position: relative; }
-    .header { text-align: center; color: #d35400; padding: 20px; border-bottom: 1px solid #eee; }
-    .header h2 { margin-bottom: 5px; }
-    .member-box { margin: 10px 15px; padding: 12px; background: #fff7ec; border-radius: 10px; border: 1px solid #f5d6a8; font-size: 14px; line-height: 1.6; }
-    .member-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-    .member-info { flex: 1; word-break: break-word; }
-    .history-btn { background: #3498db; color: white; border: none; padding: 8px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 13px; }
-    .join-btn { margin-top: 8px; background: #d35400; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-    .promo-banner { background: #eef9ff; color: #d35400; font-weight: bold; padding: 12px; font-size: 14px; border-bottom: 2px solid #3498db; text-align: center; line-height: 1.5; }
-    .combo-series-box { margin: 10px 15px; padding: 12px; background: #fff8e8; border-left: 5px solid #f39c12; border-radius: 10px; }
-    .combo-series-title { font-weight: bold; color: #d35400; margin-bottom: 10px; font-size: 16px; }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcf6f2; margin: 0; color: #333; padding-bottom: 80px; }
+    .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; position: relative; }
+    .store-closed { background: #e74c3c; color: white; font-weight: bold; text-align: center; padding: 15px; font-size: 16px; }
+    .promo-banner { background: #fff3e0; color: #d35400; font-weight: bold; padding: 12px; font-size: 14px; border-bottom: 2px solid #f39c12; border-left: 5px solid #d35400; text-align: left; line-height: 1.5; }
+    .combo-box { background: linear-gradient(135deg, #fff9f5 0%, #fff0e6 100%); border: 2px dashed #e67e22; border-radius: 12px; padding: 15px; margin: 15px; box-shadow: 0 4px 10px rgba(230,126,34,0.1); }
+    .combo-title { color: #d35400; font-size: 16px; font-weight: bold; margin-bottom: 10px; }
     .combo-card { background: white; border: 1px solid #f5d6a8; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-    .combo-card-name { font-weight: bold; color: #2c3e50; line-height: 1.5; }
-    .combo-card-price { color: #e74c3c; font-weight: bold; margin-top: 5px; font-size: 16px; }
-    .combo-btn { margin-top: 10px; width: 100%; background: #f39c12; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    .store-closed { margin: 15px; padding: 20px; background: #ffeaea; color: #c0392b; border-radius: 10px; text-align: center; font-weight: bold; }
-    .category-title { background: #d35400; color: white; padding: 10px 15px; margin-top: 15px; font-weight: bold; }
-    .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; gap: 10px; }
-    .menu-name { font-weight: bold; font-size: 16px; }
-    .menu-price { color: #e74c3c; font-size: 14px; margin-top: 5px; }
-    .btn-select { background: #f39c12; color: white; border: none; padding: 9px 15px; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
-    .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #2c3e50; color: white; display: none; justify-content: center; z-index: 999; box-shadow: 0 -3px 10px rgba(0,0,0,0.15); }
-    .cart-inner { max-width: 640px; width: 100%; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
-    .cart-summary { font-size: 14px; line-height: 1.5; }
-    .cart-actions { display: flex; gap: 5px; }
-    .cart-btn, .cart-view-btn, .cart-clear { color: white; border: none; padding: 9px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; white-space: nowrap; }
-    .cart-btn { background: #2ecc71; } .cart-view-btn { background: #f39c12; } .cart-clear { background: #95a5a6; }
-    
-    .status-board { background: #fff; border: 2px solid #d35400; border-radius: 10px; padding: 15px; margin: 15px; }
+    .combo-name { color: #2c3e50; font-weight: bold; font-size: 15px; }
+    .combo-price { color: #e74c3c; font-weight: bold; font-size: 18px; margin-top: 5px; }
+    .combo-desc { font-size: 13px; color: #7f8c8d; margin-top: 3px; line-height: 1.5; }
+    .combo-btn { margin-top: 8px; width: 100%; border-radius: 8px; background-color: #d35400; color: white; border: none; padding: 10px; cursor: pointer; font-weight: bold; }
+    .header { text-align: center; color: #d35400; padding: 20px 15px; border-bottom: 2px solid #f2e2d9; background: #fff; }
+    .header h2 { margin: 0 0 5px 0; font-size: 24px; }
+    .member-info-bar { background: #2c3e50; color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+    .btn-wallet { background: #f39c12; border: none; color: white; padding: 5px 12px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 13px; }
+    .status-board { background: #fff; border: 2px solid #d35400; border-radius: 10px; padding: 15px; margin: 15px; box-shadow: 0 4px 6px rgba(211,84,0,0.1); }
     .status-title { color: #d35400; font-weight: bold; font-size: 16px; margin-bottom: 10px; border-bottom: 1px dashed #f2e2d9; padding-bottom: 5px; }
-    .my-order-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; align-items: center; }
+    .my-order-item { padding: 8px 0; font-size: 14px; border-bottom: 1px dashed #eee; }
+    .my-order-item:last-child { border-bottom: none; }
     .my-order-tag { padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 12px; color: white; }
     .tag-red { background: #e74c3c; } .tag-orange { background: #f39c12; } .tag-blue { background: #3498db; }
+    .category-title { background-color: #d35400; color: white; padding: 8px 12px; border-radius: 6px; margin: 20px 15px 0 15px; font-size: 16px; font-weight: bold; }
+    .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px dashed #eee; }
+    .menu-name { font-weight: bold; font-size: 16px; color: #2c3e50; margin-bottom: 5px; }
+    .menu-price { color: #e74c3c; font-size: 14px; }
+    .btn-select { background-color: #f39c12; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+    .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #2c3e50; color: white; display: none; justify-content: center; z-index: 99; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+    .cart-inner { max-width: 600px; width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;}
+    .cart-actions { display: flex; gap: 8px; }
+    .btn-checkout { background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 15px; cursor: pointer; }
+    .btn-cart-view { background: #f39c12; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 15px; cursor: pointer; }
     
-    /* 客製化表單樣式 */
+    /* Swal 客製化樣式 */
     .option-section { text-align: left; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px dashed #ddd; }
     .option-title { font-weight: bold; color: #d35400; margin-bottom: 8px; font-size: 15px; }
     .choice-grid { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -50,65 +47,71 @@
     .choice-pill { display: inline-block; padding: 8px 12px; border-radius: 999px; border: 1px solid #ccc; background: #fff; font-size: 14px; cursor: pointer; user-select: none; }
     .choice-label input:checked + .choice-pill { background: #d35400; color: white; border-color: #d35400; font-weight: bold; }
     .topping-label input:checked + .choice-pill { background: #8e44ad; border-color: #8e44ad; }
-    .qty-control { display: flex; align-items: center; gap: 12px; justify-content: center; margin-top: 6px; }
-    .qty-btn { width: 42px; height: 42px; border: none; border-radius: 50%; background: #d35400; color: white; font-size: 24px; font-weight: bold; cursor: pointer; }
-    .qty-value { min-width: 48px; text-align: center; font-size: 24px; font-weight: bold; color: #2c3e50; }
-    
-    .form-control { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; }
-    .history-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px;}
-    .history-table th, .history-table td { border-bottom: 1px solid #eee; padding: 8px 4px; text-align: left;}
+    .qty-control { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 20px 0; }
+    .qty-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #ccc; background: #d35400; color: white; font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .qty-value { font-size: 20px; font-weight: bold; width: 40px; text-align: center; }
+    .detail-item { text-align: left; background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 14px; line-height: 1.6; }
+    .price-line { display: flex; justify-content: space-between; gap: 10px; }
+    .discount-text { color: #27ae60; font-weight: bold; }
+    .final-price { color: #e74c3c; font-weight: bold; }
   </style>
 </head>
 <body>
   <div class="container">
     <div id="store-closed-banner" class="store-closed" style="display:none;">⛔ 門市目前休息中，暫不開放點餐 ⛔</div>
-    <div id="promo-banner" class="promo-banner" style="display:none;"></div>
     
+    <div id="combo-section" class="combo-box" style="display:none;">
+      <div class="combo-title">👑 今日優惠組合</div>
+      <div id="combo-list-container"></div>
+    </div>
+
+    <div id="promo-banner" class="promo-banner" style="display:none;"></div>
+
     <div class="header">
       <h2>凰貴妃茶堂</h2>
       <p>線上專屬點餐系統</p>
     </div>
 
-    <div id="member-box" class="member-box">LINE 驗證中...</div>
+    <div class="member-info-bar">
+      <span id="welcome-msg">載入中...</span>
+      <button id="btn-show-history" class="btn-wallet" style="display:none;" onclick="openTransactionHistory()">交易明細</button>
+    </div>
 
     <div id="my-orders-board" class="status-board" style="display:none;">
       <div class="status-title">🔔 製作進度 <span style="font-size:12px; font-weight:normal; float:right; cursor:pointer;" onclick="fetchUserData()">🔄 更新</span></div>
       <div id="my-orders-list"></div>
     </div>
 
-    <div class="menu-section" id="app-content">
-      <div style="text-align: center; color: #e67e22; font-weight: bold; padding: 30px 0;" id="status-text">🔄 系統初始化中，請稍候...</div>
+    <div id="app-content">
+      <div style="text-align:center; color:#e67e22; font-weight:bold; padding:30px 0;" id="status-text">🔄 系統初始化中，請稍候...</div>
       <div id="menu-container"></div>
     </div>
   </div>
 
-  <div id="cart-bar" class="cart-bar">
+  <div class="cart-bar" id="cart-bar" style="display:none;">
     <div class="cart-inner">
-      <div class="cart-summary">🛒 <span id="cart-count">0</span> 杯 ｜預估 $<span id="cart-total">0</span></div>
+      <div>🛒 <span id="cart-count">0</span> 杯 / $<span id="cart-total">0</span></div>
       <div class="cart-actions">
-        <button class="cart-view-btn" onclick="openCartManager()">購物車</button>
-        <button class="cart-btn" onclick="checkout()">結帳去</button>
+        <button class="btn-cart-view" onclick="openCartManager()">購物車</button>
+        <button class="btn-checkout" id="btn-open-checkout" onclick="openCheckoutModal()">結帳</button>
       </div>
     </div>
   </div>
 
   <script>
-    // ==========================================
-    // ⚠️ 請確保這是你最新的 GAS 網址 ⚠️
-    // ==========================================
+    // ⚠️ 記得替換成你最新的 GAS 網址
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxo41bcyyfmHkSV9hUDSmBwttT929G0_CQzVZ-Em_vsl0fwTrIgBclpVI3mqloX4l-0/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyy3lwY_9j1DtRYdVKIkPHtyOL_ZhR19rf20XA0sgKUmAHD1EQLLiXm2akeHh6ikZMr/exec";
 
-    let idToken = ""; let lineProfile = null; let cart = [];
+    let idToken = ""; let lineProfile = null; let cart = []; let currentOrders = [];
     let menuData = []; let optionsData = { sweetness: [], ice: [], toppings: [] }; let promosData = []; let storeStatus = "營業中";
-    let userInfo = { isMember: false, balance: 0, name: "" }; let myHistory = [];
+    let userInfo = { isMember: false, balance: 0, name: "" }; let userHistory = [];
 
-    function escapeHTML(str) { return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
-    function escapeJS(str) { return (!str) ? "" : str.toString().replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r"); }
+    function escapeHTML(str) { return (!str) ? "" : String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
     async function callGAS(action, payload = {}, options = {}) {
       payload.action = action; payload.idToken = idToken;
-      if (options.loading) Swal.fire({ title: options.loadingText || "處理中...", allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+      if (options.loading) Swal.fire({ title: options.loadingText || "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       try {
         const res = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(payload) });
         return await res.json();
@@ -121,7 +124,7 @@
         if (!liff.isLoggedIn()) { liff.login(); return; }
         idToken = liff.getIDToken(); lineProfile = await liff.getProfile();
         await initUser(); await loadMenu(); await fetchUserData();
-      } catch (e) { Swal.fire("錯誤", "LIFF 初始化失敗，請重新開啟", "error"); }
+      } catch (e) { Swal.fire("錯誤", "LIFF 初始化失敗", "error"); }
     };
 
     async function initUser() {
@@ -130,53 +133,100 @@
     }
 
     function renderMemberBox() {
-      const box = document.getElementById("member-box");
       if (userInfo.isMember) {
-        box.innerHTML = `<div class="member-row"><div class="member-info">👤 ${escapeHTML(userInfo.name)}<br>💰 餘額：$${Number(userInfo.balance || 0)}</div><button class="history-btn" onclick="openTransactionHistory()">交易明細</button></div>`;
+        document.getElementById("welcome-msg").innerText = `👤 ${userInfo.name} | 餘額: $${userInfo.balance}`;
+        document.getElementById("btn-show-history").style.display = "block";
       } else {
-        box.innerHTML = `<div class="member-row"><div class="member-info">👋 歡迎 ${escapeHTML(userInfo.name)}<br>尚未加入專屬會員</div><button class="join-btn" onclick="joinMember()">加入會員</button></div>`;
+        document.getElementById("welcome-msg").innerHTML = `👋 歡迎 ${escapeHTML(userInfo.name)} <button style="margin-left:10px; background:#d35400; color:white; border:none; padding:4px 8px; border-radius:5px; cursor:pointer;" onclick="joinMember()">加入會員</button>`;
+        document.getElementById("btn-show-history").style.display = "none";
       }
     }
 
     async function joinMember() {
       const res = await callGAS("joinMember", { lineName: lineProfile ? lineProfile.displayName : "" }, { loading: true, loadingText: "建檔中..." });
-      if (res.success) { userInfo = res.data; renderMemberBox(); Swal.fire("成功", "🎉 恭喜成為專屬會員！", "success"); } 
-      else Swal.fire("失敗", res.message, "error");
+      if (res.success) { userInfo = res.data; renderMemberBox(); Swal.fire("成功", "🎉 恭喜成為專屬會員！", "success"); } else Swal.fire("失敗", res.message, "error");
     }
 
     function fetchUserData() {
       if (!userInfo.isMember) return;
       callGAS("getUserOrdersAndHistory").then(res => {
         if (!res.success) return;
-        myHistory = res.data.history || [];
-        const orders = res.data.orders || [];
-        if (orders.length > 0) {
+        userHistory = res.data.history || []; currentOrders = res.data.orders || [];
+        if (currentOrders.length > 0) {
           let html = "";
-          orders.forEach(o => {
+          currentOrders.forEach((o, index) => {
             const tagClass = o.status === "未處理" ? "tag-red" : (o.status === "已接單" ? "tag-orange" : "tag-blue");
-            html += `<div class="my-order-item"><div>${escapeHTML(o.time)} 訂單</div><div class="my-order-tag ${tagClass}">${escapeHTML(o.status)}</div></div>`;
+            html += `
+              <div class="my-order-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
+                 <div style="display: flex; justify-content: space-between;">
+                   <div>${escapeHTML(o.time)} 訂單 #${escapeHTML(o.id.substring(o.id.length - 4))}</div>
+                   <div class="my-order-tag ${tagClass}">${escapeHTML(o.status)}</div>
+                 </div>
+                 <div style="display: flex; justify-content: space-between; align-items: center;">
+                   <div style="color: #e74c3c; font-weight: bold;">$${o.total}</div>
+                   <button class="history-btn" style="padding: 4px 10px; font-size: 12px; background: #8e44ad;" onclick="showOngoingOrderDetail(${index})">🔍 查看內容</button>
+                 </div>
+              </div>`;
           });
           document.getElementById("my-orders-list").innerHTML = html; document.getElementById("my-orders-board").style.display = "block";
         } else { document.getElementById("my-orders-board").style.display = "none"; }
       });
     }
 
+    window.showOngoingOrderDetail = function(index) {
+       const o = currentOrders[index];
+       if(!o || !o.orderContent) return Swal.fire('錯誤', '無法讀取訂單明細', 'error');
+       
+       let contentHtml = "";
+       if(o.orderDetail && o.orderDetail.items) {
+           contentHtml = generateDetailHTML(o.orderDetail, o.total);
+       } else {
+           contentHtml = `<div style="text-align:left; font-size:14px; line-height:1.6; background:#f9f9f9; padding:10px; border-radius:8px;">${escapeHTML(o.orderContent).replace(/\n/g, '<br>')}</div><div style="text-align:right; font-weight:bold; color:#e74c3c; margin-top:10px;">總金額：$${o.total}</div>`;
+       }
+       Swal.fire({ title: `訂單 #${escapeHTML(o.id.substring(o.id.length - 4))}`, html: contentHtml, confirmButtonText: '關閉' });
+    };
+
     function openTransactionHistory() {
       let tbody = "";
-      if(myHistory.length === 0) tbody = "<tr><td colspan='4' style='text-align:center;'>尚無交易紀錄</td></tr>";
+      if(userHistory.length === 0) tbody = "<tr><td colspan='4' style='text-align:center;'>尚無交易紀錄</td></tr>";
       else {
-        myHistory.forEach(h => {
+        userHistory.forEach((h, index) => {
           let color = h.amount > 0 ? '#27ae60' : '#e74c3c';
-          let btn = h.type === '消費扣款' && h.orderContent ? `<br><button class="history-btn" style="margin-top:3px; padding:3px 6px;" onclick="showOrderDetails('${encodeURIComponent(h.orderContent)}')">🔍 明細</button>` : '';
+          let btn = h.type === '消費扣款' && h.orderContent ? `<br><button class="history-btn" style="margin-top:5px; padding:4px 8px; font-size:11px;" onclick="showPurchaseDetail(${index})">🔍 明細</button>` : '';
           tbody += `<tr><td>${escapeHTML(h.time)}</td><td>${escapeHTML(h.type)}${btn}</td><td style="color:${color};font-weight:bold;">${h.amount>0?'+':''}${h.amount}</td><td>$${h.balance}</td></tr>`;
         });
       }
-      Swal.fire({ title: '交易明細', html: `<div style="max-height:60vh;overflow-y:auto;"><table class="history-table"><thead><tr><th>時間</th><th>類型</th><th>金額</th><th>結餘</th></tr></thead><tbody>${tbody}</tbody></table></div>`, confirmButtonText: '關閉' });
+      Swal.fire({ title: '交易明細', html: `<div style="max-height:60vh;overflow-y:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;"><thead><tr><th style="border-bottom:1px solid #eee; padding:5px;">時間</th><th style="border-bottom:1px solid #eee; padding:5px;">類型</th><th style="border-bottom:1px solid #eee; padding:5px;">金額</th><th style="border-bottom:1px solid #eee; padding:5px;">結餘</th></tr></thead><tbody>${tbody}</tbody></table></div>`, confirmButtonText: '關閉' });
     }
 
-    window.showOrderDetails = function(encodedContent) {
-       let content = decodeURIComponent(encodedContent).replace(/\n/g, '<br>');
-       Swal.fire({ title: '訂單內容', html: `<div style="text-align:left; font-size:15px; line-height:1.6; background:#f9f9f9; padding:10px; border-radius:8px;">${content}</div>`, confirmButtonColor: '#d35400' });
+    function generateDetailHTML(orderDetail, spent) {
+      let html = "";
+      orderDetail.items.forEach((item, i) => {
+        const tops = item.toppings && item.toppings.length > 0 ? item.toppings.join("、") : "無";
+        html += `
+          <div class="detail-item">
+            <b>${i + 1}. [${escapeHTML(item.size)}] ${escapeHTML(item.name)}</b><br>
+            ${escapeHTML(item.sweetness)}｜${escapeHTML(item.ice)}｜加料：${escapeHTML(tops)}
+            <div class="price-line" style="margin-top:5px;"><span>飲料原價</span><span>$${Number(item.drinkOriginalPrice)}</span></div>
+            <div class="price-line"><span>加料金額</span><span>$${Number(item.toppingPrice)}</span></div>
+            ${Number(item.drinkDiscount) > 0 ? `<div class="price-line discount-text"><span>活動折抵</span><span>-$${Number(item.drinkDiscount)}</span></div><div style="font-size:12px;color:#777;">${escapeHTML(item.promoNote)}</div>` : `<div class="price-line"><span>活動折抵</span><span>$0</span></div>`}
+            <div class="price-line final-price" style="margin-top:5px; border-top:1px dashed #ccc; padding-top:5px;"><span>此杯實付</span><span>$${Number(item.finalUnitPrice)}</span></div>
+          </div>`;
+      });
+      if (orderDetail.promoLogs && orderDetail.promoLogs.length > 0) {
+        html += `<div style="text-align:left;background:#eef9ff;border-left:4px solid #3498db;padding:10px;border-radius:6px;margin-top:8px;font-size:13px;"><b>活動說明</b><br>${orderDetail.promoLogs.map(x => escapeHTML(x)).join("<br>")}</div>`;
+      }
+      html += `
+        <div style="text-align:right;margin-top:12px;color:#555;">原價合計：$${Number(orderDetail.originalTotal)}</div>
+        <div style="text-align:right;color:#27ae60;font-weight:bold;">活動折抵：-$${Number(orderDetail.discountAmount)}</div>
+        <div style="text-align:right;margin-top:4px;font-size:18px;font-weight:bold;color:#e74c3c;">本次花費：$${Number(orderDetail.finalTotal || spent)}</div>`;
+      return html;
+    }
+
+    window.showPurchaseDetail = function(index) {
+      const h = userHistory[index];
+      if (!h || !h.orderDetail || !h.orderDetail.items) return Swal.fire('錯誤', '找不到明細資料', 'error');
+      Swal.fire({ title: "購買內容與價格明細", html: generateDetailHTML(h.orderDetail, Math.abs(h.amount)), confirmButtonText: "關閉" });
     };
 
     async function loadMenu() {
@@ -184,7 +234,7 @@
       if (res.success) {
         menuData = res.data.menu || []; optionsData = res.data.options; promosData = res.data.promos || []; storeStatus = res.data.storeStatus;
         document.getElementById("status-text").style.display = "none";
-        if (storeStatus !== "營業中") { document.getElementById("store-closed-banner").style.display = "block"; }
+        if (storeStatus !== "營業中") document.getElementById("store-closed-banner").style.display = "block";
         renderPromosAndCombos(); renderMenu(); updateCart();
       }
     }
@@ -197,18 +247,17 @@
           let tName = p.targetType === "指定組合" ? String(p.targetName).split(",").join(" + ") : p.targetName;
           comboHtml += `
             <div class="combo-card">
-              <div class="combo-card-name">🔥 ${escapeHTML(tName)}</div>
-              <div class="combo-card-price">套餐價 $${p.comboPrice}</div>
-              <div class="combo-card-desc">${escapeHTML(sizeText)} ${p.desc ? '｜'+escapeHTML(p.desc) : ''}<br>※每杯可自選甜度冰塊，加料另計</div>
-              ${p.targetType === "指定組合" ? `<button class="combo-btn" onclick="selectComboPromo('${escapeJS(p.id)}')">選擇此套餐</button>` : ''}
+              <div class="combo-name">🔥 ${escapeHTML(tName)}</div>
+              <div class="combo-price">套餐價 $${p.comboPrice}</div>
+              <div class="combo-desc">${escapeHTML(sizeText)} ${p.desc ? '｜'+escapeHTML(p.desc) : ''}<br>※每杯可自選甜度冰塊，加料另計</div>
+              ${p.targetType === "指定組合" ? `<button class="combo-btn" onclick="selectComboPromo('${escapeHTML(p.id)}')">選擇此套餐</button>` : ''}
             </div>`;
         } else {
           let tag = p.targetType === "全館" ? "【全館】" : `【${escapeHTML(p.targetName)}】`;
           bannerHtml += `📢 ${tag} 買${p.buyQty}送${p.freeQty} ${sizeText} ${p.desc?' - '+escapeHTML(p.desc):''}<br>`;
         }
       });
-      const cBox = document.getElementById("menu-container");
-      if(comboHtml) cBox.innerHTML += `<div class="combo-series-box"><div class="combo-series-title">👑 今日套餐組合</div>${comboHtml}</div>`;
+      if(comboHtml) { document.getElementById("combo-list-container").innerHTML = comboHtml; document.getElementById("combo-section").style.display = "block"; }
       if(bannerHtml) { document.getElementById("promo-banner").innerHTML = bannerHtml; document.getElementById("promo-banner").style.display = "block"; }
     }
 
@@ -255,7 +304,7 @@
         <div class="option-section"><div class="option-title">甜度</div><div class="choice-grid">${sHtml}</div></div>
         <div class="option-section"><div class="option-title">冰塊</div><div class="choice-grid">${iHtml}</div></div>
         <div class="option-section"><div class="option-title">加料 (可複選)</div><div class="choice-grid">${tHtml||'<span style="color:#999;">無</span>'}</div></div>
-        <div class="option-section"><div class="option-title">數量</div><div class="qty-control"><button type="button" class="qty-btn" onclick="changeQty(-1)">−</button><div id="swal-qty-value" class="qty-value">1</div><button type="button" class="qty-btn" onclick="changeQty(1)">+</button></div></div>
+        <div class="option-section" style="border:none;"><div class="option-title">數量</div><div class="qty-control"><button type="button" class="qty-btn" onclick="changeQty(-1)">−</button><div id="swal-qty-value" class="qty-value">1</div><button type="button" class="qty-btn" onclick="changeQty(1)">+</button></div></div>
       `;
     }
 
@@ -275,8 +324,8 @@
 
     async function selectItem(encodedName) {
       const item = menuData.find(m => m.name === decodeURIComponent(encodedName));
-      const res = await Swal.fire({ title: item.name, html: buildItemFormHTML(item), showCancelButton: true, confirmButtonText: "加入購物車", preConfirm: () => readItemFormValue(item) });
-      if (res.isConfirmed && res.value) { cart.push(res.value); updateCart(); Swal.fire("成功", "已加入購物車", "success"); }
+      const res = await Swal.fire({ title: item.name, html: buildItemFormHTML(item), showCancelButton: true, confirmButtonText: "加入", preConfirm: () => readItemFormValue(item) });
+      if (res.isConfirmed && res.value) { cart.push(res.value); updateCart(); Swal.fire({title:"已加入", icon:"success", timer:1000, showConfirmButton:false}); }
     }
 
     async function selectComboPromo(promoId) {
@@ -294,7 +343,7 @@
         comboItems.push(res.value);
       }
       comboItems.forEach(item => cart.push(item)); updateCart();
-      Swal.fire({title:"已加入套餐", text: "已為您成功加入購物車，結帳時將自動套用組合價！", icon:"success"});
+      Swal.fire({title:"已加入套餐", text: "結帳時將自動套用組合價！", icon:"success"});
     }
 
     function calculateCart() {
@@ -333,33 +382,33 @@
     function updateCart() {
       let count = 0; cart.forEach(i => count += i.qty);
       if (count > 0) {
-        document.getElementById("cart-bar").style.display = "flex"; document.body.classList.add("has-cart");
+        document.getElementById("cart-bar").style.display = "flex";
         let calc = calculateCart(); document.getElementById("cart-count").innerText = count; document.getElementById("cart-total").innerText = calc.final;
-      } else { document.getElementById("cart-bar").style.display = "none"; document.body.classList.remove("has-cart"); Swal.close(); }
+      } else { document.getElementById("cart-bar").style.display = "none"; Swal.close(); }
     }
 
     window.openCartManager = function() {
       let html = `<div style="text-align:left; max-height: 300px; overflow-y:auto; border-top: 1px solid #eee; padding-top:10px;">`;
       cart.forEach((item, index) => {
         let tops = item.toppings.length > 0 ? `+${item.toppings.join("、")}` : "";
-        html += `<div style="padding:10px 0; border-bottom:1px dashed #eee;"><b>[${item.size}] ${escapeHTML(item.name)} x${item.qty}</b> <span style="float:right; color:#e74c3c;">$${item.unitPrice * item.qty}</span><div style="font-size:13px; color:#7f8c8d; margin-top:5px;">${item.sweetness}, ${item.ice} ${tops}</div><button style="margin-top:5px; background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:5px; font-weight:bold; cursor:pointer;" onclick="cart.splice(${index},1); updateCart(); openCartManager();">🗑️ 刪除此項</button></div>`;
+        html += `<div style="padding:10px 0; border-bottom:1px dashed #eee;"><b>[${item.size}] ${escapeHTML(item.name)} x${item.qty}</b> <span style="float:right; color:#e74c3c; font-weight:bold;">$${item.unitPrice * item.qty}</span><div style="font-size:13px; color:#7f8c8d; margin-top:5px;">${item.sweetness}, ${item.ice} ${tops}</div><button style="margin-top:8px; background:#e74c3c; color:white; border:none; padding:5px 12px; border-radius:5px; font-weight:bold; cursor:pointer;" onclick="cart.splice(${index},1); updateCart(); openCartManager();">🗑️ 刪除</button></div>`;
       });
       html += `</div>`;
-      Swal.fire({ title: "我的購物車", html: html, confirmButtonText: "關閉", showCancelButton: true, cancelButtonText: "清空購物車", cancelButtonColor: "#95a5a6" }).then(r => { if(r.dismiss === Swal.DismissReason.cancel) { cart = []; updateCart(); Swal.fire('已清空', '購物車已清空', 'success'); } });
+      Swal.fire({ title: "我的購物車", html: html, confirmButtonText: "關閉", showCancelButton: true, cancelButtonText: "清空", cancelButtonColor: "#95a5a6" }).then(r => { if(r.dismiss === Swal.DismissReason.cancel) { cart = []; updateCart(); Swal.fire('已清空', '購物車已清空', 'success'); } });
     };
 
-    window.checkout = function() {
+    window.openCheckoutModal = function() {
       if(storeStatus !== "營業中") return Swal.fire("休息中", "門市目前暫停點餐", "warning");
       let calc = calculateCart();
       let payOpts = userInfo.isMember && userInfo.balance >= calc.final ? `<option value="現場結帳">現場結帳</option><option value="餘額扣款">餘額扣款 (剩餘 $${userInfo.balance})</option>` : `<option value="現場結帳">現場結帳</option><option value="餘額扣款" disabled>餘額扣款 (餘額不足)</option>`;
       let html = `
         <div style="text-align:right; font-weight:bold; font-size:22px; color:#d35400; margin-bottom:15px;">應付總額：$${calc.final}</div>
-        ${calc.discount > 0 ? `<div style="text-align:right; font-size:14px; color:#2ecc71; margin-top:-10px; margin-bottom:15px;">(已自動套用活動折抵 $${calc.discount})</div>` : ''}
-        <div style="text-align:left; margin-bottom:5px; font-weight:bold;">付款方式</div><select id="co-pay" class="form-control" style="background:#f9f9f9;">${payOpts}</select>
-        <div style="text-align:left; margin-bottom:5px; font-weight:bold; margin-top:10px;">姓氏/稱呼</div><input id="co-name" class="form-control" placeholder="例：王先生">
-        <div style="text-align:left; margin-bottom:5px; font-weight:bold; margin-top:10px;">手機末三碼</div><input id="co-phone" class="form-control" placeholder="例：123" maxlength="3">
+        ${calc.discount > 0 ? `<div style="text-align:right; font-size:14px; color:#2ecc71; margin-top:-10px; margin-bottom:15px;">(活動折抵 -$${calc.discount})</div>` : ''}
+        <div style="text-align:left; margin-bottom:5px; font-weight:bold;">付款方式</div><select id="co-pay" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:15px;">${payOpts}</select>
+        <div style="text-align:left; margin-bottom:5px; font-weight:bold; margin-top:15px;">姓氏/稱呼</div><input id="co-name" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:15px;" placeholder="例：王先生">
+        <div style="text-align:left; margin-bottom:5px; font-weight:bold; margin-top:15px;">手機末三碼</div><input id="co-phone" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:15px;" placeholder="例：123" maxlength="3">
       `;
-      Swal.fire({ title: "確認結帳", html: html, showCancelButton: true, confirmButtonText: "送出訂單", preConfirm: () => {
+      Swal.fire({ title: "確認結帳", html: html, showCancelButton: true, confirmButtonText: "送出訂單", confirmButtonColor: "#d35400", preConfirm: () => {
           let n = document.getElementById("co-name").value; let p = document.getElementById("co-phone").value; let py = document.getElementById("co-pay").value;
           if(!n || !/^\d{3}$/.test(p)) { Swal.showValidationMessage("稱呼或手機格式錯誤"); return false; }
           return { n, p, py };
