@@ -85,16 +85,6 @@
       cursor: pointer;
     }
 
-    .store-closed {
-      margin: 15px;
-      padding: 20px;
-      background: #ffeaea;
-      color: #c0392b;
-      border-radius: 10px;
-      text-align: center;
-      font-weight: bold;
-    }
-
     .promo-box {
       margin: 10px 15px;
       padding: 12px;
@@ -103,6 +93,16 @@
       border-radius: 8px;
       font-size: 14px;
       line-height: 1.6;
+    }
+
+    .store-closed {
+      margin: 15px;
+      padding: 20px;
+      background: #ffeaea;
+      color: #c0392b;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: bold;
     }
 
     .category-title {
@@ -173,39 +173,33 @@
       line-height: 1.5;
     }
 
-    .cart-btn {
-      background: #2ecc71;
-      color: white;
-      border: none;
-      padding: 9px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      white-space: nowrap;
+    .cart-actions {
+      display: flex;
+      gap: 5px;
     }
 
-    .cart-view-btn {
-      background: #f39c12;
-      color: white;
-      border: none;
-      padding: 9px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      white-space: nowrap;
-      margin-right: 5px;
-    }
-
+    .cart-btn,
+    .cart-view-btn,
     .cart-clear {
-      background: #95a5a6;
       color: white;
       border: none;
       padding: 9px 12px;
       border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
-      margin-right: 5px;
       white-space: nowrap;
+    }
+
+    .cart-btn {
+      background: #2ecc71;
+    }
+
+    .cart-view-btn {
+      background: #f39c12;
+    }
+
+    .cart-clear {
+      background: #95a5a6;
     }
 
     .form-row {
@@ -227,6 +221,86 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       font-size: 15px;
+    }
+
+    .option-section {
+      text-align: left;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed #ddd;
+    }
+
+    .option-title {
+      font-weight: bold;
+      color: #d35400;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    .choice-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .choice-label {
+      cursor: pointer;
+    }
+
+    .choice-label input {
+      display: none;
+    }
+
+    .choice-pill {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #ccc;
+      background: #fff;
+      font-size: 14px;
+      user-select: none;
+    }
+
+    .choice-label input:checked + .choice-pill {
+      background: #d35400;
+      color: white;
+      border-color: #d35400;
+      font-weight: bold;
+    }
+
+    .topping-label input:checked + .choice-pill {
+      background: #8e44ad;
+      color: white;
+      border-color: #8e44ad;
+      font-weight: bold;
+    }
+
+    .qty-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    .qty-btn {
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 50%;
+      background: #d35400;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .qty-value {
+      min-width: 48px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #2c3e50;
     }
 
     .cart-list {
@@ -315,16 +389,31 @@
       line-height: 1.6;
     }
 
-    .swal-order-content {
+    .detail-item {
       text-align: left;
-      white-space: pre-line;
       background: #fafafa;
-      border: 1px dashed #ccc;
-      padding: 12px;
+      border: 1px solid #eee;
       border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 14px;
       line-height: 1.6;
-      max-height: 360px;
-      overflow-y: auto;
+    }
+
+    .price-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .discount-text {
+      color: #27ae60;
+      font-weight: bold;
+    }
+
+    .final-price {
+      color: #e74c3c;
+      font-weight: bold;
     }
 
     @media (max-width: 520px) {
@@ -343,7 +432,6 @@
       .cart-clear,
       .cart-btn {
         flex: 1;
-        margin-right: 0;
         padding-left: 6px;
         padding-right: 6px;
       }
@@ -366,16 +454,9 @@
       <p>線上點餐系統</p>
     </div>
 
-    <div id="member-box" class="member-box">
-      LINE 驗證中...
-    </div>
-
+    <div id="member-box" class="member-box">LINE 驗證中...</div>
     <div id="promo-area"></div>
-
-    <div id="menu-container">
-      載入中...
-    </div>
-
+    <div id="menu-container">載入中...</div>
     <div id="history-container"></div>
   </div>
 
@@ -396,7 +477,7 @@
 
   <script>
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyhb4fALeiODPqNndnfSNBImndeIxadDG8rfMYWE4Gr92AjkBnZz0bH6dfWA1B32WMQ/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx0o4IIHowmOz9Hc4Zj2q366MfdYWO0lxnGuOObQz2VsLV_6sqYZcI1cKyuoW6eH2xt/exec";
 
     let idToken = "";
     let lineProfile = null;
@@ -428,15 +509,6 @@
         "'": "&#39;",
         '"': "&quot;"
       }[tag] || tag));
-    }
-
-    function escapeJS(str) {
-      return (!str) ? "" : str.toString()
-        .replace(/\\/g, "\\\\")
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '\\"')
-        .replace(/\n/g, "\\n")
-        .replace(/\r/g, "\\r");
     }
 
     async function callGAS(action, payload = {}) {
@@ -642,95 +714,155 @@
       }
     }
 
+    function makeChoiceRadio(name, value, label, checked) {
+      return `
+        <label class="choice-label">
+          <input type="radio" name="${name}" value="${escapeHTML(value)}" ${checked ? "checked" : ""}>
+          <span class="choice-pill">${escapeHTML(label)}</span>
+        </label>
+      `;
+    }
+
+    function makeChoiceCheckbox(value, label, checked) {
+      return `
+        <label class="choice-label topping-label">
+          <input type="checkbox" name="swal-topping" value="${escapeHTML(value)}" ${checked ? "checked" : ""}>
+          <span class="choice-pill">${escapeHTML(label)}</span>
+        </label>
+      `;
+    }
+
+    function changeQty(delta) {
+      const el = document.getElementById("swal-qty-value");
+      const allowZero = el.dataset.allowZero === "1";
+      let current = Number(el.innerText || 0);
+      let next = current + delta;
+      let min = allowZero ? 0 : 1;
+
+      if (next < min) next = min;
+      if (next > 20) next = 20;
+
+      el.innerText = next;
+    }
+
     function buildItemFormHTML(item, existingItem = null, allowZero = false) {
       let defaultSize = existingItem ? existingItem.size : "";
       let defaultSweetness = existingItem ? existingItem.sweetness : "";
       let defaultIce = existingItem ? existingItem.ice : "";
       let defaultQty = existingItem ? Number(existingItem.qty || 1) : 1;
-      let defaultToppings = existingItem && Array.isArray(existingItem.toppings) ? existingItem.toppings : [];
+      let defaultToppings = existingItem && Array.isArray(existingItem.toppings)
+        ? existingItem.toppings
+        : [];
 
-      let sizeOptions = "";
+      let sizeHtml = "";
 
       if (Number(item.priceL) > 0) {
-        sizeOptions += `<option value="L" ${defaultSize === "L" ? "selected" : ""}>L 杯 - $${item.priceL}</option>`;
+        sizeHtml += makeChoiceRadio(
+          "swal-size",
+          "L",
+          `L 杯 $${item.priceL}`,
+          defaultSize === "L" || !defaultSize
+        );
       }
 
       if (Number(item.priceXL) > 0) {
-        sizeOptions += `<option value="XL" ${defaultSize === "XL" ? "selected" : ""}>XL 杯 - $${item.priceXL}</option>`;
+        sizeHtml += makeChoiceRadio(
+          "swal-size",
+          "XL",
+          `XL 杯 $${item.priceXL}`,
+          defaultSize === "XL"
+        );
       }
 
-      let sweetnessOptions = optionsData.sweetness.map(o => {
-        let selected = defaultSweetness === o.name ? "selected" : "";
-        return `<option value="${escapeHTML(o.name)}" ${selected}>${escapeHTML(o.name)}</option>`;
+      let sweetnessList = optionsData.sweetness.length > 0
+        ? optionsData.sweetness
+        : [{ name: "正常甜", price: 0 }];
+
+      let iceList = optionsData.ice.length > 0
+        ? optionsData.ice
+        : [{ name: "正常冰", price: 0 }];
+
+      let sweetnessHtml = sweetnessList.map((o, idx) => {
+        return makeChoiceRadio(
+          "swal-sweetness",
+          o.name,
+          o.name,
+          defaultSweetness ? defaultSweetness === o.name : idx === 0
+        );
       }).join("");
 
-      let iceOptions = optionsData.ice.map(o => {
-        let selected = defaultIce === o.name ? "selected" : "";
-        return `<option value="${escapeHTML(o.name)}" ${selected}>${escapeHTML(o.name)}</option>`;
+      let iceHtml = iceList.map((o, idx) => {
+        return makeChoiceRadio(
+          "swal-ice",
+          o.name,
+          o.name,
+          defaultIce ? defaultIce === o.name : idx === 0
+        );
       }).join("");
 
-      let toppingOptions = optionsData.toppings.map(o => {
-        let checked = defaultToppings.includes(o.name) ? "checked" : "";
-        return `
-          <label style="display:block;margin:4px 0;">
-            <input type="checkbox" name="topping" value="${escapeHTML(o.name)}" ${checked}>
-            ${escapeHTML(o.name)} +$${Number(o.price || 0)}
-          </label>
-        `;
-      }).join("");
+      let toppingHtml = "";
+
+      if (optionsData.toppings.length > 0) {
+        toppingHtml = optionsData.toppings.map(o => {
+          return makeChoiceCheckbox(
+            o.name,
+            `${o.name} +$${Number(o.price || 0)}`,
+            defaultToppings.includes(o.name)
+          );
+        }).join("");
+      } else {
+        toppingHtml = `<span style="color:#999;">無加料選項</span>`;
+      }
 
       return `
-        <div class="form-row">
-          <label>容量</label>
-          <select id="swal-size" class="form-control">
-            ${sizeOptions}
-          </select>
+        <div class="option-section">
+          <div class="option-title">① 選擇容量</div>
+          <div class="choice-grid">${sizeHtml}</div>
         </div>
 
-        <div class="form-row">
-          <label>甜度</label>
-          <select id="swal-sweetness" class="form-control">
-            ${sweetnessOptions || `<option value="正常甜">正常甜</option>`}
-          </select>
+        <div class="option-section">
+          <div class="option-title">② 選擇甜度</div>
+          <div class="choice-grid">${sweetnessHtml}</div>
         </div>
 
-        <div class="form-row">
-          <label>冰塊</label>
-          <select id="swal-ice" class="form-control">
-            ${iceOptions || `<option value="正常冰">正常冰</option>`}
-          </select>
+        <div class="option-section">
+          <div class="option-title">③ 選擇冰塊</div>
+          <div class="choice-grid">${iceHtml}</div>
         </div>
 
-        <div class="form-row">
-          <label>數量${allowZero ? "，可填 0 表示刪除" : ""}</label>
-          <input id="swal-qty" class="form-control" type="number" min="${allowZero ? "0" : "1"}" max="20" value="${defaultQty}">
+        <div class="option-section">
+          <div class="option-title">④ 選擇加料</div>
+          <div class="choice-grid">${toppingHtml}</div>
         </div>
 
-        <div class="form-row">
-          <label>加料</label>
-          <div style="max-height:120px;overflow-y:auto;border:1px solid #ddd;border-radius:6px;padding:8px;">
-            ${toppingOptions || `<span style="color:#999;">無加料選項</span>`}
+        <div class="option-section">
+          <div class="option-title">⑤ 選擇數量${allowZero ? "，可調成 0 代表刪除" : ""}</div>
+          <div class="qty-control">
+            <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
+            <div id="swal-qty-value" class="qty-value" data-allow-zero="${allowZero ? "1" : "0"}">${defaultQty}</div>
+            <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
           </div>
         </div>
       `;
     }
 
     function readItemFormValue(item) {
-      const size = document.getElementById("swal-size").value;
-      const sweetness = document.getElementById("swal-sweetness").value;
-      const ice = document.getElementById("swal-ice").value;
-      const qty = Number(document.getElementById("swal-qty").value);
+      const sizeEl = document.querySelector('input[name="swal-size"]:checked');
+      const sweetnessEl = document.querySelector('input[name="swal-sweetness"]:checked');
+      const iceEl = document.querySelector('input[name="swal-ice"]:checked');
+      const qty = Number(document.getElementById("swal-qty-value").innerText || 0);
 
       const toppings = [];
-      document.querySelectorAll('input[name="topping"]:checked').forEach(cb => {
+
+      document.querySelectorAll('input[name="swal-topping"]:checked').forEach(cb => {
         toppings.push(cb.value);
       });
 
       return {
         name: item.name,
-        size: size,
-        sweetness: sweetness,
-        ice: ice,
+        size: sizeEl ? sizeEl.value : "L",
+        sweetness: sweetnessEl ? sweetnessEl.value : "正常甜",
+        ice: iceEl ? iceEl.value : "正常冰",
         qty: qty,
         toppings: toppings
       };
@@ -1171,22 +1303,105 @@
       }
 
       const spent = Math.abs(Number(h.amount || 0));
-      const content = h.orderContent
-        ? escapeHTML(h.orderContent)
-        : "目前查不到此筆訂單內容，可能是舊資料或訂單內容未關聯成功。";
+
+      if (!h.orderDetail || !Array.isArray(h.orderDetail.items)) {
+        Swal.fire({
+          title: "購買內容",
+          html: `
+            <div style="text-align:left;white-space:pre-line;background:#fafafa;border:1px dashed #ccc;padding:12px;border-radius:8px;">
+              ${h.orderContent ? escapeHTML(h.orderContent) : "目前查不到此筆訂單內容，可能是舊資料或訂單內容未關聯成功。"}
+            </div>
+            <div style="text-align:right;margin-top:12px;font-weight:bold;color:#e74c3c;">
+              本次花費：$${spent}
+            </div>
+            <div style="text-align:right;margin-top:4px;color:#555;">
+              扣款後餘額：$${Number(h.balance || 0)}
+            </div>
+          `,
+          width: 560,
+          confirmButtonText: "關閉"
+        });
+
+        return;
+      }
+
+      let html = "";
+
+      h.orderDetail.items.forEach((item, i) => {
+        const toppings = item.toppings && item.toppings.length > 0
+          ? item.toppings.join("、")
+          : "無";
+
+        html += `
+          <div class="detail-item">
+            <b>${i + 1}. [${escapeHTML(item.size)}] ${escapeHTML(item.name)}</b><br>
+            ${escapeHTML(item.sweetness)}｜${escapeHTML(item.ice)}｜加料：${escapeHTML(toppings)}
+
+            <div class="price-line">
+              <span>飲料原價</span>
+              <span>$${Number(item.drinkOriginalPrice || 0)}</span>
+            </div>
+
+            <div class="price-line">
+              <span>加料金額</span>
+              <span>$${Number(item.toppingPrice || 0)}</span>
+            </div>
+
+            ${
+              Number(item.drinkDiscount || 0) > 0
+                ? `
+                  <div class="price-line discount-text">
+                    <span>活動折抵</span>
+                    <span>-$${Number(item.drinkDiscount || 0)}</span>
+                  </div>
+                  <div style="font-size:12px;color:#777;margin-top:3px;">
+                    ${escapeHTML(item.promoNote || "已套用優惠")}
+                  </div>
+                `
+                : `
+                  <div class="price-line">
+                    <span>活動折抵</span>
+                    <span>$0</span>
+                  </div>
+                `
+            }
+
+            <div class="price-line final-price">
+              <span>此杯實付</span>
+              <span>$${Number(item.finalUnitPrice || 0)}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      if (h.orderDetail.promoLogs && h.orderDetail.promoLogs.length > 0) {
+        html += `
+          <div style="text-align:left;background:#eef9ff;border-left:4px solid #3498db;padding:10px;border-radius:6px;margin-top:8px;font-size:13px;">
+            <b>活動說明</b><br>
+            ${h.orderDetail.promoLogs.map(x => escapeHTML(x)).join("<br>")}
+          </div>
+        `;
+      }
+
+      html += `
+        <div style="text-align:right;margin-top:12px;color:#555;">
+          原價合計：$${Number(h.orderDetail.originalTotal || 0)}
+        </div>
+        <div style="text-align:right;color:#27ae60;font-weight:bold;">
+          活動折抵：-$${Number(h.orderDetail.discountAmount || 0)}
+        </div>
+        <div style="text-align:right;margin-top:4px;font-size:16px;font-weight:bold;color:#e74c3c;">
+          本次花費：$${Number(h.orderDetail.finalTotal || spent)}
+        </div>
+        <div style="text-align:right;margin-top:4px;color:#555;">
+          扣款後餘額：$${Number(h.balance || 0)}
+        </div>
+      `;
 
       Swal.fire({
-        title: "購買內容",
-        html: `
-          <div class="swal-order-content">${content}</div>
-          <div style="text-align:right;margin-top:12px;font-weight:bold;color:#e74c3c;">
-            本次花費：$${spent}
-          </div>
-          <div style="text-align:right;margin-top:4px;color:#555;">
-            扣款後餘額：$${Number(h.balance || 0)}
-          </div>
-        `,
-        width: 560,
+        title: "購買內容與價格明細",
+        html: html,
+        width: 600,
         confirmButtonText: "關閉"
       });
     }
