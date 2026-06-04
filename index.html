@@ -67,6 +67,7 @@
 <body>
   <div class="container">
     <div id="store-closed-banner" class="store-closed" style="display:none;">⛔ 門市目前休息中，暫不開放點餐 ⛔</div>
+    
     <div id="promo-banner" class="promo-banner" style="display:none;"></div>
     
     <div class="header">
@@ -109,9 +110,9 @@
   </div>
 
   <script>
-    // ⚠️ 記得替換成你最新的 GAS 網址
+    // ⚠️ 記得替換成你最新的 GAS 網址 ⚠️
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzr1_m2TvvBynTaUIXRATA6XMOjXp5wk6w9IY6D-FbkWuImo_NTyku6vPpyR1-jGooJ/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw_WDlljEiUfB9KenD8Hyt98X3-3jROh3lpHjRdI143OIIRB9iWwMttvdRZ_ESv5TTW/exec";
 
     let idToken = ""; let lineProfile = null; let cart = []; let currentOrders = [];
     let menuData = []; let optionsData = { sweetness: [], ice: [], toppings: [] }; let promosData = []; let storeStatus = "營業中";
@@ -121,54 +122,14 @@
     function escapeJS(str) { return (!str) ? "" : str.toString().replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r"); }
 
     async function callGAS(action, payload = {}, options = {}) {
-
-      // ✅ 必填參數
-      payload.action = action;
-      payload.idToken = idToken;
-
-      // ✅ ✅ ✅ 新增 requestId（防重複請求）
+      payload.action = action; payload.idToken = idToken;
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-
-      // ✅ Loading UI（保留你原本功能）
-      if (options.loading) {
-        Swal.fire({
-          title: options.loadingText || "處理中...",
-          allowOutsideClick: false,
-          didOpen: () => Swal.showLoading()
-        });
-      }
-
+      if (options.loading) Swal.fire({ title: options.loadingText || "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       try {
-        const res = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-
-        // ✅ 安全錯誤處理
-        if (!data.success && data.message) {
-          console.warn("API錯誤:", data.message);
-        }
-
-        return data;
-
-      } catch (err) {
-        console.error("API錯誤:", err);
-
-        Swal.fire({
-          icon: "error",
-          title: "連線失敗",
-          text: "無法連接伺服器"
-        });
-
-          return { success: false };
-      }
+        const res = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(payload) });
+        return await res.json();
+      } catch (err) { return { success: false, message: "連線失敗，請稍後再試。" }; }
     }
-
 
     window.onload = async function () {
       try {
@@ -195,19 +156,15 @@
       if (res.success) { 
         userInfo = res.data; 
         renderMemberBox(); 
-        
-        // 判斷是否為新訪客，是的話就跳出邀請 Modal
         if (!userInfo.isMember) {
           document.getElementById("join-modal").style.display = "flex";
         } else {
-           // 是會員就直接載入後續資料
            await loadMenu(); 
            await fetchUserData();
         }
       }
     }
 
-    // Modal 中的加入會員按鈕
     async function joinMemberFromModal() {
       document.getElementById("join-modal").style.display = "none";
       const res = await callGAS("joinMember", { lineName: lineProfile ? lineProfile.displayName : "" }, { loading: true, loadingText: "建檔中..." });
@@ -222,7 +179,6 @@
       }
     }
 
-    // Modal 中的先不要按鈕
     async function skipJoin() {
       document.getElementById("join-modal").style.display = "none";
       await loadMenu();
@@ -242,15 +198,10 @@
         box.innerHTML = `
           <div class="member-row">
             <div class="member-info">👋 歡迎 ${escapeHTML(userInfo.name)}<br>尚未加入專屬會員</div>
-            <button class="join-btn" onclick="joinMember()">加入會員</button>
+            <button class="join-btn" onclick="joinMemberFromModal()">加入會員</button>
           </div>
         `;
       }
-    }
-
-    async function joinMember() {
-      const res = await callGAS("joinMember", { lineName: lineProfile ? lineProfile.displayName : "" }, { loading: true, loadingText: "建檔中..." });
-      if (res.success) { userInfo = res.data; renderMemberBox(); Swal.fire("成功", "🎉 恭喜成為專屬會員！", "success"); } else Swal.fire("失敗", res.message, "error");
     }
 
     function fetchUserData() {
@@ -281,7 +232,6 @@
     window.showOngoingOrderDetail = function(index) {
        const o = currentOrders[index];
        if(!o || !o.orderContent) return Swal.fire('錯誤', '無法讀取訂單明細', 'error');
-       
        let contentHtml = "";
        if(o.orderDetail && o.orderDetail.items) {
            contentHtml = generateDetailHTML(o.orderDetail, o.total);
@@ -349,7 +299,6 @@
       container.innerHTML = "";
       if (storeStatus !== "營業中") { container.innerHTML = `<div class="store-closed">門市休息中</div>`; return; }
 
-      // 1. 優先渲染「今日優惠組合」在最頂端
       let comboHtml = ""; let bannerHtml = "";
       promosData.forEach(p => {
         const sizeText = p.sizeLimit !== "不限" ? `[限${escapeHTML(p.sizeLimit)}杯] ` : "";
@@ -367,10 +316,9 @@
           bannerHtml += `📢 ${tag} 買${p.buyQty}送${p.freeQty} ${sizeText} ${p.desc?' - '+escapeHTML(p.desc):''}<br>`;
         }
       });
-      if(comboHtml) container.innerHTML += `<div class="combo-series-box"><div class="combo-series-title">👑 今日套餐組合</div>${comboHtml}</div>`;
+      if(comboHtml) container.innerHTML += `<div class="combo-series-box"><div class="combo-series-title">👑 今日優惠組合</div>${comboHtml}</div>`;
       if(bannerHtml) { document.getElementById("promo-banner").innerHTML = bannerHtml; document.getElementById("promo-banner").style.display = "block"; }
 
-      // 2. 渲染下方常規菜單分類
       const grouped = {};
       menuData.forEach(item => { if (!grouped[item.category]) grouped[item.category] = []; grouped[item.category].push(item); });
       for (let cat in grouped) {
