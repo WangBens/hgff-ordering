@@ -136,48 +136,45 @@
 
     function escapeHTML(str) { return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
     async function callGAS(action, payload = {}) {
-      payload.action = action;
-      payload.idToken = adminIdToken;
+  payload.action = action;
+  payload.idToken = adminIdToken;
 
-      // ✅ 🔥 新增 requestId（防重複攻擊）
-      payload.requestId = Date.now() + "_" + Math.random();
+  // ✅ 防重複請求
+  payload.requestId = Date.now() + "_" + Math.random();
 
-      // ✅ 🔥 Admin API 自動帶 adminKey
-      const adminActions = [
-        "getAdminDashboardData",
-        "adminUpdateWallet",
-        "updateMemberName",
-        "processOrderAction",
-        "adminToggleStore",
-        "adminAddMenuItem",
-        "adminToggleMenuItem",
-        "adminAddPromo",
-        "adminTogglePromo"
-      ];
+  const adminActions = [
+    "getAdminDashboardData",
+    "adminUpdateWallet",
+    "updateMemberName",
+    "processOrderAction",
+    "adminToggleStore",
+    "adminAddMenuItem",
+    "adminToggleMenuItem",
+    "adminAddPromo",
+    "adminTogglePromo"
+  ];
 
-      if (adminActions.includes(action)) {
-        payload.adminKey = "CHANGE_TO_RANDOM_STRING"; // ⚠️ 要跟 GAS 一樣
-      }
+  if (adminActions.includes(action)) {
+    payload.adminKey = "my_super_secret_987654";
+  }
 
-      try {
-        const response = await fetch(GAS_API_URL, {
-          method: 'POST',
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": "abc123"
-          },
-          body: JSON.stringify(payload)
-        });
+  try {
+    const response = await fetch(GAS_API_URL, {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
 
-        const data = await response.json();
-        return data;
+    return await response.json();
 
-      } catch (err) {
-        console.error("API錯誤", err);
-        Swal.fire("錯誤", "伺服器連線失敗", "error");
-        return { success: false };
-      }
-    }
+  } catch (err) {
+    console.error("API錯誤", err);
+    Swal.fire("錯誤", "伺服器連線失敗", "error");
+    return { success: false };
+  }
+}
 
 
 
