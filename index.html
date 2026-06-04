@@ -1,86 +1,1704 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>凰貴妃茶堂 - 線上點餐</title>
 
-  <title>凰貴妃茶堂 - 線上點餐</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      font-family: Arial, "Microsoft JhengHei", sans-serif;
+      background: #fcf6f2;
+      margin: 0;
+      padding-bottom: 20px;
+      color: #333;
+    }
 
-  <style>
-    body { font-family: Arial, "Microsoft JhengHei", sans-serif; background: #fcf6f2; margin: 0; padding-bottom: 80px; color: #333; }
-    body.has-cart { padding-bottom: 95px; }
-    .container { max-width: 600px; margin: auto; background: white; min-height: 100vh; position: relative; }
-    .header { text-align: center; color: #d35400; padding: 20px; border-bottom: 1px solid #eee; }
-    .header h2 { margin-bottom: 5px; }
-    .member-box { margin: 10px 15px; padding: 12px; background: #fff7ec; border-radius: 10px; border: 1px solid #f5d6a8; font-size: 14px; line-height: 1.6; }
-    .member-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-    .member-info { flex: 1; word-break: break-word; }
-    .history-btn { background: #3498db; color: white; border: none; padding: 8px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; }
-    .join-btn { margin-top: 8px; background: #d35400; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-    .promo-box { margin: 10px 15px; padding: 12px; background: #eef9ff; border-left: 5px solid #3498db; border-radius: 8px; font-size: 14px; line-height: 1.6; }
-    .combo-series-box { margin: 10px 15px; padding: 12px; background: #fff8e8; border-left: 5px solid #f39c12; border-radius: 10px; }
-    .combo-series-title { font-weight: bold; color: #d35400; margin-bottom: 10px; font-size: 16px; }
-    .combo-card { background: white; border: 1px solid #f5d6a8; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-    .combo-card-name { font-weight: bold; color: #2c3e50; line-height: 1.5; font-size: 15px; }
-    .combo-card-price { color: #e74c3c; font-weight: bold; font-size: 18px; margin-top: 5px; }
-    .combo-card-desc { font-size: 13px; color: #777; margin-top: 5px; line-height: 1.5; }
-    .combo-btn { margin-top: 8px; width: 100%; border-radius: 8px; background-color: #d35400; color: white; border: none; padding: 10px; cursor: pointer; font-weight: bold; }
-    .store-closed { margin: 15px; padding: 20px; background: #ffeaea; color: #c0392b; border-radius: 10px; text-align: center; font-weight: bold; }
-    .category-title { background: #d35400; color: white; padding: 10px 15px; margin-top: 15px; font-weight: bold; }
-    .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; gap: 10px; }
-    .menu-name { font-weight: bold; font-size: 16px; }
-    .menu-price { color: #e74c3c; font-size: 14px; margin-top: 5px; }
-    .btn-select { background: #f39c12; color: white; border: none; padding: 9px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; }
-    .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #2c3e50; color: white; display: none; justify-content: center; z-index: 999; box-shadow: 0 -3px 10px rgba(0,0,0,0.15); }
-    .cart-inner { max-width: 640px; width: 100%; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
-    .form-control { width: 100%; padding: 9px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
-    .qty-control { display: flex; align-items: center; gap: 12px; justify-content: center; margin-top: 6px; }
-    .qty-btn { width: 42px; height: 42px; border: none; border-radius: 50%; background: #d35400; color: white; font-size: 24px; font-weight: bold; cursor: pointer; }
-    .qty-value { min-width: 48px; text-align: center; font-size: 24px; font-weight: bold; color: #2c3e50; }
-  </style>
+    body.has-cart {
+      padding-bottom: 95px;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: auto;
+      background: white;
+      min-height: 100vh;
+    }
+
+    .header {
+      text-align: center;
+      color: #d35400;
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .header h2 {
+      margin-bottom: 5px;
+    }
+
+    .member-box {
+      margin: 10px 15px;
+      padding: 12px;
+      background: #fff7ec;
+      border-radius: 10px;
+      border: 1px solid #f5d6a8;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .member-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .member-info {
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .history-btn {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .join-btn {
+      margin-top: 8px;
+      background: #d35400;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .promo-box {
+      margin: 10px 15px;
+      padding: 12px;
+      background: #eef9ff;
+      border-left: 5px solid #3498db;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .combo-series-box {
+      margin: 10px 15px;
+      padding: 12px;
+      background: #fff8e8;
+      border-left: 5px solid #f39c12;
+      border-radius: 10px;
+    }
+
+    .combo-series-title {
+      font-weight: bold;
+      color: #d35400;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .combo-card {
+      background: white;
+      border: 1px solid #f5d6a8;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .combo-card-name {
+      font-weight: bold;
+      color: #2c3e50;
+      line-height: 1.5;
+    }
+
+    .combo-card-price {
+      color: #e74c3c;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    .combo-card-desc {
+      font-size: 13px;
+      color: #777;
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+
+    .combo-card button {
+      margin-top: 10px;
+      width: 100%;
+      background: #f39c12;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .store-closed {
+      margin: 15px;
+      padding: 20px;
+      background: #ffeaea;
+      color: #c0392b;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .category-title {
+      background: #d35400;
+      color: white;
+      padding: 10px 15px;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    .menu-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      gap: 10px;
+    }
+
+    .menu-name {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .menu-price {
+      color: #e74c3c;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .btn-select {
+      background: #f39c12;
+      color: white;
+      border: none;
+      padding: 9px 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .cart-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #2c3e50;
+      color: white;
+      display: none;
+      justify-content: center;
+      z-index: 999;
+      box-shadow: 0 -3px 10px rgba(0,0,0,0.15);
+    }
+
+    .cart-inner {
+      max-width: 640px;
+      width: 100%;
+      padding: 12px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-sizing: border-box;
+      gap: 8px;
+    }
+
+    .cart-summary {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .cart-actions {
+      display: flex;
+      gap: 5px;
+    }
+
+    .cart-btn,
+    .cart-view-btn,
+    .cart-clear {
+      color: white;
+      border: none;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .cart-btn {
+      background: #2ecc71;
+    }
+
+    .cart-view-btn {
+      background: #f39c12;
+    }
+
+    .cart-clear {
+      background: #95a5a6;
+    }
+
+    .form-row {
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .form-row label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 9px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    .option-section {
+      text-align: left;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed #ddd;
+    }
+
+    .option-title {
+      font-weight: bold;
+      color: #d35400;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    .choice-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .choice-label {
+      cursor: pointer;
+    }
+
+    .choice-label input {
+      display: none;
+    }
+
+    .choice-pill {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #ccc;
+      background: #fff;
+      font-size: 14px;
+      user-select: none;
+    }
+
+    .choice-label input:checked + .choice-pill {
+      background: #d35400;
+      color: white;
+      border-color: #d35400;
+      font-weight: bold;
+    }
+
+    .topping-label input:checked + .choice-pill {
+      background: #8e44ad;
+      color: white;
+      border-color: #8e44ad;
+      font-weight: bold;
+    }
+
+    .qty-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    .qty-btn {
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 50%;
+      background: #d35400;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .qty-value {
+      min-width: 48px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .cart-list {
+      text-align: left;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+    }
+
+    .cart-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      line-height: 1.5;
+      background: #fff;
+    }
+
+    .cart-item-actions {
+      margin-top: 8px;
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+
+    .mini-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 5px 9px;
+      cursor: pointer;
+      color: white;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .mini-edit {
+      background: #3498db;
+    }
+
+    .mini-delete {
+      background: #e74c3c;
+    }
+
+    .history-box {
+      margin: 15px;
+      padding: 12px;
+      background: #fafafa;
+      border-radius: 10px;
+      border: 1px solid #eee;
+    }
+
+    .history-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #2c3e50;
+    }
+
+    .history-item {
+      font-size: 13px;
+      line-height: 1.5;
+      border-bottom: 1px dashed #ddd;
+      padding: 7px 0;
+    }
+
+    .history-detail-btn {
+      margin-top: 6px;
+      background: #8e44ad;
+      color: white;
+      border: none;
+      padding: 5px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .swal-history-list {
+      text-align: left;
+      max-height: 460px;
+      overflow-y: auto;
+    }
+
+    .swal-history-item {
+      border-bottom: 1px dashed #ddd;
+      padding: 10px 0;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .detail-item {
+      text-align: left;
+      background: #fafafa;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .price-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .discount-text {
+      color: #27ae60;
+      font-weight: bold;
+    }
+
+    .final-price {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+
+    @media (max-width: 520px) {
+      .cart-inner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .cart-actions {
+        display: flex;
+        justify-content: space-between;
+        gap: 5px;
+      }
+
+      .cart-view-btn,
+      .cart-clear,
+      .cart-btn {
+        flex: 1;
+        padding-left: 6px;
+        padding-right: 6px;
+      }
+
+      .member-row {
+        align-items: flex-start;
+      }
+
+      .history-btn {
+        padding: 8px;
+      }
+    }
+  </style>
 </head>
 
 <body>
-  <div class="container">
-    <div class="header">
-      <h2>凰貴妃茶堂</h2>
-      <p>線上點餐系統</p>
-    </div>
+  <div class="container">
+    <div class="header">
+      <h2>凰貴妃茶堂</h2>
+      <p>線上點餐系統</p>
+    </div>
 
-    <div id="member-box" class="member-box">LINE 驗證中...</div>
-    <div id="promo-area"></div>
-    <div id="menu-container">載入中...</div>
-    <div id="history-container"></div>
-  </div>
+    <div id="member-box" class="member-box">LINE 驗證中...</div>
+    <div id="promo-area"></div>
+    <div id="menu-container">載入中...</div>
+    <div id="history-container"></div>
+  </div>
 
-  <div id="cart-bar" class="cart-bar">
-    <div class="cart-inner">
-      <div class="cart-summary">🛒 <span id="cart-count">0</span> 杯 ｜預估 $<span id="cart-total">0</span></div>
-      <div class="cart-actions">
-        <button class="cart-view-btn" style="background:#f39c12; border:none; color:white; padding:9px 12px; border-radius:8px;" onclick="openCartManager()">查看購物車</button>
-        <button class="cart-btn" style="background:#2ecc71; border:none; color:white; padding:9px 12px; border-radius:8px;" onclick="checkout()">結帳</button>
-      </div>
-    </div>
-  </div>
+  <div id="cart-bar" class="cart-bar">
+    <div class="cart-inner">
+      <div class="cart-summary">
+        🛒 <span id="cart-count">0</span> 杯
+        ｜預估 $<span id="cart-total">0</span>
+      </div>
 
-  <script>
-    const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxo41bcyyfmHkSV9hUDSmBwttT929G0_CQzVZ-Em_vsl0fwTrIgBclpVI3mqloX4l-0/exec";
+      <div class="cart-actions">
+        <button class="cart-view-btn" onclick="openCartManager()">查看購物車</button>
+        <button class="cart-clear" onclick="clearCart()">清空</button>
+        <button class="cart-btn" onclick="checkout()">結帳</button>
+      </div>
+    </div>
+  </div>
 
-    // 這裡放入你之前完善的 initSystem, callGAS 等邏輯...
-    // 確保這裡的變數名稱與你後端對接邏輯一致
-    async function callGAS(action, payload = {}) {
-      payload.action = action;
-      payload.idToken = idToken; // 確保 idToken 已經在 onLoad 中取得
-      const res = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(payload) });
-      return await res.json();
-    }
-    
-    // 其餘邏輯保持與你最後一次成功的版本一致即可
-    console.log("系統已載入");
-  </script>
+  <script>
+    const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx0o4IIHowmOz9Hc4Zj2q366MfdYWO0lxnGuOObQz2VsLV_6sqYZcI1cKyuoW6eH2xt/exec";
+
+    let idToken = "";
+    let lineProfile = null;
+
+    let cart = [];
+    let menuData = [];
+    let optionsData = {
+      sweetness: [],
+      ice: [],
+      toppings: []
+    };
+    let promosData = [];
+    let storeStatus = "營業中";
+
+    let userInfo = {
+      isMember: false,
+      balance: 0,
+      name: ""
+    };
+
+    let userOrders = [];
+    let userHistory = [];
+
+    function escapeHTML(str) {
+      return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;"
+      }[tag] || tag));
+    }
+
+    function showGasLoading(text = "資料傳輸中...") {
+      Swal.fire({
+        title: text,
+        html: "資料正在傳送到店鋪系統，請稍候...",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+    }
+
+    async function callGAS(action, payload = {}, options = {}) {
+      payload.action = action;
+      payload.idToken = idToken;
+
+      if (options.loading) {
+        showGasLoading(options.loadingText || "資料傳輸中...");
+      }
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        return await res.json();
+
+      } catch (err) {
+        console.error(err);
+        return {
+          success: false,
+          message: "連線失敗，請稍後再試。"
+        };
+      }
+    }
+
+    window.onload = async function () {
+      try {
+        await liff.init({ liffId: CUSTOMER_LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        idToken = liff.getIDToken();
+        lineProfile = await liff.getProfile();
+
+        await initUser();
+        await loadMenu();
+        await loadUserHistory();
+
+        updateCart();
+
+      } catch (e) {
+        console.error(e);
+        Swal.fire("錯誤", "LIFF 初始化失敗，請重新開啟頁面", "error");
+      }
+    };
+
+    async function initUser() {
+      const res = await callGAS("initUser", {
+        lineName: lineProfile ? lineProfile.displayName : ""
+      });
+
+      if (!res.success) {
+        Swal.fire("驗證失敗", res.message || "請重新開啟頁面", "error");
+        return;
+      }
+
+      userInfo = res.data;
+      renderMemberBox();
+    }
+
+    function renderMemberBox() {
+      const box = document.getElementById("member-box");
+
+      if (userInfo.isMember) {
+        box.innerHTML = `
+          <div class="member-row">
+            <div class="member-info">
+              👤 會員：${escapeHTML(userInfo.name)}<br>
+              💰 餘額：$${Number(userInfo.balance || 0)}
+            </div>
+            <button class="history-btn" onclick="openTransactionHistory()">交易明細</button>
+          </div>
+        `;
+      } else {
+        box.innerHTML = `
+          <div class="member-row">
+            <div class="member-info">
+              👋 歡迎 ${escapeHTML(userInfo.name || "顧客")}<br>
+              尚未加入會員
+            </div>
+          </div>
+          <button class="join-btn" onclick="joinMember()">加入會員</button>
+        `;
+      }
+    }
+
+    async function joinMember() {
+      const res = await callGAS("joinMember", {
+        lineName: lineProfile ? lineProfile.displayName : ""
+      }, {
+        loading: true,
+        loadingText: "會員資料建立中..."
+      });
+
+      if (res.success) {
+        userInfo = res.data;
+        renderMemberBox();
+        await loadUserHistory();
+
+        await Swal.fire({
+          title: "成功",
+          text: "已加入會員！",
+          icon: "success",
+          confirmButtonText: "確定",
+          allowOutsideClick: false
+        });
+
+      } else {
+        Swal.fire("失敗", res.message || "加入會員失敗", "error");
+      }
+    }
+
+    async function loadMenu() {
+      try {
+        const res = await callGAS("getMenuAndOptions");
+
+        if (!res.success) {
+          throw new Error(res.message || "載入失敗");
+        }
+
+        menuData = res.data.menu || [];
+        optionsData = res.data.options || {
+          sweetness: [],
+          ice: [],
+          toppings: []
+        };
+        promosData = res.data.promos || [];
+        storeStatus = res.data.storeStatus || "營業中";
+
+        renderPromos();
+        renderMenu();
+
+      } catch (e) {
+        console.error(e);
+        Swal.fire("錯誤", "載入菜單失敗：" + e.message, "error");
+      }
+    }
+
+    function renderPromos() {
+      const area = document.getElementById("promo-area");
+
+      if (!promosData || promosData.length === 0) {
+        area.innerHTML = "";
+        return;
+      }
+
+      let html = `<div class="promo-box"><b>🎉 目前優惠</b><br>`;
+
+      promosData.forEach(p => {
+        let target = p.targetType === "全館"
+          ? "全館"
+          : `${p.targetType}：${p.targetName}`;
+
+        let condition = "";
+
+        if (p.promoMode === "買X送Y") {
+          condition = `買${p.buyQty}送${p.freeQty}`;
+        } else if (p.promoMode === "組合價") {
+          if (p.targetType === "指定組合") {
+            condition = `套餐價 $${p.comboPrice}`;
+          } else {
+            condition = `任選${p.buyQty}杯 $${p.comboPrice}`;
+          }
+        }
+
+        let size = p.sizeLimit && p.sizeLimit !== "不限" ? `，限 ${p.sizeLimit} 杯` : "";
+
+        html += `• ${escapeHTML(target)}｜${escapeHTML(condition)}${escapeHTML(size)}<br>`;
+      });
+
+      html += `</div>`;
+      area.innerHTML = html;
+    }
+
+    function getTodayComboPromos() {
+      return (promosData || []).filter(p => {
+        return p.targetType === "指定組合" && p.promoMode === "組合價";
+      });
+    }
+
+    function renderTodayComboSeriesHTML() {
+      const combos = getTodayComboPromos();
+
+      if (!combos || combos.length === 0) {
+        return "";
+      }
+
+      let html = `
+        <div class="combo-series-box">
+          <div class="combo-series-title">🔥 今日套餐系列</div>
+      `;
+
+      combos.forEach(p => {
+        const items = String(p.targetName || "")
+          .split(",")
+          .map(x => x.trim())
+          .filter(x => x);
+
+        const itemText = items.join(" + ");
+        const sizeText = p.sizeLimit && p.sizeLimit !== "不限"
+          ? `限 ${p.sizeLimit} 杯`
+          : "不限杯型";
+
+        html += `
+          <div class="combo-card">
+            <div class="combo-card-name">${escapeHTML(itemText)}</div>
+            <div class="combo-card-price">套餐價 $${Number(p.comboPrice || 0)}</div>
+            <div class="combo-card-desc">
+              ${escapeHTML(sizeText)}
+              ${p.desc ? "｜" + escapeHTML(p.desc) : ""}
+              <br>
+              ※ 每杯可分別選甜度、冰塊與加料，加料另計。
+            </div>
+            <button onclick="selectComboPromo('${encodeURIComponent(p.id)}')">
+              選擇此套餐
+            </button>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      return html;
+    }
+
+    function renderMenu() {
+      const container = document.getElementById("menu-container");
+      container.innerHTML = "";
+
+      if (storeStatus !== "營業中") {
+        container.innerHTML = `<div class="store-closed">目前店鋪休息中，暫停點餐</div>`;
+        return;
+      }
+
+      if (!menuData || menuData.length === 0) {
+        container.innerHTML = `<div style="text-align:center;padding:30px;color:#999;">目前沒有菜單資料</div>`;
+        return;
+      }
+
+      container.innerHTML += renderTodayComboSeriesHTML();
+
+      const grouped = {};
+
+      menuData.forEach(item => {
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push(item);
+      });
+
+      for (let cat in grouped) {
+        container.innerHTML += `<div class="category-title">${escapeHTML(cat)}</div>`;
+
+        grouped[cat].forEach(item => {
+          let priceText = [];
+
+          if (Number(item.priceL) > 0) {
+            priceText.push(`L: $${item.priceL}`);
+          }
+
+          if (Number(item.priceXL) > 0) {
+            priceText.push(`XL: $${item.priceXL}`);
+          }
+
+          container.innerHTML += `
+            <div class="menu-item">
+              <div>
+                <div class="menu-name">${escapeHTML(item.name)}</div>
+                <div class="menu-price">${priceText.join(" ｜ ")}</div>
+              </div>
+              <button class="btn-select" onclick="selectItem('${encodeURIComponent(item.name)}')">
+                選擇
+              </button>
+            </div>
+          `;
+        });
+      }
+    }
+
+    function makeChoiceRadio(name, value, label, checked) {
+      return `
+        <label class="choice-label">
+          <input type="radio" name="${name}" value="${escapeHTML(value)}" ${checked ? "checked" : ""}>
+          <span class="choice-pill">${escapeHTML(label)}</span>
+        </label>
+      `;
+    }
+
+    function makeChoiceCheckbox(value, label, checked) {
+      return `
+        <label class="choice-label topping-label">
+          <input type="checkbox" name="swal-topping" value="${escapeHTML(value)}" ${checked ? "checked" : ""}>
+          <span class="choice-pill">${escapeHTML(label)}</span>
+        </label>
+      `;
+    }
+
+    function changeQty(delta) {
+      const el = document.getElementById("swal-qty-value");
+      const allowZero = el.dataset.allowZero === "1";
+      let current = Number(el.innerText || 0);
+      let next = current + delta;
+      let min = allowZero ? 0 : 1;
+
+      if (next < min) next = min;
+      if (next > 20) next = 20;
+
+      el.innerText = next;
+    }
+
+    function buildItemFormHTML(item, existingItem = null, allowZero = false, forcedSize = "") {
+      let defaultSize = existingItem ? existingItem.size : "";
+      let defaultSweetness = existingItem ? existingItem.sweetness : "";
+      let defaultIce = existingItem ? existingItem.ice : "";
+      let defaultQty = existingItem ? Number(existingItem.qty || 1) : 1;
+      let defaultToppings = existingItem && Array.isArray(existingItem.toppings)
+        ? existingItem.toppings
+        : [];
+
+      let sizeHtml = "";
+
+      if (forcedSize === "L") {
+        if (Number(item.priceL) > 0) {
+          sizeHtml += makeChoiceRadio(
+            "swal-size",
+            "L",
+            `L 杯 $${item.priceL}`,
+            true
+          );
+        }
+      } else if (forcedSize === "XL") {
+        if (Number(item.priceXL) > 0) {
+          sizeHtml += makeChoiceRadio(
+            "swal-size",
+            "XL",
+            `XL 杯 $${item.priceXL}`,
+            true
+          );
+        }
+      } else {
+        if (Number(item.priceL) > 0) {
+          sizeHtml += makeChoiceRadio(
+            "swal-size",
+            "L",
+            `L 杯 $${item.priceL}`,
+            defaultSize === "L" || !defaultSize
+          );
+        }
+
+        if (Number(item.priceXL) > 0) {
+          sizeHtml += makeChoiceRadio(
+            "swal-size",
+            "XL",
+            `XL 杯 $${item.priceXL}`,
+            defaultSize === "XL"
+          );
+        }
+      }
+
+      if (!sizeHtml) {
+        sizeHtml = `<span style="color:#e74c3c;">此商品目前沒有可用容量</span>`;
+      }
+
+      let sweetnessList = optionsData.sweetness.length > 0
+        ? optionsData.sweetness
+        : [{ name: "正常甜", price: 0 }];
+
+      let iceList = optionsData.ice.length > 0
+        ? optionsData.ice
+        : [{ name: "正常冰", price: 0 }];
+
+      let sweetnessHtml = sweetnessList.map((o, idx) => {
+        return makeChoiceRadio(
+          "swal-sweetness",
+          o.name,
+          o.name,
+          defaultSweetness ? defaultSweetness === o.name : idx === 0
+        );
+      }).join("");
+
+      let iceHtml = iceList.map((o, idx) => {
+        return makeChoiceRadio(
+          "swal-ice",
+          o.name,
+          o.name,
+          defaultIce ? defaultIce === o.name : idx === 0
+        );
+      }).join("");
+
+      let toppingHtml = "";
+
+      if (optionsData.toppings.length > 0) {
+        toppingHtml = optionsData.toppings.map(o => {
+          return makeChoiceCheckbox(
+            o.name,
+            `${o.name} +$${Number(o.price || 0)}`,
+            defaultToppings.includes(o.name)
+          );
+        }).join("");
+      } else {
+        toppingHtml = `<span style="color:#999;">無加料選項</span>`;
+      }
+
+      return `
+        <div class="option-section">
+          <div class="option-title">① 選擇容量</div>
+          <div class="choice-grid">${sizeHtml}</div>
+        </div>
+
+        <div class="option-section">
+          <div class="option-title">② 選擇甜度</div>
+          <div class="choice-grid">${sweetnessHtml}</div>
+        </div>
+
+        <div class="option-section">
+          <div class="option-title">③ 選擇冰塊</div>
+          <div class="choice-grid">${iceHtml}</div>
+        </div>
+
+        <div class="option-section">
+          <div class="option-title">④ 選擇加料</div>
+          <div class="choice-grid">${toppingHtml}</div>
+        </div>
+
+        <div class="option-section">
+          <div class="option-title">⑤ 選擇數量${allowZero ? "，可調成 0 代表刪除" : ""}</div>
+          <div class="qty-control">
+            <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
+            <div id="swal-qty-value" class="qty-value" data-allow-zero="${allowZero ? "1" : "0"}">${defaultQty}</div>
+            <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function readItemFormValue(item) {
+      const sizeEl = document.querySelector('input[name="swal-size"]:checked');
+      const sweetnessEl = document.querySelector('input[name="swal-sweetness"]:checked');
+      const iceEl = document.querySelector('input[name="swal-ice"]:checked');
+      const qty = Number(document.getElementById("swal-qty-value").innerText || 0);
+
+      const toppings = [];
+
+      document.querySelectorAll('input[name="swal-topping"]:checked').forEach(cb => {
+        toppings.push(cb.value);
+      });
+
+      return {
+        name: item.name,
+        size: sizeEl ? sizeEl.value : "L",
+        sweetness: sweetnessEl ? sweetnessEl.value : "正常甜",
+        ice: iceEl ? iceEl.value : "正常冰",
+        qty: qty,
+        toppings: toppings
+      };
+    }
+
+    async function selectItem(encodedName) {
+      const itemName = decodeURIComponent(encodedName);
+      const item = menuData.find(m => m.name === itemName);
+
+      if (!item) {
+        Swal.fire("錯誤", "找不到商品", "error");
+        return;
+      }
+
+      const result = await Swal.fire({
+        title: item.name,
+        html: buildItemFormHTML(item, null, false),
+        showCancelButton: true,
+        confirmButtonText: "加入購物車",
+        cancelButtonText: "取消",
+        preConfirm: () => {
+          const value = readItemFormValue(item);
+
+          if (!value.qty || value.qty <= 0 || value.qty > 20) {
+            Swal.showValidationMessage("數量必須為 1 到 20");
+            return false;
+          }
+
+          return value;
+        }
+      });
+
+      if (result.isConfirmed && result.value) {
+        cart.push(result.value);
+        updateCart();
+        Swal.fire("已加入", "商品已加入購物車", "success");
+      }
+    }
+
+    async function selectComboPromo(encodedPromoId) {
+      const promoId = decodeURIComponent(encodedPromoId);
+      const promo = promosData.find(p => String(p.id) === String(promoId));
+
+      if (!promo) {
+        Swal.fire("錯誤", "找不到此套餐活動", "error");
+        return;
+      }
+
+      const itemNames = String(promo.targetName || "")
+        .split(",")
+        .map(x => x.trim())
+        .filter(x => x);
+
+      if (itemNames.length === 0) {
+        Swal.fire("錯誤", "此套餐沒有設定品項", "error");
+        return;
+      }
+
+      const comboItems = [];
+      const forcedSize = promo.sizeLimit && promo.sizeLimit !== "不限"
+        ? promo.sizeLimit
+        : "";
+
+      for (let i = 0; i < itemNames.length; i++) {
+        const itemName = itemNames[i];
+        const menuItem = menuData.find(m => m.name === itemName);
+
+        if (!menuItem) {
+          Swal.fire("錯誤", `套餐品項「${itemName}」目前不存在或已下架`, "error");
+          return;
+        }
+
+        if (forcedSize === "L" && Number(menuItem.priceL) <= 0) {
+          Swal.fire("錯誤", `「${itemName}」沒有 L 杯價格，無法套用此套餐`, "error");
+          return;
+        }
+
+        if (forcedSize === "XL" && Number(menuItem.priceXL) <= 0) {
+          Swal.fire("錯誤", `「${itemName}」沒有 XL 杯價格，無法套用此套餐`, "error");
+          return;
+        }
+
+        const defaultItem = forcedSize
+          ? {
+              name: menuItem.name,
+              size: forcedSize,
+              sweetness: "",
+              ice: "",
+              qty: 1,
+              toppings: []
+            }
+          : null;
+
+        const result = await Swal.fire({
+          title: `套餐第 ${i + 1} 杯：${menuItem.name}`,
+          html: `
+            <div style="text-align:left;background:#fff8e8;border-left:4px solid #f39c12;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;">
+              目前正在設定套餐：${escapeHTML(itemNames.join(" + "))}<br>
+              套餐價 $${Number(promo.comboPrice || 0)}，加料另計。
+            </div>
+            ${buildItemFormHTML(menuItem, defaultItem, false, forcedSize)}
+          `,
+          width: 560,
+          showCancelButton: true,
+          confirmButtonText: i === itemNames.length - 1 ? "加入套餐" : "下一杯",
+          cancelButtonText: "取消",
+          allowOutsideClick: false,
+          preConfirm: () => {
+            const value = readItemFormValue(menuItem);
+
+            if (!value.qty || value.qty <= 0) {
+              Swal.showValidationMessage("套餐每杯數量固定為 1");
+              return false;
+            }
+
+            value.qty = 1;
+
+            if (forcedSize && value.size !== forcedSize) {
+              Swal.showValidationMessage(`此套餐限 ${forcedSize} 杯`);
+              return false;
+            }
+
+            return value;
+          }
+        });
+
+        if (!result.isConfirmed || !result.value) {
+          Swal.fire("已取消", "尚未加入套餐", "info");
+          return;
+        }
+
+        comboItems.push(result.value);
+      }
+
+      comboItems.forEach(item => {
+        cart.push(item);
+      });
+
+      updateCart();
+
+      await Swal.fire({
+        title: "已加入套餐",
+        html: `
+          <div style="text-align:left;line-height:1.6;">
+            ${comboItems.map(x => {
+              const tops = x.toppings && x.toppings.length > 0
+                ? `｜加料：${escapeHTML(x.toppings.join("、"))}`
+                : "";
+              return `• [${escapeHTML(x.size)}] ${escapeHTML(x.name)}｜${escapeHTML(x.sweetness)}｜${escapeHTML(x.ice)}${tops}`;
+            }).join("<br>")}
+          </div>
+          <div style="margin-top:10px;color:#777;font-size:13px;">
+            ※ 實際結帳金額會由後端依套餐與加料重新計算。
+          </div>
+        `,
+        icon: "success",
+        confirmButtonText: "確定"
+      });
+    }
+
+    function estimateItemPrice(item) {
+      const menuItem = menuData.find(m => m.name === item.name);
+      if (!menuItem) return 0;
+
+      let base = item.size === "XL"
+        ? Number(menuItem.priceXL || 0)
+        : Number(menuItem.priceL || 0);
+
+      let toppingTotal = 0;
+
+      if (Array.isArray(item.toppings)) {
+        item.toppings.forEach(t => {
+          const top = optionsData.toppings.find(o => o.name === t);
+          if (top) toppingTotal += Number(top.price || 0);
+        });
+      }
+
+      return (base + toppingTotal) * Number(item.qty || 0);
+    }
+
+    function updateCart() {
+      let count = 0;
+      let total = 0;
+
+      cart = cart.filter(item => Number(item.qty || 0) > 0);
+
+      cart.forEach(item => {
+        count += Number(item.qty || 0);
+        total += estimateItemPrice(item);
+      });
+
+      document.getElementById("cart-count").innerText = count;
+      document.getElementById("cart-total").innerText = total;
+
+      const cartBar = document.getElementById("cart-bar");
+
+      if (count > 0) {
+        cartBar.style.display = "flex";
+        document.body.classList.add("has-cart");
+      } else {
+        cartBar.style.display = "none";
+        document.body.classList.remove("has-cart");
+      }
+    }
+
+    function clearCart() {
+      if (cart.length === 0) return;
+
+      Swal.fire({
+        title: "確定清空購物車？",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "清空",
+        cancelButtonText: "取消"
+      }).then(r => {
+        if (r.isConfirmed) {
+          cart = [];
+          updateCart();
+          Swal.fire("已清空", "購物車已清空", "success");
+        }
+      });
+    }
+
+    function renderCartHTML(showActions = true) {
+      if (cart.length === 0) {
+        return `<div style="color:#999;text-align:center;">購物車是空的</div>`;
+      }
+
+      let html = `<div class="cart-list">`;
+
+      cart.forEach((item, index) => {
+        const toppings = item.toppings && item.toppings.length > 0
+          ? `｜加料：${item.toppings.join("、")}`
+          : "";
+
+        const subtotal = estimateItemPrice(item);
+
+        html += `
+          <div class="cart-item">
+            <b>[${escapeHTML(item.size)}] ${escapeHTML(item.name)}</b> x${Number(item.qty || 0)}
+            <span style="color:#e74c3c;font-weight:bold;">｜小計 $${subtotal}</span><br>
+            ${escapeHTML(item.sweetness)}｜${escapeHTML(item.ice)}${escapeHTML(toppings)}
+            ${
+              showActions
+                ? `
+                  <div class="cart-item-actions">
+                    <button class="mini-btn mini-edit" onclick="editCartItem(${index})">編輯</button>
+                    <button class="mini-btn mini-delete" onclick="deleteCartItem(${index})">刪除</button>
+                  </div>
+                `
+                : ""
+            }
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      return html;
+    }
+
+    function deleteCartItem(index) {
+      cart.splice(index, 1);
+      updateCart();
+
+      if (cart.length === 0) {
+        Swal.close();
+        Swal.fire("已刪除", "購物車目前是空的", "success");
+      } else {
+        openCartManager();
+      }
+    }
+
+    async function editCartItem(index) {
+      const cartItem = cart[index];
+
+      if (!cartItem) return;
+
+      const menuItem = menuData.find(m => m.name === cartItem.name);
+
+      if (!menuItem) {
+        Swal.fire("錯誤", "找不到此商品，可能已下架", "error");
+        return;
+      }
+
+      const result = await Swal.fire({
+        title: "編輯商品",
+        html: buildItemFormHTML(menuItem, cartItem, true),
+        showCancelButton: true,
+        confirmButtonText: "儲存變更",
+        cancelButtonText: "取消",
+        preConfirm: () => {
+          const value = readItemFormValue(menuItem);
+
+          if (value.qty < 0 || value.qty > 20) {
+            Swal.showValidationMessage("數量必須為 0 到 20");
+            return false;
+          }
+
+          return value;
+        }
+      });
+
+      if (!result.isConfirmed || !result.value) {
+        openCartManager();
+        return;
+      }
+
+      if (Number(result.value.qty) === 0) {
+        cart.splice(index, 1);
+      } else {
+        cart[index] = result.value;
+      }
+
+      updateCart();
+
+      if (cart.length === 0) {
+        Swal.fire("已更新", "購物車目前是空的", "success");
+      } else {
+        openCartManager();
+      }
+    }
+
+    async function openCartManager() {
+      if (cart.length === 0) {
+        Swal.fire("提示", "購物車是空的", "warning");
+        return;
+      }
+
+      let total = 0;
+      let count = 0;
+
+      cart.forEach(item => {
+        count += Number(item.qty || 0);
+        total += estimateItemPrice(item);
+      });
+
+      await Swal.fire({
+        title: "我的購物車",
+        html: `
+          ${renderCartHTML(true)}
+          <div style="text-align:right;font-weight:bold;color:#e74c3c;margin-top:10px;">
+            共 ${count} 杯｜預估 $${total}
+          </div>
+          <div style="font-size:12px;color:#777;text-align:left;margin-top:8px;">
+            ※ 實際金額會依後台活動優惠重新計算。
+          </div>
+        `,
+        width: 560,
+        showCancelButton: true,
+        confirmButtonText: "前往結帳",
+        cancelButtonText: "繼續點餐"
+      }).then(r => {
+        if (r.isConfirmed) {
+          checkout();
+        }
+      });
+    }
+
+    async function checkout() {
+      updateCart();
+
+      if (cart.length === 0) {
+        Swal.fire("提示", "購物車是空的", "warning");
+        return;
+      }
+
+      const cartHtml = renderCartHTML(false);
+
+      const payOptions = userInfo.isMember
+        ? `
+          <option value="現場結帳">現場結帳</option>
+          <option value="餘額扣款">餘額扣款，目前餘額 $${Number(userInfo.balance || 0)}</option>
+        `
+        : `<option value="現場結帳">現場結帳</option>`;
+
+      const html = `
+        ${cartHtml}
+
+        <div class="form-row">
+          <label>姓氏 / 稱呼</label>
+          <input id="order-last-name" class="form-control" placeholder="例如：王、陳、小明">
+        </div>
+
+        <div class="form-row">
+          <label>手機末三碼</label>
+          <input id="order-phone" class="form-control" placeholder="例如：123" maxlength="3">
+        </div>
+
+        <div class="form-row">
+          <label>付款方式</label>
+          <select id="order-pay-method" class="form-control">
+            ${payOptions}
+          </select>
+        </div>
+      `;
+
+      const result = await Swal.fire({
+        title: "確認訂單",
+        html: html,
+        width: 520,
+        showCancelButton: true,
+        confirmButtonText: "送出訂單",
+        cancelButtonText: "返回",
+        preConfirm: () => {
+          const lastName = document.getElementById("order-last-name").value.trim();
+          const phone = document.getElementById("order-phone").value.trim();
+          const payMethod = document.getElementById("order-pay-method").value;
+
+          if (!lastName) {
+            Swal.showValidationMessage("請輸入姓氏或稱呼");
+            return false;
+          }
+
+          if (!/^\d{3}$/.test(phone)) {
+            Swal.showValidationMessage("手機末三碼必須是 3 位數字");
+            return false;
+          }
+
+          return {
+            lastName,
+            phone,
+            payMethod
+          };
+        }
+      });
+
+      if (!result.isConfirmed || !result.value) return;
+
+      try {
+        const res = await callGAS("submitOrder", {
+          lineName: lineProfile ? lineProfile.displayName : "",
+          lastName: result.value.lastName,
+          phone: result.value.phone,
+          payMethod: result.value.payMethod,
+          cart: cart
+        }, {
+          loading: true,
+          loadingText: "訂單資料傳輸中..."
+        });
+
+        if (res.success) {
+          cart = [];
+          updateCart();
+
+          if (typeof res.newBalance !== "undefined") {
+            userInfo.balance = res.newBalance;
+            userInfo.isMember = res.isMember;
+            renderMemberBox();
+          }
+
+          await loadUserHistory();
+
+          await Swal.fire({
+            title: "成功",
+            text: res.message || "訂單已送出",
+            icon: "success",
+            confirmButtonText: "確定",
+            allowOutsideClick: false
+          });
+
+        } else {
+          Swal.fire("送出失敗", res.message || "請稍後再試", "error");
+        }
+
+      } catch (e) {
+        console.error(e);
+        Swal.fire("錯誤", "無法送出訂單，請稍後再試", "error");
+      }
+    }
+
+    async function loadUserHistory() {
+      try {
+        const res = await callGAS("getUserOrdersAndHistory");
+
+        if (!res.success) return;
+
+        userOrders = res.data.orders || [];
+        userHistory = res.data.history || [];
+
+        let html = "";
+
+        if (userOrders.length > 0) {
+          html += `
+            <div class="history-box">
+              <div class="history-title">📋 進行中訂單</div>
+          `;
+
+          userOrders.forEach(o => {
+            html += `
+              <div class="history-item">
+                #${escapeHTML(o.id)}｜${escapeHTML(o.time)}｜$${o.total}｜${escapeHTML(o.status)}
+              </div>
+            `;
+          });
+
+          html += `</div>`;
+        }
+
+        document.getElementById("history-container").innerHTML = html;
+
+      } catch (e) {
+        console.log(e);
+      }
+    }
+
+    function openTransactionHistory() {
+      if (!userInfo.isMember) {
+        Swal.fire("提示", "加入會員後才能查看交易明細", "info");
+        return;
+      }
+
+      if (!userHistory || userHistory.length === 0) {
+        Swal.fire("交易明細", "目前沒有交易紀錄", "info");
+        return;
+      }
+
+      let html = `<div class="swal-history-list">`;
+
+      userHistory.forEach((h, index) => {
+        const amount = Number(h.amount || 0);
+        const amountText = amount > 0 ? `+$${amount}` : `-$${Math.abs(amount)}`;
+        const amountColor = amount > 0 ? "#27ae60" : "#e74c3c";
+
+        let detailBtn = "";
+
+        if (h.type === "消費扣款") {
+          detailBtn = `
+            <br>
+            <button class="history-detail-btn" onclick="showPurchaseDetail(${index})">
+              查看購買內容
+            </button>
+          `;
+        }
+
+        html += `
+          <div class="swal-history-item">
+            <b>${escapeHTML(h.time)}</b><br>
+            類別：${escapeHTML(h.type)}<br>
+            金額：<span style="color:${amountColor};font-weight:bold;">${amountText}</span><br>
+            餘額：$${Number(h.balance || 0)}<br>
+            備註：<span style="color:#777;">${escapeHTML(h.note || "")}</span>
+            ${detailBtn}
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+
+      Swal.fire({
+        title: "所有交易明細",
+        html: html,
+        width: 560,
+        confirmButtonText: "關閉"
+      });
+    }
+
+    function showPurchaseDetail(index) {
+      const h = userHistory[index];
+
+      if (!h) {
+        Swal.fire("錯誤", "找不到交易資料", "error");
+        return;
+      }
+
+      const spent = Math.abs(Number(h.amount || 0));
+
+      if (!h.orderDetail || !Array.isArray(h.orderDetail.items)) {
+        Swal.fire({
+          title: "購買內容",
+          html: `
+            <div style="text-align:left;white-space:pre-line;background:#fafafa;border:1px dashed #ccc;padding:12px;border-radius:8px;">
+              ${h.orderContent ? escapeHTML(h.orderContent) : "目前查不到此筆訂單內容，可能是舊資料或訂單內容未關聯成功。"}
+            </div>
+            <div style="text-align:right;margin-top:12px;font-weight:bold;color:#e74c3c;">
+              本次花費：$${spent}
+            </div>
+            <div style="text-align:right;margin-top:4px;color:#555;">
+              扣款後餘額：$${Number(h.balance || 0)}
+            </div>
+          `,
+          width: 560,
+          confirmButtonText: "關閉"
+        });
+
+        return;
+      }
+
+      let html = "";
+
+      h.orderDetail.items.forEach((item, i) => {
+        const toppings = item.toppings && item.toppings.length > 0
+          ? item.toppings.join("、")
+          : "無";
+
+        html += `
+          <div class="detail-item">
+            <b>${i + 1}. [${escapeHTML(item.size)}] ${escapeHTML(item.name)}</b><br>
+            ${escapeHTML(item.sweetness)}｜${escapeHTML(item.ice)}｜加料：${escapeHTML(toppings)}
+
+            <div class="price-line">
+              <span>飲料原價</span>
+              <span>$${Number(item.drinkOriginalPrice || 0)}</span>
+            </div>
+
+            <div class="price-line">
+              <span>加料金額</span>
+              <span>$${Number(item.toppingPrice || 0)}</span>
+            </div>
+
+            ${
+              Number(item.drinkDiscount || 0) > 0
+                ? `
+                  <div class="price-line discount-text">
+                    <span>活動折抵</span>
+                    <span>-$${Number(item.drinkDiscount || 0)}</span>
+                  </div>
+                  <div style="font-size:12px;color:#777;margin-top:3px;">
+                    ${escapeHTML(item.promoNote || "已套用優惠")}
+                  </div>
+                `
+                : `
+                  <div class="price-line">
+                    <span>活動折抵</span>
+                    <span>$0</span>
+                  </div>
+                `
+            }
+
+            <div class="price-line final-price">
+              <span>此杯實付</span>
+              <span>$${Number(item.finalUnitPrice || 0)}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      if (h.orderDetail.promoLogs && h.orderDetail.promoLogs.length > 0) {
+        html += `
+          <div style="text-align:left;background:#eef9ff;border-left:4px solid #3498db;padding:10px;border-radius:6px;margin-top:8px;font-size:13px;">
+            <b>活動說明</b><br>
+            ${h.orderDetail.promoLogs.map(x => escapeHTML(x)).join("<br>")}
+          </div>
+        `;
+      }
+
+      html += `
+        <div style="text-align:right;margin-top:12px;color:#555;">
+          原價合計：$${Number(h.orderDetail.originalTotal || 0)}
+        </div>
+        <div style="text-align:right;color:#27ae60;font-weight:bold;">
+          活動折抵：-$${Number(h.orderDetail.discountAmount || 0)}
+        </div>
+        <div style="text-align:right;margin-top:4px;font-size:16px;font-weight:bold;color:#e74c3c;">
+          本次花費：$${Number(h.orderDetail.finalTotal || spent)}
+        </div>
+        <div style="text-align:right;margin-top:4px;color:#555;">
+          扣款後餘額：$${Number(h.balance || 0)}
+        </div>
+      `;
+
+      Swal.fire({
+        title: "購買內容與價格明細",
+        html: html,
+        width: 600,
+        confirmButtonText: "關閉"
+      });
+    }
+  </script>
 </body>
 </html>
+
+
