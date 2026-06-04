@@ -130,7 +130,7 @@
   <script>
     // ⚠️ 記得替換成你最新的 GAS 網址 ⚠️
     const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; 
-    const GAS_API_URL = "https://quiet-sun-3888.wangbens0829.workers.dev/"; 
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwpmN99nac2lG2KoEU4KaWfHss2GUPNLYtUX17c3e94Ge2PPgC1ELQ3uwDuG9x1MCQT/exec"; 
     
     let adminIdToken = ""; let globalMenus = []; let myLineUserId = "";
 
@@ -139,17 +139,46 @@
       payload.action = action;
       payload.idToken = adminIdToken;
 
-    const response = await fetch(GAS_API_URL, { 
-      method: 'POST',
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": "abc123"   // 🔑 必須跟 Worker 一樣
-      },
-       body: JSON.stringify(payload)
-    }); 
+      // ✅ 🔥 新增 requestId（防重複攻擊）
+      payload.requestId = Date.now() + "_" + Math.random();
 
-    return await response.json(); 
-  }
+      // ✅ 🔥 Admin API 自動帶 adminKey
+      const adminActions = [
+        "getAdminDashboardData",
+        "adminUpdateWallet",
+        "updateMemberName",
+        "processOrderAction",
+        "adminToggleStore",
+        "adminAddMenuItem",
+        "adminToggleMenuItem",
+        "adminAddPromo",
+        "adminTogglePromo"
+      ];
+
+      if (adminActions.includes(action)) {
+        payload.adminKey = "CHANGE_TO_RANDOM_STRING"; // ⚠️ 要跟 GAS 一樣
+      }
+
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": "abc123"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        return data;
+
+      } catch (err) {
+        console.error("API錯誤", err);
+        Swal.fire("錯誤", "伺服器連線失敗", "error");
+        return { success: false };
+      }
+    }
+
 
 
     // 防彈強化版載入
