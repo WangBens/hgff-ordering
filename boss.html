@@ -214,21 +214,76 @@
           res.data.orders.forEach(order => {
             let statusClass = order.status === '未處理' ? 'status-new' : (order.status === '已接單' ? 'status-accepted' : 'status-ready');
             let statusBadge = order.status === '未處理' ? '🔴 新訂單' : (order.status === '已接單' ? '🟠 製作中' : '🔵 可取餐');
+            
+            // 按鈕狀態判斷
             let actionBtns = "";
             if (order.status === '未處理') actionBtns = `<button class="btn-action" style="background:#f39c12;" onclick="handleOrder('${order.id}', 'accept')">接單</button><button class="btn-action btn-gray" onclick="handleOrder('${order.id}', 'cancel')">取消</button>`;
             else if (order.status === '已接單') actionBtns = `<button class="btn-action" style="background:#3498db;" onclick="handleOrder('${order.id}', 'ready')">製作完成</button>`;
             else if (order.status === '製作完成') actionBtns = `<button class="btn-action" style="background:#2ecc71;" onclick="handleOrder('${order.id}', 'complete')">結帳</button>`;
 
+            // ====== 🥤 訂單明細排版優化開始 ======
+            let itemsHtml = order.content.split('\n').filter(line => line.trim() !== '').map(line => {
+                // 解析格式：[L] 珍珠奶茶 x2 (正常甜, 正常冰, +布丁)
+                let match = line.match(/^\[(.*?)\]\s+(.*?)\s+x(\d+)\s*\((.*?)\)$/);
+                if (match) {
+                    let size = match[1];
+                    let name = match[2];
+                    let qty = match[3];
+                    let details = match[4]; // 甜度, 冰塊, +配料
+                    
+                    // 若數量大於 1，將數量標紅放大，提醒老闆
+                    let qtyStyle = qty > 1 ? 'color: #e74c3c; font-size: 18px; font-weight: 900;' : 'font-weight: bold; color: #333;';
+                    
+                    return `
+                    <div style="padding: 10px; border-bottom: 1px dashed #eee; background: #fff;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-size: 16px; font-weight: bold; color: #2c3e50;">
+                                <span style="background: #34495e; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 5px;">${size}杯</span>
+                                ${escapeHTML(name)}
+                            </span>
+                            <span style="${qtyStyle}">x${qty}</span>
+                        </div>
+                        <div style="font-size: 14px; color: #d35400; font-weight: bold; background: #fff3e0; padding: 5px 8px; border-radius: 4px; display: inline-block;">
+                            📝 ${escapeHTML(details)}
+                        </div>
+                    </div>`;
+                } else {
+                    // 若有非標準格式的文字，則作為備用輸出
+                    return `<div style="padding: 10px; border-bottom: 1px dashed #eee;">☕ ${escapeHTML(line)}</div>`;
+                }
+            }).join('');
+
+            // ====== 💰 總金額與付款方式區塊 ======
+            let payMethodColor = order.payMethod === '餘額扣款' ? '#27ae60' : '#8e44ad'; // 餘額扣款顯示綠色，現場結帳顯示紫色
+            let paymentHtml = `
+              <div style="display: flex; justify-content: space-between; align-items: center; background: #ecf0f1; padding: 10px 15px; border-radius: 6px; margin-top: 10px;">
+                <div style="font-size: 14px; color: #7f8c8d;">
+                  支付：<span style="font-weight: bold; color: ${payMethodColor};">${escapeHTML(order.payMethod)}</span>
+                </div>
+                <div style="font-size: 15px; color: #333;">
+                  總計：<span style="font-weight: bold; color: #c0392b; font-size: 18px;">$${order.total}</span>
+                </div>
+              </div>
+            `;
+
+            // ====== 渲染卡片 ======
             container.innerHTML += `
               <div class="order-card ${statusClass}">
-                <div class="card-header"><span>${escapeHTML(order.time)}</span><span style="font-weight:bold;">${statusBadge}</span></div>
-                <div class="card-customer">🙋‍♂️ ${escapeHTML(order.userName)}</div>
-                <div class="card-items">${escapeHTML(order.content)}</div>
+                <div class="card-header"><span>🕒 ${escapeHTML(order.time)}</span><span style="font-weight:bold;">${statusBadge}</span></div>
+                <div class="card-customer" style="margin-bottom: 8px;">🙋‍♂️ ${escapeHTML(order.userName)}</div>
+                
+                <div class="card-items" style="padding: 0; background: #fff; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; margin: 10px 0;">
+                    ${itemsHtml}
+                </div>
+                
+                ${paymentHtml}
+                
                 <div class="action-btns">${actionBtns}</div>
               </div>`;
           });
         }
 
+        // 商品渲染
         let menuHtml = "";
         res.data.menus.forEach(m => {
            let btn = m.status === '上架' ? `<button class="btn-action btn-red" style="padding:6px;width:70px;" onclick="toggleMenu('${escapeHTML(m.name)}', '下架')">下架</button>` : `<button class="btn-action btn-success" style="padding:6px;width:70px;" onclick="toggleMenu('${escapeHTML(m.name)}', '上架')">上架</button>`;
@@ -237,6 +292,7 @@
         });
         document.getElementById("menu-list").innerHTML = menuHtml || "<div style='text-align:center;'>無商品資料</div>";
 
+        // 活動渲染
         let promoHtml = "";
         res.data.promos.forEach(p => {
            let btn = `<button class="btn-action btn-gray" style="padding:6px;width:70px;" onclick="togglePromo('${escapeHTML(p.id)}', '停用')">停用</button>`;
