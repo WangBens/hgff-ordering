@@ -17,7 +17,7 @@
     .history-btn { background: #3498db; color: white; border: none; padding: 8px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 13px; }
     .join-btn { margin-top: 8px; background: #d35400; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
     .promo-banner { background: #eef9ff; color: #d35400; font-weight: bold; padding: 12px; font-size: 14px; border-bottom: 2px solid #3498db; text-align: center; line-height: 1.5; }
-    .combo-series-box { margin: 0 15px 10px 15px; padding: 12px; background: #fff8e8; border-left: 5px solid #f39c12; border-radius: 10px; }
+    .combo-series-box { margin: 10px 15px; padding: 12px; background: #fff8e8; border-left: 5px solid #f39c12; border-radius: 10px; }
     .combo-series-title { font-weight: bold; color: #d35400; margin-bottom: 10px; font-size: 16px; }
     .combo-card { background: white; border: 1px solid #f5d6a8; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
     .combo-card-name { font-weight: bold; color: #2c3e50; line-height: 1.5; }
@@ -62,7 +62,7 @@
   <div class="container">
     <div id="store-closed-banner" class="store-closed" style="display:none;">⛔ 門市目前休息中，暫不開放點餐 ⛔</div>
     <div id="promo-banner" class="promo-banner" style="display:none;"></div>
-
+    
     <div class="header">
       <h2>凰貴妃茶堂</h2>
       <p>線上專屬點餐系統</p>
@@ -94,7 +94,7 @@
   <script>
     // ⚠️ 記得替換成你最新的 GAS 網址
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbykQQXfiZMMrO-ghPpRiRAViOrlhhPDEXYoaVT8iE-BLXuuxqrLiqcrbhmb76OpLiXq/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxo41bcyyfmHkSV9hUDSmBwttT929G0_CQzVZ-Em_vsl0fwTrIgBclpVI3mqloX4l-0/exec";
 
     let idToken = ""; let lineProfile = null; let cart = []; let currentOrders = [];
     let menuData = []; let optionsData = { sweetness: [], ice: [], toppings: [] }; let promosData = []; let storeStatus = "營業中";
@@ -111,13 +111,27 @@
       } catch (err) { return { success: false, message: "連線失敗，請稍後再試。" }; }
     }
 
+    // ★★★ 強化版載入防呆 ★★★
     window.onload = async function () {
       try {
         await liff.init({ liffId: CUSTOMER_LIFF_ID });
-        if (!liff.isLoggedIn()) { liff.login(); return; }
-        idToken = liff.getIDToken(); lineProfile = await liff.getProfile();
-        await initUser(); await loadMenu(); await fetchUserData();
-      } catch (e) { Swal.fire("錯誤", "LIFF 初始化失敗", "error"); }
+        if (!liff.isLoggedIn()) { 
+           liff.login({ redirectUri: window.location.href }); 
+           return; 
+        }
+        idToken = liff.getIDToken(); 
+        lineProfile = await liff.getProfile();
+        await initUser(); 
+        await loadMenu(); 
+        await fetchUserData();
+      } catch (e) { 
+        console.error("LIFF 錯誤訊息：", e);
+        Swal.fire({
+          icon: "error", 
+          title: "LIFF 初始化失敗", 
+          html: `原因：${escapeHTML(e.message)}<br><br><span style="color:#e74c3c;font-size:14px;">※ 請確認您已將網頁上傳至 GitHub，並在 LINE 內透過 https:// 網址開啟，不可單機雙擊檔案執行！</span>`
+        }); 
+      }
     };
 
     async function initUser() {
