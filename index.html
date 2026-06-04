@@ -17,7 +17,7 @@
     .history-btn { background: #3498db; color: white; border: none; padding: 8px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 13px; }
     .join-btn { margin-top: 8px; background: #d35400; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
     .promo-banner { background: #eef9ff; color: #d35400; font-weight: bold; padding: 12px; font-size: 14px; border-bottom: 2px solid #3498db; text-align: center; line-height: 1.5; }
-    .combo-series-box { margin: 10px 15px; padding: 12px; background: #fff8e8; border-left: 5px solid #f39c12; border-radius: 10px; }
+    .combo-series-box { margin: 10px 15px 10px 15px; padding: 12px; background: #fff8e8; border-left: 5px solid #f39c12; border-radius: 10px; }
     .combo-series-title { font-weight: bold; color: #d35400; margin-bottom: 10px; font-size: 16px; }
     .combo-card { background: white; border: 1px solid #f5d6a8; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
     .combo-card-name { font-weight: bold; color: #2c3e50; line-height: 1.5; }
@@ -92,15 +92,15 @@
   </div>
 
   <script>
-    // ⚠️ 記得替換成你最新的 GAS 網址
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxo41bcyyfmHkSV9hUDSmBwttT929G0_CQzVZ-Em_vsl0fwTrIgBclpVI3mqloX4l-0/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbykQQXfiZMMrO-ghPpRiRAViOrlhhPDEXYoaVT8iE-BLXuuxqrLiqcrbhmb76OpLiXq/exec";
 
     let idToken = ""; let lineProfile = null; let cart = []; let currentOrders = [];
     let menuData = []; let optionsData = { sweetness: [], ice: [], toppings: [] }; let promosData = []; let storeStatus = "營業中";
     let userInfo = { isMember: false, balance: 0, name: "" }; let userHistory = [];
 
     function escapeHTML(str) { return (!str) ? "" : String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function escapeJS(str) { return (!str) ? "" : str.toString().replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r"); }
 
     async function callGAS(action, payload = {}, options = {}) {
       payload.action = action; payload.idToken = idToken;
@@ -111,7 +111,6 @@
       } catch (err) { return { success: false, message: "連線失敗，請稍後再試。" }; }
     }
 
-    // ★★★ 強化版載入防呆 ★★★
     window.onload = async function () {
       try {
         await liff.init({ liffId: CUSTOMER_LIFF_ID });
@@ -140,12 +139,21 @@
     }
 
     function renderMemberBox() {
+      const box = document.getElementById("member-box");
       if (userInfo.isMember) {
-        document.getElementById("welcome-msg").innerText = `👤 ${userInfo.name} | 餘額: $${userInfo.balance}`;
-        document.getElementById("btn-show-history").style.display = "block";
+        box.innerHTML = `
+          <div class="member-row">
+            <div class="member-info">👤 ${escapeHTML(userInfo.name)}<br>💰 餘額：$${Number(userInfo.balance || 0)}</div>
+            <button class="history-btn" onclick="openTransactionHistory()">交易明細</button>
+          </div>
+        `;
       } else {
-        document.getElementById("welcome-msg").innerHTML = `👋 歡迎 ${escapeHTML(userInfo.name)} <button style="margin-left:10px; background:#d35400; color:white; border:none; padding:4px 8px; border-radius:5px; cursor:pointer;" onclick="joinMember()">加入會員</button>`;
-        document.getElementById("btn-show-history").style.display = "none";
+        box.innerHTML = `
+          <div class="member-row">
+            <div class="member-info">👋 歡迎 ${escapeHTML(userInfo.name)}<br>尚未加入專屬會員</div>
+            <button class="join-btn" onclick="joinMember()">加入會員</button>
+          </div>
+        `;
       }
     }
 
@@ -258,9 +266,9 @@
           let tName = p.targetType === "指定組合" ? String(p.targetName).split(",").join(" + ") : p.targetName;
           comboHtml += `
             <div class="combo-card">
-              <div class="combo-name">🔥 ${escapeHTML(tName)}</div>
-              <div class="combo-price">套餐價 $${p.comboPrice}</div>
-              <div class="combo-desc">${escapeHTML(sizeText)} ${p.desc ? '｜'+escapeHTML(p.desc) : ''}<br>※每杯可自選甜度冰塊，加料另計</div>
+              <div class="combo-card-name">🔥 ${escapeHTML(tName)}</div>
+              <div class="combo-card-price">套餐價 $${p.comboPrice}</div>
+              <div class="combo-card-desc">${escapeHTML(sizeText)} ${p.desc ? '｜'+escapeHTML(p.desc) : ''}<br>※每杯可自選甜度冰塊，加料另計</div>
               ${p.targetType === "指定組合" ? `<button class="combo-btn" onclick="selectComboPromo('${escapeJS(p.id)}')">選擇此套餐</button>` : ''}
             </div>`;
         } else {
@@ -268,8 +276,14 @@
           bannerHtml += `📢 ${tag} 買${p.buyQty}送${p.freeQty} ${sizeText} ${p.desc?' - '+escapeHTML(p.desc):''}<br>`;
         }
       });
-      if(comboHtml) container.innerHTML += `<div class="combo-series-box"><div class="combo-series-title">👑 今日套餐組合</div>${comboHtml}</div>`;
-      if(bannerHtml) { document.getElementById("promo-banner").innerHTML = bannerHtml; document.getElementById("promo-banner").style.display = "block"; }
+      if(comboHtml) container.innerHTML += `<div class="combo-series-box"><div class="combo-series-title">👑 今日優惠組合</div>${comboHtml}</div>`;
+      
+      if(bannerHtml) { 
+         document.getElementById("promo-banner").innerHTML = `<marquee scrollamount="5">${bannerHtml}</marquee>`; 
+         document.getElementById("promo-banner").style.display = "block"; 
+      } else {
+         document.getElementById("promo-banner").style.display = "none";
+      }
 
       // 2. 渲染下方常規菜單分類
       const grouped = {};
