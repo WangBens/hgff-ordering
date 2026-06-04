@@ -29,18 +29,17 @@
     .card-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: #7f8c8d; }
     .card-customer { font-size: 16px; font-weight: bold; color: #2c3e50; }
     .card-items { font-size: 15px; margin: 10px 0; line-height: 1.5; white-space: pre-line; background: #fff; padding: 10px; border-radius: 5px; border: 1px dashed #ccc; }
-    .card-footer { display: flex; flex-direction: column; align-items: flex-start; margin-top: 10px; gap: 10px; }
-    .card-price { font-size: 16px; font-weight: bold; color: #e74c3c; }
-    .action-btns { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
-    .btn-action { flex: 1; padding: 10px; border: none; border-radius: 5px; font-weight: bold; color: white; cursor: pointer; font-size: 14px; text-align: center; }
+    .card-footer { display: flex; justify-content: flex-end; margin-top: 10px; }
+    .action-btns { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; justify-content: flex-end;}
+    .btn-action { padding: 8px 15px; border: none; border-radius: 5px; font-weight: bold; color: white; cursor: pointer; font-size: 14px; text-align: center; }
     .btn-gray { background: #95a5a6; }
     
-    /* 修改為 Row 排版，讓按鈕靠右 */
     .list-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }
     .multi-checkbox-box { border: 1px solid #ccc; padding: 10px; border-radius: 6px; max-height: 120px; overflow-y: auto; background: #fafafa; }
     .checkbox-item { display: inline-flex; align-items: center; margin-right: 15px; font-size: 14px; margin-bottom: 8px;}
     .flex-row { display: flex; gap: 10px; flex-wrap: wrap;}
     .flex-row > * { flex: 1; min-width: 120px;}
+    .scroll-box { margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; max-height: 250px; overflow-y: auto; }
   </style>
 </head>
 <body>
@@ -50,7 +49,7 @@
     <div class="header"><h2>凰貴妃茶堂 店鋪管理</h2></div>
 
     <div class="section" style="background:#fff3e0; border-color:#f1c40f;">
-      <h3>🏬 門市狀態 <span id="current-store-status" style="font-size:14px;"></span></h3>
+      <h3>🏬 門市營業狀態 <span id="current-store-status" style="font-size:14px;"></span></h3>
       <div class="flex-row">
         <button class="btn btn-success" onclick="toggleStore('營業中')">🟢 開放點餐</button>
         <button class="btn btn-red" onclick="toggleStore('休息中')">⛔ 關閉點餐</button>
@@ -58,7 +57,7 @@
     </div>
 
     <div class="section">
-      <h3>📋 即時看板 <span style="font-size:12px; font-weight:normal; background:#ecf0f1; padding:3px 6px; border-radius:10px;">10s 刷新</span></h3>
+      <h3>📋 即時訂單看板 <span style="font-size:12px; font-weight:normal; background:#ecf0f1; padding:3px 6px; border-radius:10px;">10s 刷新</span></h3>
       <div id="orders-container">載入中...</div>
     </div>
 
@@ -72,7 +71,7 @@
       </div>
       <div class="form-group">
         <select id="promo-size" class="form-control">
-          <option value="不限">容量限制：不限</option><option value="L">限 L 杯</option><option value="XL">限 XL 杯</option>
+          <option value="不限">容量限制：不限杯型</option><option value="L">限 L 杯</option><option value="XL">限 XL 杯</option>
         </select>
       </div>
       <div class="form-group" id="promo-multi-drinks-group" style="display:none;">
@@ -96,7 +95,7 @@
       </div>
       <button class="btn btn-blue" onclick="addPromo()">➕ 新增活動</button>
       
-      <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:10px; max-height:250px; overflow-y:auto;" id="promo-list"></div>
+      <div class="scroll-box" id="promo-list"></div>
     </div>
 
     <div class="section">
@@ -111,7 +110,7 @@
       </div>
       <button class="btn btn-blue" onclick="addMenu()">➕ 快速上架商品</button>
       
-      <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:10px; max-height:250px; overflow-y:auto;" id="menu-list"></div>
+      <div class="scroll-box" id="menu-list"></div>
     </div>
 
     <div class="section">
@@ -131,9 +130,9 @@
   </div>
 
   <script>
-    // ⚠️ 記得替換成你最新的 GAS 網址
+    // ⚠️ 請確保這是你最新的 GAS 網址 ⚠️
     const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; 
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyy3lwY_9j1DtRYdVKIkPHtyOL_ZhR19rf20XA0sgKUmAHD1EQLLiXm2akeHh6ikZMr/exec"; 
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbykQQXfiZMMrO-ghPpRiRAViOrlhhPDEXYoaVT8iE-BLXuuxqrLiqcrbhmb76OpLiXq/exec"; 
     
     let adminIdToken = ""; let globalMenus = []; let myLineUserId = "";
 
@@ -159,13 +158,13 @@
             Swal.fire({
                icon: 'error', 
                title: '您尚未擁有管理員權限', 
-               html: `請將您的專屬 ID 貼到 Google Sheet：<br><br><b style="color:#e74c3c; user-select:all; word-break:break-all;">${myLineUserId}</b>`,
+               html: `請將以下您的專屬 LINE ID 複製並貼上到 Google Sheet 的「管理員名單」中：<br><br><b style="color:#e74c3c; user-select:all; word-break:break-all;">${myLineUserId}</b>`,
                confirmButtonText: '我知道了'
             });
           }
         }).catch(err => {
             document.getElementById("loading-layer").style.display = "none";
-            Swal.fire('連線異常', '無法連接到伺服器。', 'error');
+            Swal.fire('連線異常', '無法連接到伺服器，請檢查網路或 GAS 網址是否正確。', 'error');
         });
       });
     };
@@ -216,7 +215,7 @@
             let statusClass = order.status === '未處理' ? 'status-new' : (order.status === '已接單' ? 'status-accepted' : 'status-ready');
             let statusBadge = order.status === '未處理' ? '🔴 新訂單' : (order.status === '已接單' ? '🟠 製作中' : '🔵 可取餐');
             let actionBtns = "";
-            if (order.status === '未處理') actionBtns = `<button class="btn-action" style="background:#f39c12;" onclick="handleOrder('${order.id}', 'accept')">接單</button><button class="btn-action btn-gray" onclick="handleOrder('${order.id}', 'cancel')">取消</button>`;
+            if (order.status === '未處理') actionBtns = `<button class="btn-action" style="background:#f39c12;" onclick="handleOrder('${order.id}', 'accept')">接單</button><button class="btn-action btn-gray" onclick="handleOrder('${order.id}', 'cancel')">取消退款</button>`;
             else if (order.status === '已接單') actionBtns = `<button class="btn-action" style="background:#3498db;" onclick="handleOrder('${order.id}', 'ready')">製作完成</button>`;
             else if (order.status === '製作完成') actionBtns = `<button class="btn-action" style="background:#2ecc71;" onclick="handleOrder('${order.id}', 'complete')">結帳</button>`;
 
@@ -225,7 +224,7 @@
                 <div class="card-header"><span>${escapeHTML(order.time)}</span><span style="font-weight:bold;">${statusBadge}</span></div>
                 <div class="card-customer">🙋‍♂️ ${escapeHTML(order.userName)}</div>
                 <div class="card-items">${escapeHTML(order.content)}</div>
-                <div class="card-footer"><div class="card-price">$${order.total} <span style="font-size:13px; color:#7f8c8d;">(${escapeHTML(order.payMethod)})</span></div><div class="action-btns">${actionBtns}</div></div>
+                <div class="card-footer"><div class="action-btns">${actionBtns}</div></div>
               </div>`;
           });
         }
@@ -240,15 +239,14 @@
 
         let promoHtml = "";
         res.data.promos.forEach(p => {
-           let btn = p.status === '啟用' ? `<button class="btn-action btn-gray" style="padding:6px;width:70px;" onclick="togglePromo('${escapeHTML(p.id)}', '停用')">停用</button>` : `<button class="btn-action btn-success" style="padding:6px;width:70px;" onclick="togglePromo('${escapeHTML(p.id)}', '啟用')">啟用</button>`;
+           let btn = `<button class="btn-action btn-gray" style="padding:6px;width:70px;" onclick="togglePromo('${escapeHTML(p.id)}', '停用')">停用</button>`;
            let itemsFmt = p.targetType === '指定組合' ? p.targetName.split(',').join('、') : p.targetName;
            let tag = p.targetType === '全館' ? '全館' : `[${p.targetType}] ${itemsFmt}`;
            let cond = p.promoMode === '組合價' ? `任選${p.buyQty}杯${p.comboPrice}元` : `買${p.buyQty}送${p.freeQty}`;
            let dDesc = p.desc ? `<br><span style="color:#7f8c8d; font-size:12px;">(${p.desc})</span>` : '';
-           let sTag = p.status === '啟用' ? '' : '<span style="color:#e74c3c;font-size:12px;">(停用)</span>';
-           promoHtml += `<div class="list-item"><div style="flex:1; line-height:1.4;">🎉 <b>${escapeHTML(tag)}</b> ${escapeHTML(cond)} ${sTag}${dDesc}</div><div style="flex-shrink:0;">${btn}</div></div>`;
+           promoHtml += `<div class="list-item"><div style="flex:1; line-height:1.4;">🎉 <b>${escapeHTML(tag)}</b> ${escapeHTML(cond)} ${dDesc}</div><div style="flex-shrink:0;">${btn}</div></div>`;
         });
-        document.getElementById("promo-list").innerHTML = promoHtml || "<div style='text-align:center;'>無活動紀錄</div>";
+        document.getElementById("promo-list").innerHTML = promoHtml || "<div style='text-align:center;'>無進行中活動</div>";
       });
     }
 
@@ -293,8 +291,8 @@
     }
 
     function togglePromo(id, status) { 
-      Swal.fire({ title: `確定要${status}活動嗎？`, icon: 'warning', showCancelButton: true, confirmButtonText: '確定' }).then((r) => {
-        if (r.isConfirmed) { showLoading(); callGAS('adminTogglePromo', { promoId:id, status:status }).then(res => { Swal.fire('成功', `活動已${status}`, 'success'); loadDashboardData(); }); }
+      Swal.fire({ title: `確定要停用活動嗎？`, icon: 'warning', showCancelButton: true, confirmButtonText: '確定' }).then((r) => {
+        if (r.isConfirmed) { showLoading(); callGAS('adminTogglePromo', { promoId:id, status:status }).then(res => { Swal.fire('成功', `活動已停用`, 'success'); loadDashboardData(); }); }
       });
     }
 
