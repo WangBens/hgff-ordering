@@ -67,7 +67,6 @@
 <body>
   <div class="container">
     <div id="store-closed-banner" class="store-closed" style="display:none;">⛔ 門市目前休息中，暫不開放點餐 ⛔</div>
-    
     <div id="promo-banner" class="promo-banner" style="display:none;"></div>
     
     <div class="header">
@@ -110,7 +109,7 @@
   </div>
 
   <script>
-    // ⚠️ 記得替換成你最新的 GAS 網址 ⚠️
+    // ⚠️ 記得替換成你最新的 GAS 網址
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw_WDlljEiUfB9KenD8Hyt98X3-3jROh3lpHjRdI143OIIRB9iWwMttvdRZ_ESv5TTW/exec";
 
@@ -232,6 +231,7 @@
     window.showOngoingOrderDetail = function(index) {
        const o = currentOrders[index];
        if(!o || !o.orderContent) return Swal.fire('錯誤', '無法讀取訂單明細', 'error');
+       
        let contentHtml = "";
        if(o.orderDetail && o.orderDetail.items) {
            contentHtml = generateDetailHTML(o.orderDetail, o.total);
@@ -299,6 +299,7 @@
       container.innerHTML = "";
       if (storeStatus !== "營業中") { container.innerHTML = `<div class="store-closed">門市休息中</div>`; return; }
 
+      // 1. 優先渲染「今日優惠組合」在最頂端
       let comboHtml = ""; let bannerHtml = "";
       promosData.forEach(p => {
         const sizeText = p.sizeLimit !== "不限" ? `[限${escapeHTML(p.sizeLimit)}杯] ` : "";
@@ -317,8 +318,15 @@
         }
       });
       if(comboHtml) container.innerHTML += `<div class="combo-series-box"><div class="combo-series-title">👑 今日優惠組合</div>${comboHtml}</div>`;
-      if(bannerHtml) { document.getElementById("promo-banner").innerHTML = bannerHtml; document.getElementById("promo-banner").style.display = "block"; }
+      
+      if(bannerHtml) { 
+         document.getElementById("promo-banner").innerHTML = `<marquee scrollamount="5">${bannerHtml}</marquee>`; 
+         document.getElementById("promo-banner").style.display = "block"; 
+      } else {
+         document.getElementById("promo-banner").style.display = "none";
+      }
 
+      // 2. 渲染下方常規菜單分類
       const grouped = {};
       menuData.forEach(item => { if (!grouped[item.category]) grouped[item.category] = []; grouped[item.category].push(item); });
       for (let cat in grouped) {
@@ -335,31 +343,52 @@
       }
     }
 
-    // --- 客製化表單 ---
+    // --- 客製化表單 (支援新增與編輯預設值) ---
     window.changeQty = function(delta) {
       const el = document.getElementById("swal-qty-value"); let next = Number(el.innerText) + delta;
       if (next < 1) next = 1; if (next > 20) next = 20; el.innerText = next;
     };
 
-    function buildItemFormHTML(item, forcedSize = "") {
+    function buildItemFormHTML(item, forcedSize = "", existingItem = null, isCombo = false) {
+      let targetSize = existingItem ? existingItem.size : "";
+      let targetSweetness = existingItem ? existingItem.sweetness : "";
+      let targetIce = existingItem ? existingItem.ice : "";
+      let targetToppings = existingItem ? existingItem.toppings : [];
+      let targetQty = existingItem ? existingItem.qty : 1;
+
       let sizeHtml = "";
       if (forcedSize === "L" && item.priceL > 0) sizeHtml += `<label class="choice-label"><input type="radio" name="swal-size" value="L" checked><span class="choice-pill">L 杯 $${item.priceL}</span></label>`;
       else if (forcedSize === "XL" && item.priceXL > 0) sizeHtml += `<label class="choice-label"><input type="radio" name="swal-size" value="XL" checked><span class="choice-pill">XL 杯 $${item.priceXL}</span></label>`;
       else {
-        if (item.priceL > 0) sizeHtml += `<label class="choice-label"><input type="radio" name="swal-size" value="L" checked><span class="choice-pill">L 杯 $${item.priceL}</span></label>`;
-        if (item.priceXL > 0) sizeHtml += `<label class="choice-label"><input type="radio" name="swal-size" value="XL" ${item.priceL<=0?'checked':''}><span class="choice-pill">XL 杯 $${item.priceXL}</span></label>`;
+        if (item.priceL > 0) sizeHtml += `<label class="choice-label"><input type="radio" name="swal-size" value="L" ${targetSize==='L'||!targetSize?'checked':''}><span class="choice-pill">L 杯 $${item.priceL}</span></label>`;
+        if (item.priceXL > 0) sizeHtml += `<label class="choice-label"><input type="radio" name="swal-size" value="XL" ${targetSize==='XL'||(item.priceL<=0 && !targetSize)?'checked':''}><span class="choice-pill">XL 杯 $${item.priceXL}</span></label>`;
       }
       
-      let sHtml = optionsData.sweetness.map((o,i) => `<label class="choice-label"><input type="radio" name="swal-sweetness" value="${o.name}" ${i===0?'checked':''}><span class="choice-pill">${o.name}</span></label>`).join("");
-      let iHtml = optionsData.ice.map((o,i) => `<label class="choice-label"><input type="radio" name="swal-ice" value="${o.name}" ${i===0?'checked':''}><span class="choice-pill">${o.name}</span></label>`).join("");
-      let tHtml = optionsData.toppings.map(o => `<label class="choice-label topping-label"><input type="checkbox" name="swal-topping" value="${o.name}"><span class="choice-pill">${o.name} +$${o.price}</span></label>`).join("");
+      let sHtml = optionsData.sweetness.map((o,i) => {
+        let isChecked = targetSweetness ? (targetSweetness === o.name) : (i === 0);
+        return `<label class="choice-label"><input type="radio" name="swal-sweetness" value="${o.name}" ${isChecked?'checked':''}><span class="choice-pill">${o.name}</span></label>`;
+      }).join("");
+      
+      let iHtml = optionsData.ice.map((o,i) => {
+        let isChecked = targetIce ? (targetIce === o.name) : (i === 0);
+        return `<label class="choice-label"><input type="radio" name="swal-ice" value="${o.name}" ${isChecked?'checked':''}><span class="choice-pill">${o.name}</span></label>`;
+      }).join("");
+      
+      let tHtml = optionsData.toppings.map(o => {
+        let isChecked = targetToppings.includes(o.name);
+        return `<label class="choice-label topping-label"><input type="checkbox" name="swal-topping" value="${o.name}" ${isChecked?'checked':''}><span class="choice-pill">${o.name} +$${o.price}</span></label>`;
+      }).join("");
+
+      let qtyHtml = isCombo 
+        ? `<div class="qty-control"><div id="swal-qty-value" class="qty-value">1</div><span style="font-size:12px;color:#999;margin-left:10px;">(套餐內固定1杯)</span></div>`
+        : `<div class="qty-control"><button type="button" class="qty-btn" onclick="changeQty(-1)">−</button><div id="swal-qty-value" class="qty-value">${targetQty}</div><button type="button" class="qty-btn" onclick="changeQty(1)">+</button></div>`;
 
       return `
         <div class="option-section"><div class="option-title">容量</div><div class="choice-grid">${sizeHtml}</div></div>
         <div class="option-section"><div class="option-title">甜度</div><div class="choice-grid">${sHtml}</div></div>
         <div class="option-section"><div class="option-title">冰塊</div><div class="choice-grid">${iHtml}</div></div>
         <div class="option-section"><div class="option-title">加料 (可複選)</div><div class="choice-grid">${tHtml||'<span style="color:#999;">無</span>'}</div></div>
-        <div class="option-section" style="border:none;"><div class="option-title">數量</div><div class="qty-control"><button type="button" class="qty-btn" onclick="changeQty(-1)">−</button><div id="swal-qty-value" class="qty-value">1</div><button type="button" class="qty-btn" onclick="changeQty(1)">+</button></div></div>
+        <div class="option-section" style="border:none;"><div class="option-title">數量</div>${qtyHtml}</div>
       `;
     }
 
@@ -379,9 +408,43 @@
       };
     }
 
+    // --- 新增：編輯購物車商品 ---
+    window.editCartItem = function(index) {
+      let existingItem = cart[index];
+      let isCombo = !!existingItem.groupId;
+      let forcedSize = isCombo ? existingItem.size : "";
+      let menuItem = menuData.find(m => m.name === existingItem.name);
+      
+      if (!menuItem) return Swal.fire('錯誤', '找不到此商品，可能已下架', 'error');
+
+      Swal.fire({ 
+        title: '編輯 ' + menuItem.name, 
+        html: buildItemFormHTML(menuItem, forcedSize, existingItem, isCombo), 
+        showCancelButton: true, 
+        confirmButtonText: "儲存修改",
+        cancelButtonText: "取消",
+        preConfirm: () => readItemFormValue(menuItem) 
+      }).then(res => {
+        if (res.isConfirmed && res.value) {
+           let updated = res.value;
+           if(isCombo) {
+              updated.groupId = existingItem.groupId;
+              updated.comboName = existingItem.comboName;
+              updated.comboPrice = existingItem.comboPrice;
+              updated.qty = 1; // 套餐鎖死1杯
+           }
+           cart[index] = updated; 
+           updateCart(); 
+           Swal.fire({title:"修改成功", icon:"success", timer:1000, showConfirmButton:false}).then(() => openCartManager());
+        } else if (res.dismiss === Swal.DismissReason.cancel || res.dismiss === Swal.DismissReason.backdrop) {
+           openCartManager();
+        }
+      });
+    };
+
     async function selectItem(encodedName) {
       const item = menuData.find(m => m.name === decodeURIComponent(encodedName));
-      const res = await Swal.fire({ title: item.name, html: buildItemFormHTML(item), showCancelButton: true, confirmButtonText: "加入", preConfirm: () => readItemFormValue(item) });
+      const res = await Swal.fire({ title: item.name, html: buildItemFormHTML(item, "", null, false), showCancelButton: true, confirmButtonText: "加入", preConfirm: () => readItemFormValue(item) });
       if (res.isConfirmed && res.value) { cart.push(res.value); updateCart(); Swal.fire({title:"已加入", icon:"success", timer:1000, showConfirmButton:false}); }
     }
 
@@ -396,7 +459,7 @@
         const menuItem = menuData.find(m => m.name === itemNames[i]);
         if(!menuItem || (sizeLimit==='L'&&menuItem.priceL<=0) || (sizeLimit==='XL'&&menuItem.priceXL<=0)) return Swal.fire('錯誤', `商品「${itemNames[i]}」不符套餐條件`, 'error');
         
-        const res = await Swal.fire({ title: `套餐第 ${i + 1} 杯：${menuItem.name}`, html: buildItemFormHTML(menuItem, sizeLimit), showCancelButton: true, confirmButtonText: i === itemNames.length - 1 ? "完成加入" : "設定下一杯", allowOutsideClick: false, preConfirm: () => { let val = readItemFormValue(menuItem); val.qty = 1; return val; } });
+        const res = await Swal.fire({ title: `套餐第 ${i + 1} 杯：${menuItem.name}`, html: buildItemFormHTML(menuItem, sizeLimit, null, true), showCancelButton: true, confirmButtonText: i === itemNames.length - 1 ? "完成加入" : "設定下一杯", allowOutsideClick: false, preConfirm: () => { let val = readItemFormValue(menuItem); val.qty = 1; return val; } });
         if (!res.isConfirmed) return Swal.fire("已取消", "尚未加入套餐", "info");
         
         res.value.groupId = groupId; res.value.comboName = promo.targetName.split(",").join(" + "); res.value.comboPrice = promo.comboPrice;
@@ -447,8 +510,9 @@
       } else { document.getElementById("cart-bar").style.display = "none"; Swal.close(); }
     }
 
+    // --- 修改：購物車清單加入編輯按鈕 ---
     window.openCartManager = function() {
-      let html = `<div style="text-align:left; max-height: 400px; overflow-y:auto; border-top: 1px solid #eee; padding-top:10px;">`;
+      let html = `<div style="text-align:left; max-height: 400px; overflow-y:auto; border-top: 1px solid #eee; padding-top:10px; padding-right:5px;">`;
       let groups = {}; let singles = [];
       cart.forEach((item, index) => {
         item._idx = index;
@@ -459,12 +523,18 @@
       for(let gid in groups) {
         let g = groups[gid]; let toppingSum = 0; g.items.forEach(i => toppingSum += (i.toppingPrice * i.qty));
         html += `<div style="background:#fff8e8; border:1px solid #f39c12; border-radius:8px; padding:10px; margin-bottom:10px;">
-                   <div style="font-weight:bold; color:#d35400; display:flex; justify-content:space-between;"><span>👑 ${escapeHTML(g.name)}</span><span>$${g.price + toppingSum}</span></div>`;
+                   <div style="font-weight:bold; color:#d35400; display:flex; justify-content:space-between; margin-bottom:5px;"><span>👑 ${escapeHTML(g.name)}</span><span>$${g.price + toppingSum}</span></div>`;
         g.items.forEach(item => {
            let tops = item.toppings.length > 0 ? `｜加料：${item.toppings.join("、")} (+$${item.toppingPrice * item.qty})` : "";
-           html += `<div style="font-size:13px; margin-top:5px; padding-left:10px; border-left:2px solid #f39c12; color:#333;"><b>[${escapeHTML(item.size)}] ${escapeHTML(item.name)}</b><br><span style="color:#7f8c8d;">${escapeHTML(item.sweetness)}, ${escapeHTML(item.ice)} ${tops}</span></div>`;
+           html += `<div style="font-size:13px; margin-top:5px; padding-bottom:5px; border-bottom:1px dashed #f3ce95; position:relative;">
+                      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <b>[${escapeHTML(item.size)}] ${escapeHTML(item.name)}</b>
+                        <button style="background:#3498db; color:white; border:none; padding:3px 8px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="editCartItem(${item._idx})">✏️ 編輯此杯</button>
+                      </div>
+                      <div style="color:#7f8c8d; margin-top:3px;">${escapeHTML(item.sweetness)}, ${escapeHTML(item.ice)} ${tops}</div>
+                    </div>`;
         });
-        html += `<div style="text-align:right; margin-top:8px;"><button style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="cart = cart.filter(i => i.groupId !== '${gid}'); updateCart(); openCartManager();">🗑️ 刪除此套餐</button></div></div>`;
+        html += `<div style="text-align:right; margin-top:8px;"><button style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="cart = cart.filter(i => i.groupId !== '${gid}'); updateCart(); openCartManager();">🗑️ 刪除整組套餐</button></div></div>`;
       }
       
       singles.forEach(item => {
@@ -472,7 +542,10 @@
         html += `<div style="border:1px solid #eee; border-radius:8px; padding:10px; margin-bottom:10px;">
                    <div style="font-weight:bold; display:flex; justify-content:space-between;"><span>[${escapeHTML(item.size)}] ${escapeHTML(item.name)} x${item.qty}</span><span style="color:#e74c3c;">$${item.unitPrice * item.qty}</span></div>
                    <div style="font-size:13px; color:#7f8c8d; margin-top:5px;">${escapeHTML(item.sweetness)}, ${escapeHTML(item.ice)} ${tops}<br>(單品飲料 $${item.basePrice * item.qty})</div>
-                   <div style="text-align:right; margin-top:8px;"><button style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="cart.splice(${item._idx},1); updateCart(); openCartManager();">🗑️ 刪除單品</button></div></div>`;
+                   <div style="text-align:right; margin-top:8px;">
+                      <button style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:12px; margin-right:5px;" onclick="editCartItem(${item._idx})">✏️ 編輯</button>
+                      <button style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="cart.splice(${item._idx},1); updateCart(); openCartManager();">🗑️ 刪除</button>
+                   </div></div>`;
       });
       html += `</div>`;
       Swal.fire({ title: "我的購物車", html: html, confirmButtonText: "關閉", showCancelButton: true, cancelButtonText: "清空", cancelButtonColor: "#95a5a6" }).then(r => { if(r.dismiss === Swal.DismissReason.cancel) { cart = []; updateCart(); Swal.fire('已清空', '購物車已清空', 'success'); } });
