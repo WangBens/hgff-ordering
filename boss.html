@@ -129,91 +129,199 @@
   </div>
 
   <script>
-    const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx8J2bY3hx75M2s3y5XFEXH2XG6IpnsWZeCmazntE66BEHe8JTG1-OnItlA1OXYC914/exec";
+const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz4yuSdIsI4LBRr4fKMkO_4Lqf_w0OUkXCyuozCqxhAfuUMSMUIMRZ1RdzxcSFfUa0/exec";
 
-    let globalMenus = [];
+let globalMenus = [];
+let currentUserId = ""; // ✅ 新增
 
-    // ✅ API呼叫（最穩定版）
-    async function callGAS(action, payload = {}) {
-      payload.action = action;
-      payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+// ✅ API呼叫
+async function callGAS(action, payload = {}) {
+  payload.action = action;
+  payload.userId = currentUserId;
+  payload.requestId = Date.now();
 
-      const formData = new FormData();
-      formData.append("data", JSON.stringify(payload));
+  const formData = new FormData();
+  formData.append("data", JSON.stringify(payload));
 
-      try {
-        const response = await fetch(GAS_API_URL, {
-          method: "POST",
-          body: formData
-        });
+  const res = await fetch(GAS_API_URL, { method: "POST", body: formData });
+  const text = await res.text();
+  console.log("✅回傳:", text);
+  return JSON.parse(text);
+}
 
-        const text = await response.text();
-        console.log("✅ 原始回應:", text);
+// ✅ 啟動
+window.onload = async function () {
+  await liff.init({ liffId: BOSS_LIFF_ID });
 
-        return JSON.parse(text);
+  if (!liff.isLoggedIn()) {
+    liff.login();
+    return;
+  }
 
-      } catch (err) {
-        console.error("❌ API錯誤", err);
-        Swal.fire("錯誤", "無法連線到伺服器", "error");
-        throw err;
-      }
-    }
+  const profile = await liff.getProfile();
+  const userId = profile.userId;
+  currentUserId = userId;
 
-    // ✅ 啟動流程
-    window.onload = function () {
-      console.log("🚀 頁面啟動");
+  const res = await callGAS("verifyAdmin", { userId });
 
-      liff.init({ liffId: BOSS_LIFF_ID })
-        .then(() => {
-          console.log("✅ LIFF 初始化成功");
+  document.getElementById("loading-layer").style.display = "none";
 
-          if (!liff.isLoggedIn()) {
-            liff.login();
-            return;
+  if (!res.success || !res.isAdmin) {
+    Swal.fire("錯誤", "權限不足", "error");
+    return;
+  }
+
+  document.getElementById("admin-layer").style.display = "block";
+
+  loadDashboardData();
+  setInterval(loadDashboardData, 10000);
+};
+
+// ✅ 載入資料
+async function loadDashboardData() {
+  const res = await callGAS("getAdminDashboardData");
+  if (!res.success) return;
+
+  const data = res.data;
+
+  globalMenus = data.menus;
+
+  // ✅ 店鋪狀態
+  document.getElementById("current-store-status").innerText =
+    `(${data.storeStatus})`;
+
+  // ✅ ✅ ✅ 訂單渲染（關鍵修正）
+  renderOrders(data.orders);
+
+  // ✅ ✅ ✅ 菜單渲染
+  renderMenuManage(data.menus);
+}
+
+// ✅ ✅ ✅ 訂單顯示
+function renderOrders(orders) {
+  const box = document.getElementById("orders-container");
+
+  if (!orders || orders.length === 0) {
+    box.innerHTML = "目前沒有訂單";
+    return;
+  }
+
+  let html = "";
+
+  orders.forEach(o => {
+    let cls =
+      o.status === "未處理"
+        ? "status-new"
+        : o.status === "已接單"
+        ? "status-accepted"
+        : "status-ready";
+
+    html += `
+      <div class="order-card ${cls}">
+        <div class="card-header">
+          <span>#${o.id}</span>
+          <span>${o.time}</span>
+        </div>
+
+        <div class="card-customer">${o.userName}</div>
+
+        <div class="card-items">
+          ${o.content.replace(/\n/g, "<br>")}
+        </div>
+
+        <div class="action-btns">
+          ${
+            o.status === "未處理"
+              ? `<button class="btn-action btn-orange" onclick="orderAction('${o.id}','accept')">接單</button>`
+              : ""
           }
+          ${
+            o.status === "已接單"
+              ? `<button class="btn-action btn-blue" onclick="orderAction('${o.id}','ready')">完成</button>`
+              : ""
+          }
+        </div>
+      </div>
+    `;
+  });
 
-          // ✅ 改用 userId
-          liff.getProfile().then(profile => {
-            const userId = profile.userId;
-            console.log("🔥 USER ID =", userId);
-            console.log("✅ LINE userId:", userId);
+  box.innerHTML = html;
+}
 
-            callGAS('verifyAdmin', { userId: userId })
-              .then(res => {
-                console.log("✅ GAS 回傳 =", res);
+// ✅ 訂單操作
+function orderAction(id, action) {
+  callGAS("processOrderAction", {
+    orderId: id,
+    action: action
+  }).then(() => {
+    loadDashboardData();
+  });
+}
 
-                document.getElementById("loading-layer").style.display = "none";
+// ✅ ✅ ✅ 菜單管理（含下架）
+function renderMenuManage(menus) {
+  const box = document.getElementById("menu-list");
 
-                if (res.success && res.isAdmin) {
-                  console.log("✅ 進入後台");
-                  document.getElementById("admin-layer").style.display = "block";
-                  loadDashboardData();
-                  setInterval(loadDashboardData, 10000);
-                } else {
-                  Swal.fire("錯誤", "權限不足", "error");
-                }
-              });
+  let html = "";
 
-          });
-        })
-        .catch(err => {
-          console.error("❌ LIFF 初始化失敗:", err);
-        });
-    };
+  menus.forEach(m => {
+    html += `
+      <div class="list-item">
+        <div>
+          <b>${m.name}</b> (${m.category})<br>
+          L:$${m.priceL} XL:$${m.priceXL}
+        </div>
+        <button 
+          class="btn-action ${m.status === "上架" ? "btn-red" : "btn-blue"}"
+          onclick="toggleMenu('${m.name}','${m.status === "上架" ? "下架" : "上架"}')">
+          ${m.status === "上架" ? "下架" : "上架"}
+        </button>
+      </div>
+    `;
+  });
 
-    // ✅ 後台資料載入
-    function loadDashboardData() {
-      callGAS('getAdminDashboardData').then(res => {
-        if (!res.success) return;
+  box.innerHTML = html;
+}
 
-        globalMenus = res.data.menus;
+// ✅ 下架/上架
+function toggleMenu(name, status) {
+  callGAS("adminToggleMenuItem", {
+    name: name,
+    status: status
+  }).then(() => {
+    loadDashboardData();
+  });
+}
+    function toggleStore(status) {
+  callGAS("adminToggleStore", {
+    status: status
+  }).then(() => {
+    loadDashboardData();
+  });
+}
+    function addMenu() {
+  const cat = document.getElementById("menu-cat").value;
+  const name = document.getElementById("menu-name").value;
+  const pl = document.getElementById("menu-pl").value;
+  const pxl = document.getElementById("menu-pxl").value;
 
-        document.getElementById("current-store-status").innerText =
-          `(${res.data.storeStatus})`;
-      });
+  callGAS("adminAddMenuItem", {
+    category: cat,
+    name: name,
+    priceL: pl,
+    priceXL: pxl
+  }).then(res => {
+    if (res.success) {
+      Swal.fire("成功", "商品已上架", "success");
+      loadDashboardData();
+    } else {
+      Swal.fire("錯誤", res.message, "error");
     }
-  </script>
+  });
+}
+
+</script>
 
 </body>
 </html>
