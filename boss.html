@@ -187,9 +187,8 @@
             Swal.fire({
               icon: 'error',
               title: '權限不足',
-              result = { success: true, isAdmin: isUserAdmin(body.userId) };
+              text: '你不是管理員，目前登入 ID：' + res.debugUserId
             });
-          }
 
         }).catch(err => {
           console.error(err);
