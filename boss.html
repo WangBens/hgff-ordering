@@ -153,25 +153,52 @@
 
     window.onload = function() {
       liff.init({ liffId: BOSS_LIFF_ID }).then(() => {
-        if (!liff.isLoggedIn()) { liff.login(); return; }
+    
+        // ✅ 沒登入就跳登入
+        if (!liff.isLoggedIn()) {
+          liff.login();
+           return;
+        }
+
+        // ✅ 取得 idToken
         adminIdToken = liff.getIDToken();
-        
+        console.log("✅ idToken 已取得");
+
+        // ✅ 呼叫後端驗證
         callGAS('verifyAdmin').then(res => {
+
+          console.log("✅ GAS 回傳 =", res);
+          console.log("✅ 真正 LINE userId =", res.debugUserId);
+
           document.getElementById("loading-layer").style.display = "none";
+
+          // ✅ 是管理員
           if (res.success && res.isAdmin) {
+            console.log("✅ 驗證通過，進入後台");
+    
             document.getElementById("admin-layer").style.display = "block";
-            loadDashboardData(); setInterval(loadDashboardData, 10000); 
+            loadDashboardData();
+            setInterval(loadDashboardData, 10000);
+
           } else {
+        // ❌ 不是管理員
+            console.log("❌ 不是 admin");
+
             Swal.fire({
-               icon: 'error', title: '權限不足', 
-               text: '您尚未擁有管理員權限，請確認已將您的 LINE ID 加入試算表，並且已重新發佈 GAS。',
-               confirmButtonText: '我知道了'
+              icon: 'error',
+              title: '權限不足',
+              text: '你不是管理員，目前登入 ID：' + res.debugUserId
             });
           }
+
         }).catch(err => {
-            document.getElementById("loading-layer").style.display = "none";
-            Swal.fire('連線異常', '無法連接到伺服器，請檢查網路或 GAS 網址是否正確。', 'error');
+          console.error(err);
+
+          document.getElementById("loading-layer").style.display = "none";
+
+          Swal.fire('連線異常', '無法連接到伺服器', 'error');
         });
+
       });
     };
 
