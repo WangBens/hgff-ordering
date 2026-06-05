@@ -132,7 +132,7 @@
   <script>
     // ⚠️ 請確保這是你最新的 GAS 網址 ⚠️
     const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; 
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxuw8hQBjnm_KODSd4lcLA4AbqRiGkQygByCBqCFP9BSeQqpeA58RcSrEVy05jHiRQH/exec"; 
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycby1dkzN-MY8FhBKYYgbE3oy6wuNbbgLjZXTNd2Ko4sb7aHqUYMzHsMUwABlL2zenbM/exec"; 
     
     let adminIdToken = ""; let globalMenus = []; let myLineUserId = "";
 
@@ -173,6 +173,7 @@
           document.getElementById("loading-layer").style.display = "none";
 
           // ✅ 是管理員
+          // ✅ 是管理員
           if (res.success && res.isAdmin) {
             console.log("✅ 驗證通過，進入後台");
     
@@ -181,15 +182,15 @@
             setInterval(loadDashboardData, 10000);
 
           } else {
-            // ❌ 驗證失敗 (可能是沒權限，也可能是後端執行出錯)
-            console.log("❌ 驗證失敗", res);
+            // ❌ 不是管理員
+            console.log("❌ 不是 admin");
 
             Swal.fire({
               icon: 'error',
-              title: res.message ? '系統發生錯誤' : '權限不足',
-              html: (res.message ? `後端回報：<br><b style="color:red;">${res.message}</b>` : `你不是管理員。<br>目前登入 ID：<b>${res.debugUserId}</b>`)
+              title: '權限不足',
+              text: '你不是管理員，目前登入 ID：' + res.debugUserId
             });
-          }
+          } 
 
         }).catch(err => {
           console.error(err);
