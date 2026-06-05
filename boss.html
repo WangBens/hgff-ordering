@@ -138,7 +138,7 @@
 
     function escapeHTML(str) { return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
     
-    async function async function callGAS(action, payload = {}) {
+    async function callGAS(action, payload = {}) {
       payload.action = action;
       payload.idToken = adminIdToken;
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
