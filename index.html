@@ -121,7 +121,7 @@
     function escapeJS(str) { return (!str) ? "" : str.toString().replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r"); }
 
     async function callGAS(action, payload = {}, options = {}) {
-      payload.action = action; payload.idToken = idToken;
+      payload.action = action; payload.userId = lineProfile.userId;
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
       if (options.loading) Swal.fire({ title: options.loadingText || "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       try {
