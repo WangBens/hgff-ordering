@@ -132,7 +132,7 @@
   <script>
     // ⚠️ 請確保這是你最新的 GAS 網址 ⚠️
     const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; 
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx8K8tr7ABkk4wfow_rZfiHvpQta2JQAlr6qwnZ_3R8ZEguQIe56HQRdBVtDKN-tVwc/exec"; 
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxEKibIzWN1QV-Hvl_ohumsqENwbNt8aqnuTwXE8yIi60g2jSyNcGJdi7Ytuo7donsz/exec"; 
     
     let adminIdToken = ""; let globalMenus = []; let myLineUserId = "";
 
@@ -142,9 +142,6 @@
       payload.action = action;
       payload.idToken = adminIdToken;
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-
-      const adminActions = ["getAdminDashboardData", "adminUpdateWallet", "updateMemberName", "processOrderAction", "adminToggleStore", "adminAddMenuItem", "adminToggleMenuItem", "adminAddPromo", "adminTogglePromo"];
-      if (adminActions.includes(action)) { payload.adminKey = "my_super_secret_987654"; }
 
       try {
         const response = await fetch(GAS_API_URL, { method: 'POST', headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
@@ -159,10 +156,6 @@
         if (!liff.isLoggedIn()) { liff.login(); return; }
         adminIdToken = liff.getIDToken();
         
-        liff.getProfile().then(profile => { 
-          myLineUserId = profile.userId; 
-        }).catch(e => console.log("獲取 LINE 資訊失敗，但可忽略", e));
-
         callGAS('verifyAdmin').then(res => {
           document.getElementById("loading-layer").style.display = "none";
           if (res.success && res.isAdmin) {
@@ -170,8 +163,8 @@
             loadDashboardData(); setInterval(loadDashboardData, 10000); 
           } else {
             Swal.fire({
-               icon: 'error', title: '您尚未擁有管理員權限', 
-               html: `請將您的專屬 LINE ID 貼到 Google Sheet 的「管理員名單」A 欄中：<br><br><b style="color:#e74c3c; user-select:all; word-break:break-all;">${myLineUserId || "載入 ID 失敗，請重整網頁"}</b>`,
+               icon: 'error', title: '權限不足', 
+               text: '您尚未擁有管理員權限，請確認已將您的 LINE ID 加入試算表，並且已重新發佈 GAS。',
                confirmButtonText: '我知道了'
             });
           }
@@ -229,9 +222,9 @@
             let statusBadge = order.status === '未處理' ? '🔴 新訂單' : (order.status === '已接單' ? '🟠 製作中' : '🔵 可取餐');
             
             let actionBtns = "";
-            if (order.status === '未處理') actionBtns = `<button class="btn-action" style="background:#f39c12;" onclick="handleOrder('${order.id}', 'accept')">接單</button><button class="btn-action btn-gray" onclick="handleOrder('${order.id}', 'cancel')">取消</button>`;
+            if (order.status === '未處理') actionBtns = `<button class="btn-action" style="background:#f39c12;" onclick="handleOrder('${order.id}', 'accept')">接單</button><button class="btn-action btn-gray" onclick="handleOrder('${order.id}', 'cancel')">取消/退款</button>`;
             else if (order.status === '已接單') actionBtns = `<button class="btn-action" style="background:#3498db;" onclick="handleOrder('${order.id}', 'ready')">製作完成</button>`;
-            else if (order.status === '製作完成') actionBtns = `<button class="btn-action" style="background:#2ecc71;" onclick="handleOrder('${order.id}', 'complete')">結案</button>`;
+            else if (order.status === '製作完成') actionBtns = `<button class="btn-action" style="background:#2ecc71;" onclick="handleOrder('${order.id}', 'complete')">結帳</button>`;
 
             // ====== 🥤 訂單明細排版優化：像點餐機收據般緊湊 ======
             let itemsHtml = order.content.split('\n').filter(line => line.trim() !== '' && !line.includes('活動折扣') && !line.includes('折抵')).map(line => {
@@ -282,7 +275,7 @@
            let dDesc = p.desc ? `<br><span style="color:#7f8c8d; font-size:12px;">(${p.desc})</span>` : '';
            promoHtml += `<div class="list-item"><div style="flex:1; line-height:1.4;">🎉 <b>${escapeHTML(tag)}</b> ${escapeHTML(cond)} ${dDesc}</div><div style="flex-shrink:0; margin-left:10px;">${btn}</div></div>`;
         });
-        document.getElementById("promo-list").innerHTML = promoHtml || "<div style='text-align:center;'>無活動紀錄</div>";
+        document.getElementById("promo-list").innerHTML = promoHtml || "<div style='text-align:center;'>無進行中活動</div>";
       });
     }
 
@@ -361,4 +354,3 @@
   </script>
 </body>
 </html>
-
