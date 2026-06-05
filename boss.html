@@ -143,18 +143,29 @@
       payload.idToken = adminIdToken;
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
 
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(payload));
+
       try {
         const response = await fetch(GAS_API_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: formData   // ✅ 不要 Content-Type
         });
 
-        const data = await response.json();
-        return data;
+        const text = await response.text();
+
+        console.log("✅ 原始回應:", text); // ✅ debug用
+
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          console.error("❌ JSON 解析失敗", text);
+          Swal.fire("錯誤", "伺服器回應錯誤", "error");
+          throw e;
+        }
 
       } catch (err) {
-        console.error("API錯誤", err);
+        console.error("❌ API錯誤", err);
         Swal.fire("錯誤", "無法連線到伺服器", "error");
         throw err;
       }
@@ -162,45 +173,63 @@
 
     // 🚀 正確、會執行安全驗證的 onload
     window.onload = function() {
-      liff.init({ liffId: BOSS_LIFF_ID }).then(() => {
-    
-        if (!liff.isLoggedIn()) {
-          liff.login();
-           return;
-        }
+      console.log("🚀 頁面啟動");
 
-        adminIdToken = liff.getIDToken();
-        console.log("✅ idToken 已取得");
+      liff.init({ liffId: BOSS_LIFF_ID })
+        .then(() => {
+          console.log("✅ LIFF 初始化成功");
 
-        callGAS('verifyAdmin').then(res => {
-          console.log("✅ GAS 回傳 =", res);
-          document.getElementById("loading-layer").style.display = "none";
+          console.log("isInClient:", liff.isInClient());
 
-          if (res.success && res.isAdmin) {
-            console.log("✅ 驗證通過，進入後台");
-            document.getElementById("admin-layer").style.display = "block";
-            loadDashboardData();
-            setInterval(loadDashboardData, 10000);
-          } else {
-            console.log("❌ 不是 admin");
-            Swal.fire({
-              icon: 'error',
-              title: '無法登入：權限不足',
-              html: `
-                <div style="text-align:left; font-size:12px; background:#f4f4f4; padding:10px; border-radius:5px; margin-top:10px; word-break: break-all;">
-                  <b>你的 LINE ID:</b><br>${res.debugUserId || "無資料"}<br><br>
-                  <b>後端讀取到的資料:</b><br>${(res.debugInfo || "無除錯訊息").replace(/\n/g, '<br>')}
-                </div>
-              `
+          if (!liff.isLoggedIn()) {
+            console.log("❗未登入 → 進行登入");
+            liff.login();
+            return;
+          }
+
+          adminIdToken = liff.getIDToken();
+
+          console.log("✅ 取得 Token:", adminIdToken);
+
+          if (!adminIdToken) {
+            Swal.fire("錯誤", "拿不到 LINE Token", "error");
+            return;
+          }
+
+          console.log("✅ 準備呼叫 GAS");
+
+          callGAS('verifyAdmin')
+            .then(res => {
+              console.log("✅ GAS 回傳 =", res);
+
+              document.getElementById("loading-layer").style.display = "none";
+
+              if (res.success && res.isAdmin) {
+                console.log("✅ 進入後台");
+                document.getElementById("admin-layer").style.display = "block";
+                loadDashboardData();
+                setInterval(loadDashboardData, 10000);
+              } else {
+                console.log("❌ 非 admin", res);
+
+                Swal.fire({
+                  icon: 'error',
+                  title: '無法登入：權限不足',
+                  html: `
+                    <div style="text-align:left;font-size:12px;">
+                      LINE ID: ${res.debugUserId || "無"}
+                    </div>`
+                });
+              }
+            })
+            .catch(err => {
+              console.error("❌ verifyAdmin 失敗", err);
             });
-          } 
 
-        }).catch(err => {
-          console.error("呼叫 verifyAdmin 發生錯誤：", err);
-          document.getElementById("loading-layer").style.display = "none";
+        })
+        .catch(err => {
+          console.error("❌ LIFF 初始化失敗:", err);
         });
-
-      });
     };
 
     function updatePromoTargetUI() {
