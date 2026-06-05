@@ -149,12 +149,9 @@
       try {
         const response = await fetch(GAS_API_URL, {
           method: "POST",
-          mode: "no-cors",   // ✅ 關鍵
+          mode: "POST",   // ✅ 關鍵
           body: formData
         });
-
-        // ⚠️ no-cors 無法拿 response
-        // 所以我們改成「不用 response 判斷」，直接相信成功
 
         return { success: true };
 
