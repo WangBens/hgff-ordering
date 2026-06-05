@@ -130,7 +130,7 @@
 
   <script>
 const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyWW7Nhw1v4nSzdLPUJr5bg3atybd-Lgik8xifNx6lvr8dsVzJF-kUDYbDE04OifxNt/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyUAApzF1hk1iNmnst3hw8VFYNXKAqLjy6-V0k3nK4EMYgFICKd0MI3OPZgEzkVptcC/exec";
 
 let globalMenus = [];
 let currentUserId = ""; // ✅ 新增
@@ -140,6 +140,7 @@ async function callGAS(action, payload = {}) {
   payload.action = action;
   payload.userId = currentUserId;
   payload.requestId = Date.now();
+  console.log("🔥送出payload:", payload);
 
   const formData = new FormData();
   formData.append("data", JSON.stringify(payload));
@@ -175,6 +176,8 @@ window.onload = async function () {
   document.getElementById("admin-layer").style.display = "block";
 
   loadDashboardData();
+  updatePromoTargetUI();
+  updatePromoModeUI();
   setInterval(loadDashboardData, 10000);
 };
 
@@ -197,6 +200,8 @@ async function loadDashboardData() {
 
   // ✅ ✅ ✅ 菜單渲染
   renderMenuManage(data.menus);
+
+  renderPromos(data.promos);
 }
 
 // ✅ ✅ ✅ 訂單顯示
@@ -250,13 +255,17 @@ function renderOrders(orders) {
   box.innerHTML = html;
 }
 
-// ✅ 訂單操作
 function orderAction(id, action) {
   callGAS("processOrderAction", {
     orderId: id,
     action: action
-  }).then(() => {
-    loadDashboardData();
+  }).then(res => {
+    if (res.success) {
+      Swal.fire("成功", res.message, "success");
+      loadDashboardData();
+    } else {
+      Swal.fire("錯誤", res.message, "error");
+    }
   });
 }
 
@@ -312,10 +321,26 @@ function toggleMenu(name, status) {
   });
 }
     function toggleStore(status) {
-  callGAS("adminToggleStore", {
-    status: status
-  }).then(() => {
-    loadDashboardData();
+  Swal.fire({
+    title: "確認操作",
+    text: `確定要將門市設為「${status}」嗎？`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "確定",
+    cancelButtonText: "取消"
+  }).then(result => {
+    if (!result.isConfirmed) return;
+
+    callGAS("adminToggleStore", {
+      status: status
+    }).then(res => {
+      if (res.success) {
+        Swal.fire("成功", res.message, "success");
+        loadDashboardData();
+      } else {
+        Swal.fire("錯誤", res.message, "error");
+      }
+    });
   });
 }
     function addMenu() {
@@ -423,8 +448,119 @@ function updateMember() {
   });
 }
 
+function addPromo() {
+  const type = document.getElementById("promo-target-type").value;
+  const mode = document.getElementById("promo-mode").value;
 
+  let targetName = "";
+
+  if (type === "指定組合") {
+    const checked = document.querySelectorAll("#promo-checkbox-list input:checked");
+
+    let arr = [];
+    checked.forEach(c => arr.push(c.value));
+
+    if (arr.length === 0) {
+      return Swal.fire("錯誤", "請選擇套餐內容", "warning");
+    }
+
+    targetName = arr.join(",");
+  } else {
+    const select = document.getElementById("promo-target-name");
+    targetName = select ? select.value : "";
+  }
+
+  const desc = document.getElementById("promo-desc").value;
+  const sizeLimit = document.getElementById("promo-size").value;
+  let buyQty = document.getElementById("promo-buy").value;
+  let freeQty = document.getElementById("promo-free").value;
+  let comboPrice = document.getElementById("promo-combo-price").value;
+
+  callGAS("adminAddPromo", {
+    desc,
+    targetType: type,
+    targetName,
+    promoMode: mode,
+    buyQty,
+    freeQty,
+    comboPrice,
+    sizeLimit
+  }).then(res => {
+    if (res.success) {
+
+      Swal.fire("成功", res.message, "success");
+      loadDashboardData();
+
+      // ✅ ✅ ✅ 成功才清空
+      document.getElementById("promo-desc").value = "";
+      document.getElementById("promo-buy").value = "";
+      document.getElementById("promo-free").value = "";
+      document.getElementById("promo-combo-price").value = "";
+      
+      document.querySelectorAll("#promo-checkbox-list input")
+        .forEach(cb => cb.checked = false);
+
+
+    } else {
+      Swal.fire("錯誤", res.message, "error");
+    }
+  });
+}
+    function updatePromoTargetUI() {
+  const type = document.getElementById("promo-target-type").value;
+  const checkboxBox = document.getElementById("promo-checkbox-list");
+  const multiBox = document.getElementById("promo-multi-drinks-group");
+
+  if (type === "指定組合") {
+    multiBox.style.display = "block";
+
+    let html = "";
+
+    globalMenus.forEach(m => {
+      html += `
+        <label class="checkbox-item">
+          <input type="checkbox" value="${m.name}"> ${m.name}
+        </label>
+      `;
+    });
+
+    checkboxBox.innerHTML = html;
+  } else {
+    multiBox.style.display = "none";
+  }
+}
+    function updatePromoModeUI() {
+  const mode = document.getElementById("promo-mode").value;
+
+  document.getElementById("promo-buy-free-ui").style.display =
+    mode === "買X送Y" ? "flex" : "none";
+
+  document.getElementById("promo-combo-ui").style.display =
+    mode === "組合價" ? "flex" : "none";
+}
+    function renderPromos(promos) {
+  const box = document.getElementById("promo-list");
+
+  if (!promos || promos.length === 0) {
+    box.innerHTML = "目前沒有活動";
+    return;
+  }
+
+  let html = "";
+
+  promos.forEach(p => {
+    html += `
+      <div class="list-item">
+        <div>
+          <b>${p.desc || "活動"}</b><br>
+          ${p.targetName}<br>
+          模式：${p.promoMode}
+        </div>
+      </div>
+    `;
+  });
+  box.innerHTML = html;
+}
 </script>
-
 </body>
 </html>
