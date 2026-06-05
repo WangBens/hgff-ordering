@@ -623,14 +623,40 @@
     </div>
     ${calc.discount > 0 ? `<div style="color:#27ae60;">折抵 -$${calc.discount}</div>` : ''}
 
-    <div>付款方式</div>
-    <select id="co-pay">${payOpts}</select>
+    <div style="text-align:left; margin-top:10px; font-weight:bold;">付款方式</div>
+<select id="co-pay" style="
+  width:100%;
+  padding:12px;
+  font-size:16px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  margin-bottom:10px;
+">
+  ${payOpts}
+</select>
 
-    <div>姓名</div>
-    <input id="co-name">
+<div style="text-align:left; margin-top:10px; font-weight:bold;">姓名</div>
+<input id="co-name" placeholder="請輸入姓名" style="
+  width:100%;
+  padding:12px;
+  font-size:16px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  margin-bottom:10px;
+  box-sizing:border-box;
+">
 
-    <div>手機末三碼</div>
-    <input id="co-phone" maxlength="3">
+<div style="text-align:left; margin-top:10px; font-weight:bold;">手機末三碼</div>
+<input id="co-phone" placeholder="例：123" maxlength="3" style="
+  width:100%;
+  padding:12px;
+  font-size:18px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  letter-spacing:3px;
+  text-align:center;
+  box-sizing:border-box;
+">
   `;
 
   Swal.fire({
@@ -638,15 +664,26 @@
     html: html,
     showCancelButton: true,
     confirmButtonText: "送出訂單",
+    
+didOpen: () => {
+    document.getElementById("co-name").focus();
+  },
+
     preConfirm: () => {
       let n = document.getElementById("co-name").value;
       let p = document.getElementById("co-phone").value;
       let py = document.getElementById("co-pay").value;
 
-      if (!n || !/^\d{3}$/.test(p)) {
-        Swal.showValidationMessage("格式錯誤");
-        return false;
-      }
+      if (!n) {
+  Swal.fire("錯誤", "請輸入姓名", "warning");
+  return false;
+}
+
+if (!/^\d{3}$/.test(p)) {
+  Swal.fire("錯誤", "請輸入正確的手機末三碼（3位數字）", "error");
+  return false;
+}
+
 
       return { n, p, py };
     }
