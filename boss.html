@@ -21,7 +21,6 @@
     .btn-orange { background-color: #f39c12; }
     .btn-blue { background-color: #3498db; }
     
-    /* 訂單看板優化：更緊湊、省空間 */
     .order-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px; border-left: 5px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .status-new { border-left-color: #e74c3c; }
     .status-accepted { border-left-color: #f39c12; }
@@ -132,31 +131,10 @@
   <script>
     const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; 
     
-    // 🚨🚨🚨 必改 🚨🚨🚨
-    // 請把你 index.html 裡面的那串 GAS_API_URL 完整複製過來，取代下面雙引號裡面的字！
-    // ⚠️ 請確保這是你最新的 GAS 網址 ⚠️
-    const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; 
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycby1dkzN-MY8FhBKYYgbE3oy6wuNbbgLjZXTNd2Ko4sb7aHqUYMzHsMUwABlL2zenbM/exec"; 
+    // 🚨🚨🚨 必改 🚨🚨🚨 請把你剛剛部署的「全新網址」貼在下面取代這串！
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwLQB82BTTns7tHWs24UYEbvU5IJFZwCbJwfrJP9DLhp3WNFkcerj6x_M40oKQ-nKLT/exec"; 
     
     let adminIdToken = ""; let globalMenus = []; let myLineUserId = "";
-
-    // 🚀🚀🚀 強制進入後台的暴力解法 🚀🚀🚀
-    window.onload = function() {
-      liff.init({ liffId: BOSS_LIFF_ID }).then(() => {
-        if (!liff.isLoggedIn()) {
-          liff.login();
-           return;
-        }
-        adminIdToken = liff.getIDToken();
-        console.log("✅ idToken 已取得，強制進入後台模式");
-        
-        // 不去呼叫 verifyAdmin 驗證了，直接打開畫面！
-        document.getElementById("loading-layer").style.display = "none";
-        document.getElementById("admin-layer").style.display = "block";
-        loadDashboardData();
-        setInterval(loadDashboardData, 10000);
-      });
-    };
 
     function escapeHTML(str) { return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
     
@@ -170,44 +148,43 @@
         return await response.json();
       } catch (err) {
         console.error("API錯誤", err); 
-        Swal.fire("錯誤", "無法連線到 Google 伺服器，請確認網址正確且權限已設為「所有人」。", "error"); 
-        // 把錯誤拋出去，不要回傳假的 { success: false }
+        Swal.fire("錯誤", "無法連線到伺服器", "error"); 
         throw err; 
       }
     }
 
+    // 🚀 正確、會執行安全驗證的 onload
     window.onload = function() {
       liff.init({ liffId: BOSS_LIFF_ID }).then(() => {
     
-        // ✅ 沒登入就跳登入
         if (!liff.isLoggedIn()) {
           liff.login();
            return;
         }
 
-        // ✅ 取得 idToken
         adminIdToken = liff.getIDToken();
         console.log("✅ idToken 已取得");
 
-        // ✅ 呼叫後端驗證
         callGAS('verifyAdmin').then(res => {
           console.log("✅ GAS 回傳 =", res);
           document.getElementById("loading-layer").style.display = "none";
 
-          // ✅ 是管理員
           if (res.success && res.isAdmin) {
             console.log("✅ 驗證通過，進入後台");
             document.getElementById("admin-layer").style.display = "block";
             loadDashboardData();
             setInterval(loadDashboardData, 10000);
-
           } else {
-            // ❌ 不是管理員
             console.log("❌ 不是 admin");
             Swal.fire({
               icon: 'error',
-              title: '權限不足',
-              text: '你不是管理員，目前登入 ID：' + (res.debugUserId || "無資料")
+              title: '無法登入：權限不足',
+              html: `
+                <div style="text-align:left; font-size:12px; background:#f4f4f4; padding:10px; border-radius:5px; margin-top:10px; word-break: break-all;">
+                  <b>你的 LINE ID:</b><br>${res.debugUserId || "無資料"}<br><br>
+                  <b>後端讀取到的資料:</b><br>${(res.debugInfo || "無除錯訊息").replace(/\n/g, '<br>')}
+                </div>
+              `
             });
           } 
 
@@ -270,7 +247,6 @@
             else if (order.status === '已接單') actionBtns = `<button class="btn-action" style="background:#3498db;" onclick="handleOrder('${order.id}', 'ready')">製作完成</button>`;
             else if (order.status === '製作完成') actionBtns = `<button class="btn-action" style="background:#2ecc71;" onclick="handleOrder('${order.id}', 'complete')">結帳</button>`;
 
-            // ====== 🥤 訂單明細排版優化：像點餐機收據般緊湊 ======
             let itemsHtml = order.content.split('\n').filter(line => line.trim() !== '' && !line.includes('活動折扣') && !line.includes('折抵')).map(line => {
                 let match = line.match(/^\[(.*?)\]\s+(.*?)\s+x(\d+)\s*\((.*?)\)$/);
                 if (match) {
@@ -289,7 +265,7 @@
                         </div>
                     </div>`;
                 }
-                return ""; // 隱藏無法解析或不需要的行 (如折扣資訊)
+                return ""; 
             }).join('');
 
             container.innerHTML += `
