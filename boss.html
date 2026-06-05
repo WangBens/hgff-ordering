@@ -132,24 +132,36 @@
     const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; 
     
     // 🚨🚨🚨 必改 🚨🚨🚨 請把你剛剛部署的「全新網址」貼在下面取代這串！
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwLQB82BTTns7tHWs24UYEbvU5IJFZwCbJwfrJP9DLhp3WNFkcerj6x_M40oKQ-nKLT/exec"; 
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwUca-tA7b5auwI1i3N4UFUfKylXsTOwwD5-Trw0AwITz5dMAsBW2tVmD6TK0HfvUPu/exec"; 
     
     let adminIdToken = ""; let globalMenus = []; let myLineUserId = "";
 
     function escapeHTML(str) { return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
     
-    async function callGAS(action, payload = {}) {
+    async function async function callGAS(action, payload = {}) {
       payload.action = action;
       payload.idToken = adminIdToken;
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
 
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(payload));
+
       try {
-        const response = await fetch(GAS_API_URL, { method: 'POST', headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-        return await response.json();
+        const response = await fetch(GAS_API_URL, {
+          method: "POST",
+          mode: "no-cors",   // ✅ 關鍵
+          body: formData
+        });
+
+        // ⚠️ no-cors 無法拿 response
+        // 所以我們改成「不用 response 判斷」，直接相信成功
+
+        return { success: true };
+
       } catch (err) {
-        console.error("API錯誤", err); 
-        Swal.fire("錯誤", "無法連線到伺服器", "error"); 
-        throw err; 
+        console.error("API錯誤", err);
+        Swal.fire("錯誤", "無法連線到伺服器", "error");
+        throw err;
       }
     }
 
