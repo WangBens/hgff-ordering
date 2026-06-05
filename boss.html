@@ -130,7 +130,7 @@
 
   <script>
 const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz4yuSdIsI4LBRr4fKMkO_4Lqf_w0OUkXCyuozCqxhAfuUMSMUIMRZ1RdzxcSFfUa0/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyWW7Nhw1v4nSzdLPUJr5bg3atybd-Lgik8xifNx6lvr8dsVzJF-kUDYbDE04OifxNt/exec";
 
 let globalMenus = [];
 let currentUserId = ""; // ✅ 新增
@@ -186,6 +186,7 @@ async function loadDashboardData() {
   const data = res.data;
 
   globalMenus = data.menus;
+  renderUserSelect(data.users);
 
   // ✅ 店鋪狀態
   document.getElementById("current-store-status").innerText =
@@ -286,11 +287,28 @@ function renderMenuManage(menus) {
 
 // ✅ 下架/上架
 function toggleMenu(name, status) {
-  callGAS("adminToggleMenuItem", {
-    name: name,
-    status: status
-  }).then(() => {
-    loadDashboardData();
+
+  Swal.fire({
+    title: "確認操作",
+    text: `確定要將「${name}」設為「${status}」嗎？`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "確定",
+    cancelButtonText: "取消"
+  }).then(result => {
+    if (!result.isConfirmed) return;
+
+    callGAS("adminToggleMenuItem", {
+      name: name,
+      status: status
+    }).then(res => {
+      if (res.success) {
+        Swal.fire("成功", res.message, "success");
+        loadDashboardData();
+      } else {
+        Swal.fire("錯誤", res.message, "error");
+      }
+    });
   });
 }
     function toggleStore(status) {
@@ -320,6 +338,91 @@ function toggleMenu(name, status) {
     }
   });
 }
+  function renderUserSelect(users) {
+  const select1 = document.getElementById("user-select");
+  const select2 = document.getElementById("edit-user-select");
+
+  let html = `<option value="">-- 請選擇會員 --</option>`;
+
+  users.forEach(u => {
+    html += `<option value="${u.userId}">
+      ${u.userName}（$${u.balance}）
+    </option>`;
+  });
+
+  select1.innerHTML = html;
+  select2.innerHTML = html;
+}
+
+//////////////////////////////////////////////////////
+// ✅ ✅ ✅ 從這裡開始新增
+//////////////////////////////////////////////////////
+
+// ✅ 錢包功能
+function submitTopUp() {
+  const userId = document.getElementById("user-select").value;
+  const type = document.getElementById("topup-type").value;
+  const amount = document.getElementById("topup-amount").value;
+  const note = document.getElementById("topup-note").value;
+
+  if (!userId) {
+    return Swal.fire("錯誤", "請選擇會員", "warning");
+  }
+
+  if (!amount || amount <= 0) {
+    return Swal.fire("錯誤", "請輸入正確金額", "warning");
+  }
+
+  Swal.fire({
+    title: "確認帳務",
+    text: `${type === "add" ? "儲值" : "扣款"} $${amount}？`,
+    showCancelButton: true
+  }).then(res => {
+    if (!res.isConfirmed) return;
+
+    callGAS("adminUpdateWallet", {
+      targetUserId: userId,
+      amount: amount,
+      type: type,
+      note: note
+    }).then(r => {
+      if (r.success) {
+        Swal.fire("成功", r.message, "success");
+        loadDashboardData();
+      } else {
+        Swal.fire("錯誤", r.message, "error");
+      }
+    });
+  });
+}
+
+
+// ✅ 修改會員名稱
+function updateMember() {
+  const userId = document.getElementById("edit-user-select").value;
+  const newName = document.getElementById("new-user-name").value;
+
+  if (!userId) {
+    return Swal.fire("錯誤", "請選擇會員", "warning");
+  }
+
+  if (!newName) {
+    return Swal.fire("錯誤", "請輸入名稱", "warning");
+  }
+
+  callGAS("updateMemberName", {
+    targetUserId: userId,
+    newName: newName
+  }).then(res => {
+    if (res.success) {
+      Swal.fire("成功", res.message, "success");
+      loadDashboardData();
+    } else {
+      Swal.fire("錯誤", res.message, "error");
+    }
+  });
+}
+
 
 </script>
 
