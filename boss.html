@@ -181,7 +181,7 @@
             setInterval(loadDashboardData, 10000);
 
           } else {
-        // ❌ 不是管理員
+            // ❌ 不是管理員
             console.log("❌ 不是 admin");
 
             Swal.fire({
@@ -189,7 +189,7 @@
               title: '權限不足',
               text: '你不是管理員，目前登入 ID：' + res.debugUserId
             });
-          } // <--- ✅✅ 就是補上這個大括號 ✅✅
+          } 
 
         }).catch(err => {
           console.error(err);
