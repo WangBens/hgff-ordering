@@ -143,17 +143,15 @@
       payload.idToken = adminIdToken;
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
 
-      const formData = new FormData();
-      formData.append("data", JSON.stringify(payload));
-
       try {
         const response = await fetch(GAS_API_URL, {
           method: "POST",
-          mode: "POST",   // ✅ 關鍵
-          body: formData
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
         });
 
-        return { success: true };
+        const data = await response.json();
+        return data;
 
       } catch (err) {
         console.error("API錯誤", err);
