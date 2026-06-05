@@ -181,15 +181,15 @@
             setInterval(loadDashboardData, 10000);
 
           } else {
-            // ❌ 不是管理員
-            console.log("❌ 不是 admin");
+            // ❌ 驗證失敗 (可能是沒權限，也可能是後端執行出錯)
+            console.log("❌ 驗證失敗", res);
 
             Swal.fire({
               icon: 'error',
-              title: '權限不足',
-              text: '你不是管理員，目前登入 ID：' + res.debugUserId
+              title: res.message ? '系統發生錯誤' : '權限不足',
+              html: (res.message ? `後端回報：<br><b style="color:red;">${res.message}</b>` : `你不是管理員。<br>目前登入 ID：<b>${res.debugUserId}</b>`)
             });
-          } 
+          }
 
         }).catch(err => {
           console.error(err);
