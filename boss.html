@@ -130,7 +130,7 @@
 
   <script>
     const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx753miV3MLE1p9aUx8bGS-wQUnjr8chqSKeEaBQKj0LulDVvt-7i1k_gOMqbxNbKPT/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxkNd5FM43oZxAxJRkDewri224_NnPQsi305Nkdu1SJXRWnCcd-81WTfuTKcpJOzgbl/exec";
 
     let globalMenus = [];
 
@@ -176,6 +176,7 @@
           // ✅ 改用 userId
           liff.getProfile().then(profile => {
             const userId = profile.userId;
+            console.log("🔥 USER ID =", userId);
             console.log("✅ LINE userId:", userId);
 
             callGAS('verifyAdmin', { userId: userId })
