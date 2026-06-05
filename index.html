@@ -599,15 +599,16 @@
 
     window.openCheckoutModal = function() {
 
-  // ✅ 先檢查營業
-  if(storeStatus !== "營業中") {
-    return Swal.fire("休息中", "門市目前暫停點餐", "warning");
-  }
+ 
+    // ✅ 先檢查營業
+    if (storeStatus !== "營業中") {
+      return Swal.fire("休息中", "門市目前暫停點餐", "warning");
+    }
 
-  // ✅ 再檢查購物車
-  if (cart.length === 0) {
-    return Swal.fire("錯誤", "購物車是空的", "warning");
-  }
+    // ✅ 再檢查購物車
+    if (cart.length === 0) {
+      return Swal.fire("錯誤", "購物車是空的", "warning");
+    }
 
   let calc = calculateCart();
 
@@ -666,27 +667,32 @@
     confirmButtonText: "送出訂單",
     
 didOpen: () => {
-    document.getElementById("co-name").focus();
-  },
+  const nameEl = document.getElementById("co-name");
+  const phoneEl = document.getElementById("co-phone");
+
+  nameEl.focus();
+
+  nameEl.addEventListener("input", () => Swal.resetValidationMessage());
+  phoneEl.addEventListener("input", () => Swal.resetValidationMessage());
+},
 
     preConfirm: () => {
-      let n = document.getElementById("co-name").value;
-      let p = document.getElementById("co-phone").value;
-      let py = document.getElementById("co-pay").value;
+  let n = document.getElementById("co-name").value;
+  let p = document.getElementById("co-phone").value;
+  let py = document.getElementById("co-pay").value;
 
-      if (!n) {
-  Swal.fire("錯誤", "請輸入姓名", "warning");
-  return false;
+  if (!n) {
+    Swal.showValidationMessage("請輸入姓名");
+    return false;
+  }
+
+  if (!/^\d{3}$/.test(p)) {
+    Swal.showValidationMessage("請輸入正確的手機末三碼（3位數字）");
+    return false;
+  }
+
+  return { n, p, py };
 }
-
-if (!/^\d{3}$/.test(p)) {
-  Swal.fire("錯誤", "請輸入正確的手機末三碼（3位數字）", "error");
-  return false;
-}
-
-
-      return { n, p, py };
-    }
   }).then(res => {
     if(res.isConfirmed){
       callGAS("submitOrder", {
