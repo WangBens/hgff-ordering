@@ -132,7 +132,7 @@
     const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; 
     
     // 🚨🚨🚨 必改 🚨🚨🚨 請把你剛剛部署的「全新網址」貼在下面取代這串！
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwUca-tA7b5auwI1i3N4UFUfKylXsTOwwD5-Trw0AwITz5dMAsBW2tVmD6TK0HfvUPu/exec"; 
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbysaOTHYR6Ze1Z8qdE3MlwZrCviUw9zhHtnh4s3Mkn2hcz0WpPnaDQO-ePuCnb4Op9P/exec"; 
     
     let adminIdToken = ""; let globalMenus = []; let myLineUserId = "";
 
@@ -140,7 +140,28 @@
     
     async function callGAS(action, payload = {}) {
       payload.action = action;
-      payload.idToken = adminIdToken;
+      async function callGAS(action, payload = {}) {
+  payload.action = action;
+  payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+
+  const formData = new FormData();
+  formData.append("data", JSON.stringify(payload));
+
+  try {
+    const response = await fetch(GAS_API_URL, {
+      method: "POST",
+      body: formData
+    });
+
+    const text = await response.text();
+    return JSON.parse(text);
+
+  } catch (err) {
+    console.error("API錯誤", err);
+    Swal.fire("錯誤", "無法連線到伺服器", "error");
+    throw err;
+  }
+}
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
 
       const formData = new FormData();
@@ -187,7 +208,27 @@
             return;
           }
 
-          adminIdToken = liff.getIDToken();
+          liff.getProfile().then(profile => {
+  const userId = profile.userId;
+  console.log("✅ LINE userId:", userId);
+
+  callGAS('verifyAdmin', { userId: userId })
+    .then(res => {
+      console.log("✅ GAS 回傳 =", res);
+
+      document.getElementById("loading-layer").style.display = "none";
+
+      if (res.success && res.isAdmin) {
+        console.log("✅ 進入後台");
+        document.getElementById("admin-layer").style.display = "block";
+        loadDashboardData();
+        setInterval(loadDashboardData, 10000);
+      } else {
+        Swal.fire("錯誤", "權限不足", "error");
+      }
+    });
+
+});
 
           console.log("✅ 取得 Token:", adminIdToken);
 
