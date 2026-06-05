@@ -121,24 +121,52 @@
     function escapeJS(str) { return (!str) ? "" : str.toString().replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r"); }
 
     async function callGAS(action, payload = {}, options = {}) {
-      payload.action = action; payload.userId = lineProfile.userId;
+      payload.action = action;
+      payload.userId = lineProfile.userId; // ✅ 正確
+
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-      if (options.loading) Swal.fire({ title: options.loadingText || "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+      if (options.loading) {
+        Swal.fire({
+          title: options.loadingText || "處理中...",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+      }
+
       try {
-        const res = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify(payload) });
-        return await res.json();
-      } catch (err) { return { success: false, message: "連線失敗，請稍後再試。" }; }
+        // ✅ 改成 FormData（關鍵）
+        const formData = new FormData();
+        formData.append("data", JSON.stringify(payload));
+    
+        const response = await fetch(GAS_API_URL, {
+          method: "POST",
+          body: formData
+        });
+
+        const text = await response.text();
+        console.log("✅ 原始回應:", text);
+
+        return JSON.parse(text);
+
+      } catch (err) {
+        console.error("❌ API錯誤", err);
+        return { success: false, message: "連線失敗" };
+      }
     }
 
     window.onload = async function () {
+      console.log("🚀 點餐系統啟動");
       try {
         await liff.init({ liffId: CUSTOMER_LIFF_ID });
+        console.log("✅ LIFF 初始化完成");
         if (!liff.isLoggedIn()) { 
            liff.login({ redirectUri: window.location.href }); 
            return; 
         }
         idToken = liff.getIDToken(); 
         lineProfile = await liff.getProfile();
+        console.log("🔥 LINE PROFILE =", lineProfile);
         await initUser(); 
       } catch (e) { 
         console.error("LIFF 錯誤訊息：", e);
@@ -151,7 +179,9 @@
     };
 
     async function initUser() {
+      console.log("🔥 initUser 開始");
       const res = await callGAS("initUser", { lineName: lineProfile ? lineProfile.displayName : "" });
+      console.log("🔥 initUser 回應 =", res); 
       if (res.success) { 
         userInfo = res.data; 
         renderMemberBox(); 
