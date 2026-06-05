@@ -129,39 +129,14 @@
   </div>
 
   <script>
-    const BOSS_LIFF_ID = "2010243276-ZRC8eTMt"; 
-    
-    // 🚨🚨🚨 必改 🚨🚨🚨 請把你剛剛部署的「全新網址」貼在下面取代這串！
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbysaOTHYR6Ze1Z8qdE3MlwZrCviUw9zhHtnh4s3Mkn2hcz0WpPnaDQO-ePuCnb4Op9P/exec"; 
-    
-    let adminIdToken = ""; let globalMenus = []; let myLineUserId = "";
+    const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx753miV3MLE1p9aUx8bGS-wQUnjr8chqSKeEaBQKj0LulDVvt-7i1k_gOMqbxNbKPT/exec";
 
-    function escapeHTML(str) { return (!str) ? "" : str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
-    
+    let globalMenus = [];
+
+    // ✅ API呼叫（最穩定版）
     async function callGAS(action, payload = {}) {
       payload.action = action;
-      async function callGAS(action, payload = {}) {
-  payload.action = action;
-  payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-
-  const formData = new FormData();
-  formData.append("data", JSON.stringify(payload));
-
-  try {
-    const response = await fetch(GAS_API_URL, {
-      method: "POST",
-      body: formData
-    });
-
-    const text = await response.text();
-    return JSON.parse(text);
-
-  } catch (err) {
-    console.error("API錯誤", err);
-    Swal.fire("錯誤", "無法連線到伺服器", "error");
-    throw err;
-  }
-}
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
 
       const formData = new FormData();
@@ -170,20 +145,13 @@
       try {
         const response = await fetch(GAS_API_URL, {
           method: "POST",
-          body: formData   // ✅ 不要 Content-Type
+          body: formData
         });
 
         const text = await response.text();
+        console.log("✅ 原始回應:", text);
 
-        console.log("✅ 原始回應:", text); // ✅ debug用
-
-        try {
-          return JSON.parse(text);
-        } catch (e) {
-          console.error("❌ JSON 解析失敗", text);
-          Swal.fire("錯誤", "伺服器回應錯誤", "error");
-          throw e;
-        }
+        return JSON.parse(text);
 
       } catch (err) {
         console.error("❌ API錯誤", err);
@@ -192,262 +160,59 @@
       }
     }
 
-    // 🚀 正確、會執行安全驗證的 onload
-    window.onload = function() {
+    // ✅ 啟動流程
+    window.onload = function () {
       console.log("🚀 頁面啟動");
 
       liff.init({ liffId: BOSS_LIFF_ID })
         .then(() => {
           console.log("✅ LIFF 初始化成功");
 
-          console.log("isInClient:", liff.isInClient());
-
           if (!liff.isLoggedIn()) {
-            console.log("❗未登入 → 進行登入");
             liff.login();
             return;
           }
 
+          // ✅ 改用 userId
           liff.getProfile().then(profile => {
-  const userId = profile.userId;
-  console.log("✅ LINE userId:", userId);
+            const userId = profile.userId;
+            console.log("✅ LINE userId:", userId);
 
-  callGAS('verifyAdmin', { userId: userId })
-    .then(res => {
-      console.log("✅ GAS 回傳 =", res);
+            callGAS('verifyAdmin', { userId: userId })
+              .then(res => {
+                console.log("✅ GAS 回傳 =", res);
 
-      document.getElementById("loading-layer").style.display = "none";
+                document.getElementById("loading-layer").style.display = "none";
 
-      if (res.success && res.isAdmin) {
-        console.log("✅ 進入後台");
-        document.getElementById("admin-layer").style.display = "block";
-        loadDashboardData();
-        setInterval(loadDashboardData, 10000);
-      } else {
-        Swal.fire("錯誤", "權限不足", "error");
-      }
-    });
+                if (res.success && res.isAdmin) {
+                  console.log("✅ 進入後台");
+                  document.getElementById("admin-layer").style.display = "block";
+                  loadDashboardData();
+                  setInterval(loadDashboardData, 10000);
+                } else {
+                  Swal.fire("錯誤", "權限不足", "error");
+                }
+              });
 
-});
-
-          console.log("✅ 取得 Token:", adminIdToken);
-
-          if (!adminIdToken) {
-            Swal.fire("錯誤", "拿不到 LINE Token", "error");
-            return;
-          }
-
-          console.log("✅ 準備呼叫 GAS");
-
-          callGAS('verifyAdmin')
-            .then(res => {
-              console.log("✅ GAS 回傳 =", res);
-
-              document.getElementById("loading-layer").style.display = "none";
-
-              if (res.success && res.isAdmin) {
-                console.log("✅ 進入後台");
-                document.getElementById("admin-layer").style.display = "block";
-                loadDashboardData();
-                setInterval(loadDashboardData, 10000);
-              } else {
-                console.log("❌ 非 admin", res);
-
-                Swal.fire({
-                  icon: 'error',
-                  title: '無法登入：權限不足',
-                  html: `
-                    <div style="text-align:left;font-size:12px;">
-                      LINE ID: ${res.debugUserId || "無"}
-                    </div>`
-                });
-              }
-            })
-            .catch(err => {
-              console.error("❌ verifyAdmin 失敗", err);
-            });
-
+          });
         })
         .catch(err => {
           console.error("❌ LIFF 初始化失敗:", err);
         });
     };
 
-    function updatePromoTargetUI() {
-       let type = document.getElementById("promo-target-type").value;
-       let nameSelect = document.getElementById("promo-target-name");
-       let multiGroup = document.getElementById("promo-multi-drinks-group");
-       if(type === '全館') { nameSelect.style.display = 'none'; multiGroup.style.display = 'none'; return; }
-       if(type === '指定組合') {
-          nameSelect.style.display = 'none'; multiGroup.style.display = 'block';
-          document.getElementById("promo-mode").value = "組合價"; updatePromoModeUI();
-          let chkContainer = document.getElementById("promo-checkbox-list"); chkContainer.innerHTML = "";
-          globalMenus.forEach(m => { if(m.status === '上架') chkContainer.innerHTML += `<label class="checkbox-item"><input type="checkbox" name="promo-drinks" value="${escapeHTML(m.name)}"><span>${escapeHTML(m.name)}</span></label>`; });
-          return;
-       }
-       multiGroup.style.display = 'none'; nameSelect.style.display = 'block'; nameSelect.innerHTML = '';
-       if(type === '系列') {
-          let categories = [...new Set(globalMenus.map(m => m.category))];
-          categories.forEach(c => nameSelect.innerHTML += `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`);
-       } else globalMenus.forEach(m => nameSelect.innerHTML += `<option value="${escapeHTML(m.name)}">${escapeHTML(m.name)}</option>`);
-    }
-
-    function updatePromoModeUI() {
-       let mode = document.getElementById("promo-mode").value;
-       document.getElementById("promo-buy-free-ui").style.display = mode === '買X送Y' ? 'flex' : 'none';
-       document.getElementById("promo-combo-ui").style.display = mode === '組合價' ? 'flex' : 'none';
-    }
-
+    // ✅ 後台資料載入
     function loadDashboardData() {
       callGAS('getAdminDashboardData').then(res => {
         if (!res.success) return;
+
         globalMenus = res.data.menus;
-        
-        document.getElementById("current-store-status").innerText = `(${escapeHTML(res.data.storeStatus)})`;
-        document.getElementById("current-store-status").style.color = res.data.storeStatus === '營業中' ? '#2ecc71' : '#e74c3c';
 
-        let uHtml = '<option value="">-- 請選擇會員 --</option>'; let uBalHtml = '<option value="">-- 請選擇會員 --</option>';
-        res.data.users.forEach(u => { uHtml += `<option value="${escapeHTML(u.userId)}">${escapeHTML(u.userName)}</option>`; uBalHtml += `<option value="${escapeHTML(u.userId)}">${escapeHTML(u.userName)} (餘額: $${u.balance})</option>`; });
-        if(document.getElementById("user-select").value === "") document.getElementById("user-select").innerHTML = uBalHtml;
-        if(document.getElementById("edit-user-select").value === "") document.getElementById("edit-user-select").innerHTML = uHtml;
-
-        var container = document.getElementById("orders-container");
-        if (res.data.orders.length === 0) container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">目前無未處理訂單</div>';
-        else {
-          container.innerHTML = "";
-          res.data.orders.forEach(order => {
-            let statusClass = order.status === '未處理' ? 'status-new' : (order.status === '已接單' ? 'status-accepted' : 'status-ready');
-            let statusBadge = order.status === '未處理' ? '🔴 新訂單' : (order.status === '已接單' ? '🟠 製作中' : '🔵 可取餐');
-            
-            let actionBtns = "";
-            if (order.status === '未處理') actionBtns = `<button class="btn-action" style="background:#f39c12;" onclick="handleOrder('${order.id}', 'accept')">接單</button><button class="btn-action btn-gray" onclick="handleOrder('${order.id}', 'cancel')">取消/退款</button>`;
-            else if (order.status === '已接單') actionBtns = `<button class="btn-action" style="background:#3498db;" onclick="handleOrder('${order.id}', 'ready')">製作完成</button>`;
-            else if (order.status === '製作完成') actionBtns = `<button class="btn-action" style="background:#2ecc71;" onclick="handleOrder('${order.id}', 'complete')">結帳</button>`;
-
-            let itemsHtml = order.content.split('\n').filter(line => line.trim() !== '' && !line.includes('活動折扣') && !line.includes('折抵')).map(line => {
-                let match = line.match(/^\[(.*?)\]\s+(.*?)\s+x(\d+)\s*\((.*?)\)$/);
-                if (match) {
-                    let size = match[1], name = match[2], qty = match[3], details = match[4];
-                    let qtyStyle = qty > 1 ? 'color: #e74c3c; font-size: 15px; font-weight: 900;' : 'font-weight: bold; color: #333; font-size: 13px;';
-                    return `
-                    <div style="padding: 6px 4px; border-bottom: 1px dashed #ddd;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <span style="font-weight: bold; color: #2c3e50; font-size: 14px;">
-                                <span style="background: #34495e; color: white; padding: 2px 5px; border-radius: 4px; font-size: 11px; margin-right: 5px;">${size}</span>${escapeHTML(name)}
-                            </span>
-                            <span style="${qtyStyle}">x${qty}</span>
-                        </div>
-                        <div style="font-size: 12px; color: #d35400; margin-top: 4px; font-weight: bold; margin-left: 2px;">
-                            ↳ ${escapeHTML(details)}
-                        </div>
-                    </div>`;
-                }
-                return ""; 
-            }).join('');
-
-            container.innerHTML += `
-              <div class="order-card ${statusClass}">
-                <div class="card-header"><span>🕒 ${escapeHTML(order.time)}</span><span style="font-weight:bold;">${statusBadge}</span></div>
-                <div class="card-customer">🙋‍♂️ ${escapeHTML(order.userName)}</div>
-                <div class="card-items">${itemsHtml}</div>
-                <div class="action-btns">${actionBtns}</div>
-              </div>`;
-          });
-        }
-
-        let menuHtml = "";
-        res.data.menus.forEach(m => {
-           let btn = m.status === '上架' ? `<button class="btn-action btn-red" style="padding:6px;width:70px;" onclick="toggleMenu('${escapeHTML(m.name)}', '下架')">下架</button>` : `<button class="btn-action btn-success" style="padding:6px;width:70px;" onclick="toggleMenu('${escapeHTML(m.name)}', '上架')">上架</button>`;
-           let sTag = m.status === '上架' ? '' : '<span style="color:#e74c3c;font-size:12px;">(已下架)</span>';
-           menuHtml += `<div class="list-item"><div style="flex:1; line-height: 1.4;">🍵 [${escapeHTML(m.category)}] ${escapeHTML(m.name)} ${sTag}</div><div style="flex-shrink:0; margin-left:10px;">${btn}</div></div>`;
-        });
-        document.getElementById("menu-list").innerHTML = menuHtml || "<div style='text-align:center;'>無商品資料</div>";
-
-        let promoHtml = "";
-        res.data.promos.forEach(p => {
-           let btn = `<button class="btn-action btn-gray" style="padding:6px;width:70px;" onclick="togglePromo('${escapeHTML(p.id)}', '停用')">停用</button>`;
-           let itemsFmt = p.targetType === '指定組合' ? p.targetName.split(',').join('、') : p.targetName;
-           let tag = p.targetType === '全館' ? '全館' : `[${p.targetType}] ${itemsFmt}`;
-           let cond = p.promoMode === '組合價' ? `任選${p.buyQty}杯${p.comboPrice}元` : `買${p.buyQty}送${p.freeQty}`;
-           let dDesc = p.desc ? `<br><span style="color:#7f8c8d; font-size:12px;">(${p.desc})</span>` : '';
-           promoHtml += `<div class="list-item"><div style="flex:1; line-height:1.4;">🎉 <b>${escapeHTML(tag)}</b> ${escapeHTML(cond)} ${dDesc}</div><div style="flex-shrink:0; margin-left:10px;">${btn}</div></div>`;
-        });
-        document.getElementById("promo-list").innerHTML = promoHtml || "<div style='text-align:center;'>無進行中活動</div>";
+        document.getElementById("current-store-status").innerText =
+          `(${res.data.storeStatus})`;
       });
-    }
-
-    function showLoading() { Swal.fire({title: '處理中...', allowOutsideClick: false, didOpen: () => {Swal.showLoading()}}); }
-
-    function toggleStore(status) {
-      Swal.fire({ title: `確定設為「${status}」嗎？`, icon: 'warning', showCancelButton: true, confirmButtonText: '確定' }).then((r) => {
-        if (r.isConfirmed) { showLoading(); callGAS('adminToggleStore', { status: status }).then(res => { Swal.fire('成功', res.message, 'success'); loadDashboardData(); }); }
-      });
-    }
-
-    function addMenu() {
-      let c = document.getElementById("menu-cat").value; let n = document.getElementById("menu-name").value;
-      let pl = document.getElementById("menu-pl").value; let pxl = document.getElementById("menu-pxl").value;
-      if(!c || !n || (!pl && !pxl)) return Swal.fire('資料不完整', '分類、品名與價格不能為空', 'warning');
-      showLoading();
-      callGAS('adminAddMenuItem', { category:c, name:n, priceL:pl, priceXL:pxl }).then(res => { Swal.fire('成功', '商品已上架！', 'success'); document.getElementById("menu-name").value=''; loadDashboardData(); });
-    }
-    
-    function toggleMenu(name, status) { 
-      Swal.fire({ title: `確定「${name}」${status}嗎？`, icon: 'warning', showCancelButton: true, confirmButtonText: '確定' }).then((r) => {
-        if (r.isConfirmed) { showLoading(); callGAS('adminToggleMenuItem', { name:name, status:status }).then(res => { Swal.fire('成功', `已${status}`, 'success'); loadDashboardData(); }); }
-      });
-    }
-
-    function addPromo() {
-      let tType = document.getElementById("promo-target-type").value; let pMode = document.getElementById("promo-mode").value;
-      let desc = document.getElementById("promo-desc").value; let sizeLimit = document.getElementById("promo-size").value;
-      let tName = "";
-      if (tType === '指定組合') {
-         let chks = []; document.querySelectorAll('input[name="promo-drinks"]:checked').forEach(cb => chks.push(cb.value));
-         if(chks.length === 0) return Swal.fire('錯誤', '請勾選飲料！', 'warning'); tName = chks.join(',');
-      } else tName = document.getElementById("promo-target-name").value;
-
-      let bQty = pMode === '買X送Y' ? document.getElementById("promo-buy").value : document.getElementById("promo-combo-qty").value;
-      let fQty = document.getElementById("promo-free").value; let cPrice = document.getElementById("promo-combo-price").value;
-
-      if(!bQty || (pMode === '買X送Y' && !fQty) || (pMode === '組合價' && !cPrice)) return Swal.fire('錯誤', '請填寫數量與價格條件', 'warning');
-      
-      showLoading();
-      callGAS('adminAddPromo', { desc:desc, targetType:tType, targetName:tName, promoMode:pMode, buyQty:bQty, freeQty:fQty, comboPrice:cPrice, sizeLimit:sizeLimit }).then(res => { Swal.fire('成功', '活動已建立！', 'success'); loadDashboardData(); });
-    }
-
-    function togglePromo(id, status) { 
-      Swal.fire({ title: `確定要停用活動嗎？`, icon: 'warning', showCancelButton: true, confirmButtonText: '確定' }).then((r) => {
-        if (r.isConfirmed) { showLoading(); callGAS('adminTogglePromo', { promoId:id, status:status }).then(res => { Swal.fire('成功', `活動已停用`, 'success'); loadDashboardData(); }); }
-      });
-    }
-
-    function submitTopUp() {
-      let u = document.getElementById("user-select").value; let a = document.getElementById("topup-amount").value;
-      let t = document.getElementById("topup-type").value; let n = document.getElementById("topup-note").value;
-      if (!u || !a) return Swal.fire('錯誤','請選擇會員與金額','warning');
-      Swal.fire({ title: '確認操作', icon: 'warning', showCancelButton: true, confirmButtonText: '確定' }).then((r) => {
-        if (r.isConfirmed) { showLoading(); callGAS('adminUpdateWallet', { targetUserId: u, amount: a, type: t, note: n }).then(res => { if (res.success) { Swal.fire('成功', res.message, 'success'); document.getElementById("topup-amount").value=""; loadDashboardData(); } else Swal.fire('錯誤', res.message, 'error'); }); }
-      });
-    }
-
-    function updateMember() {
-      let u = document.getElementById("edit-user-select").value; let n = document.getElementById("new-user-name").value;
-      if(!u || !n) return Swal.fire('錯誤','請選擇會員與新稱呼','warning');
-      Swal.fire({ title: '確認變更名稱', icon: 'warning', showCancelButton: true, confirmButtonText: '確定' }).then((r) => {
-        if (r.isConfirmed) { showLoading(); callGAS('updateMemberName', { targetUserId: u, newName: n }).then(res => { Swal.fire('成功','已更新','success'); document.getElementById("new-user-name").value=""; loadDashboardData(); }); }
-      });
-    }
-
-    function handleOrder(orderId, action) {
-      if(action === 'cancel') {
-         Swal.fire({ title: '確定要取消嗎？', text: '餘額付款將自動退款！', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: '確定取消' }).then((r) => {
-           if (r.isConfirmed) { showLoading(); callGAS('processOrderAction', { orderId: orderId, orderAction: action }).then(res => { if(res.success){ Swal.fire('成功', res.message, 'success'); loadDashboardData(); }else Swal.fire('錯誤', res.message, 'error'); }); }
-         });
-      } else {
-         showLoading(); callGAS('processOrderAction', { orderId: orderId, orderAction: action }).then(res => { if(res.success){Swal.close(); loadDashboardData();} else Swal.fire('錯誤', res.message, 'error'); });
-      }
     }
   </script>
+
 </body>
 </html>
