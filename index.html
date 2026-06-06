@@ -111,7 +111,7 @@
   <script>
     // ⚠️ 記得替換成你最新的 GAS 網址
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzaA6QtqUU8wXTM3IiFkrAuhwVVeWdUEBHcpegipLaucYHKsIprXrRmno37mHCj9fow/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzlvo5KPKdUKK_bC8-n231Uz0j8x1Mc5pcGRou8BtVBtE015WoYGyY5lxYD9M0adMrh/exec";
 
     let idToken = ""; let lineProfile = null; let cart = []; let currentOrders = [];
     let menuData = []; let optionsData = { sweetness: [], ice: [], toppings: [] }; let promosData = []; let storeStatus = "營業中";
@@ -123,7 +123,6 @@
     async function callGAS(action, payload = {}, options = {}) {
       payload.action = action;
       payload.userId = lineProfile ? lineProfile.userId : "";
-
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
 
       if (options.loading) {
@@ -135,25 +134,24 @@
       }
 
       try {
-        // ✅ 改成 FormData（關鍵）
-        const formData = new FormData();
-        formData.append("data", JSON.stringify(payload));
-    
+        // ✅ 修正：改用 text/plain 來繞過瀏覽器 OPTIONS 預檢，避免因 CORS 導致的卡住問題
         const response = await fetch(GAS_API_URL, {
           method: "POST",
-          body: formData
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8" 
+          },
+          body: JSON.stringify(payload)
         });
 
         const text = await response.text();
         console.log("✅ 原始回應:", text);
 
         try {
-      return JSON.parse(text);
-    } catch (e) {
-      console.error("❌ JSON解析失敗", text);
-    return { success: false, message: "回應格式錯誤" };
-    }
-
+          return JSON.parse(text);
+        } catch (e) {
+          console.error("❌ JSON解析失敗", text);
+          return { success: false, message: "回應格式錯誤" };
+        }
 
       } catch (err) {
         console.error("❌ API錯誤", err);
