@@ -109,7 +109,7 @@
 
   <script>
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzleX0sVz63LTC9jFhKkcz0OAVb14cP3aNeoN7B-vK5Q542iRd7W06Bq1pDXnfbwlhK/exec"; // ⚠️ 替換最新網址
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyxy1MPY9JfjQBWo9AdQ_OrSBcFzeIjOsSOspo42ULQvrupeKgCzmrmMbpcv5RQY5GM/exec"; // ⚠️ 請確保這是最新網址
 
     let idToken = ""; let lineProfile = null; let cart = []; let currentOrders = [];
     let menuData = []; let optionsData = { sweetness: [], ice: [], toppings: [] }; let promosData = []; let storeStatus = "營業中";
@@ -118,13 +118,11 @@
     function escapeHTML(str) { return (!str) ? "" : String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function escapeJS(str) { return (!str) ? "" : str.toString().replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r"); }
 
-    // 🔒 安全升級：強制驗證 idToken 且加入高隨機性 requestId 防重放
     async function callGAS(action, payload = {}, options = {}) {
       if (!liff.isLoggedIn()) {
          Swal.fire("錯誤", "請先登入 LINE", "error");
          return { success: false, message: "未登入 LINE" };
       }
-
       let currentIdToken = liff.getIDToken();
       if (!currentIdToken) {
          Swal.fire("授權錯誤", "無法取得安全憑證，請重新開啟頁面", "error");
@@ -136,18 +134,12 @@
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 9);
 
       if (options.loading) {
-        Swal.fire({
-          title: options.loadingText || "處理中...",
-          allowOutsideClick: false,
-          didOpen: () => Swal.showLoading()
-        });
+        Swal.fire({ title: options.loadingText || "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       }
 
       try {
         const response = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
+          method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload)
         });
         const text = await response.text();
         try {
@@ -165,10 +157,7 @@
     window.onload = async function () {
       try {
         await liff.init({ liffId: CUSTOMER_LIFF_ID });
-        if (!liff.isLoggedIn()) { 
-           liff.login({ redirectUri: window.location.href }); 
-           return; 
-        }
+        if (!liff.isLoggedIn()) { liff.login({ redirectUri: window.location.href }); return; }
         idToken = liff.getIDToken(); 
         lineProfile = await liff.getProfile();
         await initUser(); 
@@ -182,53 +171,32 @@
       if (res.success) { 
         userInfo = res.data; 
         renderMemberBox(); 
-        if (!userInfo.isMember) {
-          document.getElementById("join-modal").style.display = "flex";
-        } else {
-           await loadMenu(); 
-           await fetchUserData();
-        }
-      } else {
-        Swal.fire("驗證失敗", res.message, "error");
-      }
+        if (!userInfo.isMember) { document.getElementById("join-modal").style.display = "flex"; } 
+        else { await loadMenu(); await fetchUserData(); }
+      } else { Swal.fire("驗證失敗", res.message, "error"); }
     }
 
     async function joinMemberFromModal() {
       document.getElementById("join-modal").style.display = "none";
       const res = await callGAS("joinMember", { lineName: lineProfile ? lineProfile.displayName : "" }, { loading: true, loadingText: "建檔中..." });
       if (res.success) { 
-        userInfo = res.data; 
-        renderMemberBox(); 
+        userInfo = res.data; renderMemberBox(); 
         Swal.fire({title: "成功", text: "🎉 恭喜成為專屬會員！", icon: "success", timer: 1500, showConfirmButton: false});
-        await loadMenu(); 
-        await fetchUserData();
-      } else {
-        Swal.fire("失敗", res.message, "error");
-      }
+        await loadMenu(); await fetchUserData();
+      } else { Swal.fire("失敗", res.message, "error"); }
     }
 
     async function skipJoin() {
       document.getElementById("join-modal").style.display = "none";
-      await loadMenu();
-      await fetchUserData();
+      await loadMenu(); await fetchUserData();
     }
 
     function renderMemberBox() {
       const box = document.getElementById("member-box");
       if (userInfo.isMember) {
-        box.innerHTML = `
-          <div class="member-row">
-            <div class="member-info">👤 ${escapeHTML(userInfo.name)}<br>💰 餘額：$${Number(userInfo.balance || 0)}</div>
-            <button class="history-btn" onclick="openTransactionHistory()">交易明細</button>
-          </div>
-        `;
+        box.innerHTML = `<div class="member-row"><div class="member-info">👤 ${escapeHTML(userInfo.name)}<br>💰 餘額：$${Number(userInfo.balance || 0)}</div><button class="history-btn" onclick="openTransactionHistory()">交易明細</button></div>`;
       } else {
-        box.innerHTML = `
-          <div class="member-row">
-            <div class="member-info">👋 歡迎 ${escapeHTML(userInfo.name)}<br>尚未加入專屬會員</div>
-            <button class="join-btn" onclick="joinMemberFromModal()">加入會員</button>
-          </div>
-        `;
+        box.innerHTML = `<div class="member-row"><div class="member-info">👋 歡迎 ${escapeHTML(userInfo.name)}<br>尚未加入專屬會員</div><button class="join-btn" onclick="joinMemberFromModal()">加入會員</button></div>`;
       }
     }
 
@@ -240,16 +208,7 @@
           let html = "";
           currentOrders.forEach((o, index) => {
             const tagClass = o.status === "未處理" ? "tag-red" : (o.status === "已接單" ? "tag-orange" : "tag-blue");
-            html += `
-              <div class="my-order-item">
-                 <div style="display: flex; justify-content: space-between;">
-                   <div>${escapeHTML(o.time)} 訂單 #${escapeHTML(o.id.substring(o.id.length - 4))}</div>
-                   <div class="my-order-tag ${tagClass}">${escapeHTML(o.status)}</div>
-                 </div>
-                 <div style="display: flex; justify-content: flex-end;">
-                   <button class="history-btn" style="padding: 4px 10px; font-size: 12px; background: #8e44ad;" onclick="showOngoingOrderDetail(${index})">🔍 訂單內容</button>
-                 </div>
-              </div>`;
+            html += `<div class="my-order-item"><div style="display: flex; justify-content: space-between;"><div>${escapeHTML(o.time)} 訂單 #${escapeHTML(o.id.substring(o.id.length - 4))}</div><div class="my-order-tag ${tagClass}">${escapeHTML(o.status)}</div></div><div style="display: flex; justify-content: flex-end;"><button class="history-btn" style="padding: 4px 10px; font-size: 12px; background: #8e44ad;" onclick="showOngoingOrderDetail(${index})">🔍 訂單內容</button></div></div>`;
           });
           document.getElementById("my-orders-list").innerHTML = html; document.getElementById("my-orders-board").style.display = "block";
         } else { document.getElementById("my-orders-board").style.display = "none"; }
@@ -301,7 +260,7 @@
       }
       html += `
         <div style="text-align:right;margin-top:12px;color:#555;">原價合計：$${Number(orderDetail.originalTotal)}</div>
-        <div style="text-align:right;color:#27ae60;font-weight:bold;">活動折抵：-$${Number(orderDetail.discountAmount)}</div>
+        <div style="text-align:right;color:#27ae60;font-weight:bold;">活動總折抵：-$${Number(orderDetail.discountAmount)}</div>
         <div style="text-align:right;margin-top:4px;font-size:18px;font-weight:bold;color:#e74c3c;">本次花費：$${Number(orderDetail.finalTotal || spent)}</div>`;
       return html;
     }
@@ -349,9 +308,7 @@
       if(bannerHtml) { 
          document.getElementById("promo-banner").innerHTML = `<marquee scrollamount="5">${bannerHtml}</marquee>`; 
          document.getElementById("promo-banner").style.display = "block"; 
-      } else {
-         document.getElementById("promo-banner").style.display = "none";
-      }
+      } else { document.getElementById("promo-banner").style.display = "none"; }
 
       const grouped = {};
       menuData.forEach(item => { if (!grouped[item.category]) grouped[item.category] = []; grouped[item.category].push(item); });
@@ -439,27 +396,17 @@
       let isCombo = !!existingItem.groupId;
       let forcedSize = isCombo ? existingItem.size : "";
       let menuItem = menuData.find(m => m.name === existingItem.name);
-      
       if (!menuItem) return Swal.fire('錯誤', '找不到此商品，可能已下架', 'error');
 
       Swal.fire({ 
-        title: '編輯 ' + menuItem.name, 
-        html: buildItemFormHTML(menuItem, forcedSize, existingItem, isCombo), 
-        showCancelButton: true, 
-        confirmButtonText: "儲存修改",
-        cancelButtonText: "取消",
+        title: '編輯 ' + menuItem.name, html: buildItemFormHTML(menuItem, forcedSize, existingItem, isCombo), 
+        showCancelButton: true, confirmButtonText: "儲存修改", cancelButtonText: "取消",
         preConfirm: () => readItemFormValue(menuItem) 
       }).then(res => {
         if (res.isConfirmed && res.value) {
            let updated = res.value;
-           if(isCombo) {
-              updated.groupId = existingItem.groupId;
-              updated.comboName = existingItem.comboName;
-              updated.comboPrice = existingItem.comboPrice;
-              updated.qty = 1; 
-           }
-           cart[index] = updated; 
-           updateCart(); 
+           if(isCombo) { updated.groupId = existingItem.groupId; updated.comboName = existingItem.comboName; updated.comboPrice = existingItem.comboPrice; updated.qty = 1; }
+           cart[index] = updated; updateCart(); 
            Swal.fire({title:"修改成功", icon:"success", timer:1000, showConfirmButton:false}).then(() => openCartManager());
         } else if (res.dismiss === Swal.DismissReason.cancel || res.dismiss === Swal.DismissReason.backdrop) {
            openCartManager();
@@ -494,48 +441,114 @@
       Swal.fire({title:"已加入套餐", text: "結帳時將自動套用組合價！", icon:"success"});
     }
 
+    // ✅ 完整移植後端的「活動攤平計價邏輯」，確保前後端金額一模一樣！
     function calculateCart() {
       let flatItems = []; let originalTotal = 0;
-      cart.forEach(item => { for(let i=0; i<item.qty; i++){ flatItems.push({ name: item.name, category: item.category, price: item.unitPrice, size: item.size, usedPromo: false }); originalTotal += item.unitPrice; } });
-      flatItems.sort((a, b) => b.price - a.price); 
+      
+      // 1. 將所有購物車品項根據數量「攤平」為單杯獨立計算，並把加料金額與本體分離
+      cart.forEach((item, cartIndex) => { 
+        for(let i=0; i<item.qty; i++){ 
+          flatItems.push({ 
+             cartIndex: cartIndex, name: item.name, category: item.category, 
+             basePrice: item.basePrice, toppingPrice: item.toppingPrice, size: item.size, 
+             usedPromo: false 
+          }); 
+          originalTotal += (item.basePrice + item.toppingPrice); 
+        } 
+      });
+      
+      // 優先從高價飲料開始折抵 (對消費者最有利)
+      flatItems.sort((a, b) => b.basePrice - a.basePrice); 
       let discountAmount = 0;
+      let appliedPromos = [];
 
       promosData.forEach(promo => {
-        let matchedIndices = [];
-        for(let i=0; i<flatItems.length; i++) {
-          if(!flatItems[i].usedPromo) {
-             if(promo.sizeLimit !== '不限' && flatItems[i].size !== promo.sizeLimit) continue;
-             let isMatch = false;
-             if(promo.targetType === '全館') isMatch = true;
-             else if(promo.targetType === '系列' && flatItems[i].category === promo.targetName) isMatch = true;
-             else if(promo.targetType === '單品' && flatItems[i].name === promo.targetName) isMatch = true;
-             else if(promo.targetType === '指定組合') { if(promo.targetName.split(',').includes(flatItems[i].name)) isMatch = true; }
-             if(isMatch) matchedIndices.push(i);
+        // [A] 指定組合套餐處理
+        if (promo.targetType === "指定組合" && promo.promoMode === "組合價") {
+          let requiredNames = promo.targetName.split(",").map(x => x.trim()).filter(x => x);
+          if (requiredNames.length === 0) return;
+          
+          while (true) {
+            let currentGroup = []; let canMakeCombo = true;
+            for (let r = 0; r < requiredNames.length; r++) {
+              let reqName = requiredNames[r]; let foundIdx = -1;
+              for (let fi = 0; fi < flatItems.length; fi++) {
+                if (flatItems[fi].usedPromo) continue;
+                if (currentGroup.includes(fi)) continue;
+                if (flatItems[fi].name !== reqName) continue;
+                if (promo.sizeLimit !== "不限" && flatItems[fi].size !== promo.sizeLimit) continue;
+                foundIdx = fi; break;
+              }
+              if (foundIdx === -1) { canMakeCombo = false; break; }
+              currentGroup.push(foundIdx);
+            }
+            if (!canMakeCombo) break;
+            
+            let groupBaseTotal = 0; 
+            currentGroup.forEach(idx => groupBaseTotal += flatItems[idx].basePrice);
+            let discount = groupBaseTotal - promo.comboPrice;
+            if (discount > 0) {
+              discountAmount += discount;
+              appliedPromos.push(`(套餐優惠) ${requiredNames.join(" + ")} 特價 $${promo.comboPrice}，折抵 $${discount}`);
+            }
+            currentGroup.forEach(idx => flatItems[idx].usedPromo = true);
           }
+          return;
         }
-        if (promo.promoMode === '買X送Y' && (promo.buyQty + promo.freeQty) > 0) {
-          let gSize = promo.buyQty + promo.freeQty; let groups = Math.floor(matchedIndices.length / gSize);
-          for(let g=0; g<groups; g++) { let cur = matchedIndices.slice(g*gSize, (g+1)*gSize); for(let f = promo.buyQty; f < gSize; f++) discountAmount += flatItems[cur[f]].price; cur.forEach(idx => flatItems[idx].usedPromo = true); }
-        } else if (promo.promoMode === '組合價' && promo.buyQty > 0) {
+
+        // [B] 全館 / 系列 / 單品 處理
+        let matchedIndices = [];
+        for (let i = 0; i < flatItems.length; i++) {
+          if (flatItems[i].usedPromo) continue;
+          if (promo.sizeLimit !== "不限" && flatItems[i].size !== promo.sizeLimit) continue;
+          let isMatch = false;
+          if (promo.targetType === "全館") isMatch = true;
+          else if (promo.targetType === "系列" && flatItems[i].category === promo.targetName) isMatch = true;
+          else if (promo.targetType === "單品" && flatItems[i].name === promo.targetName) isMatch = true;
+          if (isMatch) matchedIndices.push(i);
+        }
+
+        if (promo.promoMode === "買X送Y" && (promo.buyQty + promo.freeQty) > 0) {
+          let groupSize = promo.buyQty + promo.freeQty;
+          let groups = Math.floor(matchedIndices.length / groupSize);
+          for (let g = 0; g < groups; g++) {
+            let curGroup = matchedIndices.slice(g * groupSize, (g + 1) * groupSize);
+            // 送價位較低的飲料 (前面已經由高至低排序過)
+            for (let f = promo.buyQty; f < groupSize; f++) {
+              let freeIdx = curGroup[f];
+              discountAmount += flatItems[freeIdx].basePrice;
+              appliedPromos.push(`(買${promo.buyQty}送${promo.freeQty}) 折抵 ${flatItems[freeIdx].name} 飲料本體 $${flatItems[freeIdx].basePrice}`);
+            }
+            curGroup.forEach(idx => flatItems[idx].usedPromo = true);
+          }
+        } else if (promo.promoMode === "組合價" && promo.buyQty > 0) {
           let groups = Math.floor(matchedIndices.length / promo.buyQty);
-          for(let g=0; g<groups; g++) {
-            let cur = matchedIndices.slice(g*promo.buyQty, (g+1)*promo.buyQty); let sum = 0; cur.forEach(idx => sum += flatItems[idx].price);
-            let disc = sum - promo.comboPrice; if (disc > 0) discountAmount += disc; cur.forEach(idx => flatItems[idx].usedPromo = true);
+          for (let g = 0; g < groups; g++) {
+            let curGroup = matchedIndices.slice(g * promo.buyQty, (g + 1) * promo.buyQty);
+            let baseSum = 0;
+            curGroup.forEach(idx => baseSum += flatItems[idx].basePrice);
+            let comboDiscount = baseSum - promo.comboPrice;
+            if (comboDiscount > 0) {
+              discountAmount += comboDiscount;
+              appliedPromos.push(`(任選組合價) 原價 $${baseSum} 特價 $${promo.comboPrice}，折抵 $${comboDiscount}`);
+            }
+            curGroup.forEach(idx => flatItems[idx].usedPromo = true);
           }
         }
       });
-      return { original: originalTotal, discount: discountAmount, final: originalTotal - discountAmount };
+      return { original: originalTotal, discount: discountAmount, final: originalTotal - discountAmount, appliedPromos: appliedPromos };
     }
 
     function updateCart() {
+      let calc = calculateCart();
       let count = 0;
-      let total = 0;
-      cart.forEach(i => { count += i.qty; total += i.unitPrice * i.qty; });
+      cart.forEach(i => count += i.qty);
 
       if (count > 0) {
         document.getElementById("cart-bar").style.display = "flex";
         document.getElementById("cart-count").innerText = count;
-        document.getElementById("cart-total").innerText = total;
+        // ✅ 讓下方購物車的金額直接顯示「已折抵後」的最終價格
+        document.getElementById("cart-total").innerText = calc.final; 
       } else {
         document.getElementById("cart-bar").style.display = "none";
       }
@@ -612,6 +625,16 @@
         ? `<option value="現場結帳">現場結帳</option><option value="餘額扣款">餘額扣款 (剩餘 $${userInfo.balance})</option>`
         : `<option value="現場結帳">現場結帳</option><option value="餘額扣款" disabled>餘額扣款 (餘額不足)</option>`;
 
+      // ✅ 結帳畫面顯示自動套用的優惠細節
+      let promoDetailsHtml = "";
+      if (calc.appliedPromos && calc.appliedPromos.length > 0) {
+          promoDetailsHtml = `
+            <div style="font-size:13px; color:#27ae60; margin-top:5px; padding:6px; background:#eafaf1; border-radius:4px; border-left:3px solid #27ae60;">
+                <b>🎁 已自動套用活動折抵：</b><br>
+                ${calc.appliedPromos.join("<br>")}
+            </div>`;
+      }
+
       let html = `
         ${getPromoHint()}
         
@@ -620,7 +643,7 @@
           ${itemDetails}
           <hr style="border:0; border-top:1px solid #ddd; margin:10px 0;">
           <div style="display:flex; justify-content:space-between; color:#555;"><span>原價小計</span><span>$${calc.original}</span></div>
-          ${calc.discount > 0 ? `<div style="display:flex; justify-content:space-between; color:#27ae60; font-weight:bold; margin-top:5px;"><span>系統自動活動折抵</span><span>-$${calc.discount}</span></div>` : ''}
+          ${calc.discount > 0 ? `<div style="display:flex; justify-content:space-between; color:#27ae60; font-weight:bold; margin-top:5px;"><span>系統自動折扣總額</span><span>-$${calc.discount}</span></div>${promoDetailsHtml}` : ''}
         </div>
 
         <div style="text-align:right; font-weight:bold; font-size:24px; color:#d35400; margin-bottom:15px;">應付總額：$${calc.final}</div>
