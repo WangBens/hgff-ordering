@@ -169,7 +169,6 @@ async function callGAS(action, payload = {}) {
 }
 
 function escapeHTML(str) { return (!str) ? "" : String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-// ✅ 補上遺失的 escapeJS
 function escapeJS(str) { return (!str) ? "" : str.toString().replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r"); }
 
 window.onload = async function () {
@@ -190,13 +189,19 @@ window.onload = async function () {
   updatePromoTargetUI();
   updatePromoModeUI();
   
-  // ⏱️ 將刷新頻率調整至 15 秒，確保系統穩定不超載
+  // ⏱️ 將刷新頻率調整至 15 秒
   setInterval(loadDashboardData, 15000); 
 };
 
+// ✅ 修正 1：API 失敗時會有對應的錯誤 UI，不會卡住
 async function loadDashboardData() {
   const res = await callGAS("getAdminDashboardData");
-  if (!res.success) return;
+  
+  if (!res.success) {
+    console.warn("儀表板更新失敗:", res.message);
+    document.getElementById("orders-container").innerHTML = `<div style="text-align:center; padding: 20px; color: #e74c3c; font-weight: bold;">⚠️ 讀取失敗：${escapeHTML(res.message || '連線異常，請檢查網路狀態')}</div>`;
+    return;
+  }
 
   const data = res.data;
   globalMenus = data.menus;
@@ -210,7 +215,6 @@ async function loadDashboardData() {
   updatePromoTargetUI(true); 
 }
 
-// ✅ 全新優化：清晰的視覺化卡片排版
 function renderOrders(orders) {
   const box = document.getElementById("orders-container");
   if (!orders || orders.length === 0) {
@@ -225,7 +229,6 @@ function renderOrders(orders) {
     currentOrdersMap[o.id] = o;
     let cls = o.status === "未處理" ? "status-new" : (o.status === "已接單" ? "status-accepted" : "status-ready");
     
-    // 渲染每一杯飲料的漂亮排版
     let itemsHtml = "";
     if (o.orderDetail && o.orderDetail.items) {
        o.orderDetail.items.forEach(item => {
@@ -234,7 +237,7 @@ function renderOrders(orders) {
             <div style="background: #fff; border: 1px solid #eaeaea; border-radius: 6px; padding: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
                <div style="font-weight: bold; color: #2c3e50; font-size: 15px;">
                   <span style="color:#d35400;">[${escapeHTML(item.size)}]</span> ${escapeHTML(item.name)} 
-                  <span style="color:#e74c3c; float:right;">x${item.qty}</span>
+                  <span style="color:#e74c3c; float:right;">x${item.qty || 1}</span>
                </div>
                <div style="color: #7f8c8d; font-size: 13px; margin-top: 4px; line-height: 1.4;">
                   🧊 ${escapeHTML(item.ice)} ｜ 🍬 ${escapeHTML(item.sweetness)} ${tops}
@@ -243,6 +246,7 @@ function renderOrders(orders) {
           `;
        });
     } else {
+       // 防呆降級方案：如果 JSON 壞掉，就顯示純文字換行
        itemsHtml = escapeHTML(o.content).replace(/\n/g, "<br>");
     }
     
@@ -252,7 +256,7 @@ function renderOrders(orders) {
           <span>${escapeHTML(o.id)}</span>
           <span>${escapeHTML(o.time)}</span>
         </div>
-        <div class="card-customer">${escapeHTML(o.userName)}</div>
+        <div class="card-customer">${escapeHTML(o.userName)} <span style="font-weight:normal; font-size:12px; margin-left:8px; padding:2px 6px; border-radius:4px; background:#eee;">${o.payMethod}</span></div>
         
         <div class="card-items">
           ${itemsHtml}
