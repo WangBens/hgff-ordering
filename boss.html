@@ -15,6 +15,7 @@
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #4f5f6f; font-size:14px;}
     .form-control { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+    .form-control:disabled { background-color: #eee; color: #666; }
     .btn { color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; width: 100%; margin-top: 5px;}
     .btn-success { background-color: #2ecc71; }
     .btn-red { background-color: #e74c3c; }
@@ -135,35 +136,27 @@ const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzaA6QtqUU8wXTM3IiF
 let globalMenus = [];
 let currentUserId = ""; 
 
-// ✅ API呼叫 (修正了 CORS 跨域問題)
+// ✅ API呼叫
 async function callGAS(action, payload = {}) {
   try {
     payload.action = action;
     payload.userId = currentUserId;
     payload.requestId = Date.now();
 
-    console.log("🔥送出:", payload);
-
     const res = await fetch(GAS_API_URL, {
       method: "POST",
       headers: {
-        // ✅ 修正：改用 text/plain 來繞過瀏覽器 OPTIONS 預檢，避免 CORS 錯誤
         "Content-Type": "text/plain;charset=utf-8" 
       },
       body: JSON.stringify(payload)
     });
 
     const data = await res.json();
-
-    console.log("✅回傳:", data);
     return data;
 
   } catch (err) {
     console.error("❌ API錯誤:", err);
-
-    Swal.fire("錯誤", "伺服器連線失敗", "error");
-
-    return { success: false };
+    return { success: false, message: "伺服器連線失敗" };
   }
 }
 
@@ -177,10 +170,9 @@ window.onload = async function () {
   }
 
   const profile = await liff.getProfile();
-  const userId = profile.userId;
-  currentUserId = userId;
+  currentUserId = profile.userId;
 
-  const res = await callGAS("verifyAdmin", { userId });
+  const res = await callGAS("verifyAdmin", { userId: currentUserId });
 
   document.getElementById("loading-layer").style.display = "none";
 
@@ -191,7 +183,7 @@ window.onload = async function () {
 
   document.getElementById("admin-layer").style.display = "block";
 
-  loadDashboardData();
+  await loadDashboardData();
   updatePromoTargetUI();
   updatePromoModeUI();
   setInterval(loadDashboardData, 10000);
@@ -207,13 +199,14 @@ async function loadDashboardData() {
   globalMenus = data.menus;
   renderUserSelect(data.users);
 
-  // ✅ 店鋪狀態
-  document.getElementById("current-store-status").innerText =
-    `(${data.storeStatus})`;
+  document.getElementById("current-store-status").innerText = `(${data.storeStatus})`;
 
   renderOrders(data.orders);
   renderMenuManage(data.menus);
   renderPromos(data.promos);
+  
+  // 保持下拉選單的內容即時
+  updatePromoTargetUI(true); 
 }
 
 // ✅ 訂單顯示
@@ -226,77 +219,44 @@ function renderOrders(orders) {
   }
 
   let html = "";
-
   orders.forEach(o => {
-    let cls =
-      o.status === "未處理"
-        ? "status-new"
-        : o.status === "已接單"
-        ? "status-accepted"
-        : "status-ready";
-
+    let cls = o.status === "未處理" ? "status-new" : o.status === "已接單" ? "status-accepted" : "status-ready";
     html += `
       <div class="order-card ${cls}">
         <div class="card-header">
           <span>#${o.id}</span>
           <span>${o.time}</span>
         </div>
-
         <div class="card-customer">${o.userName}</div>
-
         <div class="card-items">
           ${o.content.replace(/\n/g, "<br>")}
         </div>
-
         <div class="action-btns">
-          ${
-            o.status === "未處理"
-              ? `<button class="btn-action btn-orange" onclick="orderAction('${o.id}','accept')">接單</button>`
-              : ""
-          }
-          ${
-            o.status === "已接單"
-              ? `<button class="btn-action btn-blue" onclick="orderAction('${o.id}','ready')">完成</button>`
-              : ""
-          }
+          ${o.status === "未處理" ? `<button class="btn-action btn-orange" onclick="orderAction('${o.id}','accept')">接單</button>` : ""}
+          ${o.status === "已接單" ? `<button class="btn-action btn-blue" onclick="orderAction('${o.id}','ready')">完成</button>` : ""}
         </div>
       </div>
     `;
   });
-
   box.innerHTML = html;
 }
 
 function orderAction(id, action) {
-
-  Swal.fire({
-    title: "處理中...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
-
-  callGAS("processOrderAction", {
-  orderId: id,
-  orderAction: action  
-}).then(res => {
-
-    Swal.close(); 
-
+  Swal.fire({ title: "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  callGAS("processOrderAction", { orderId: id, orderAction: action }).then(async res => {
     if (res.success) {
+      await loadDashboardData(); // 必須等資料更新完
       Swal.fire("成功", res.message, "success");
-      loadDashboardData();
     } else {
       Swal.fire("錯誤", res.message, "error");
     }
   });
 }
 
-// ✅ 菜單管理（含下架）
+// ✅ 菜單管理
 function renderMenuManage(menus) {
   const box = document.getElementById("menu-list");
-
   let html = "";
-
   menus.forEach(m => {
     html += `
       <div class="list-item">
@@ -312,202 +272,184 @@ function renderMenuManage(menus) {
       </div>
     `;
   });
-
   box.innerHTML = html;
 }
 
-// ✅ 下架/上架
 function toggleMenu(name, status) {
-
   Swal.fire({
-    title: "確認操作",
-    text: `確定要將「${name}」設為「${status}」嗎？`,
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "確定",
-    cancelButtonText: "取消"
+    title: "確認操作", text: `確定要將「${name}」設為「${status}」嗎？`, icon: "warning",
+    showCancelButton: true, confirmButtonText: "確定", cancelButtonText: "取消"
   }).then(result => {
-  if (!result.isConfirmed) return;
-
-  Swal.fire({
-    title: "處理中...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
-
-
-    callGAS("adminToggleMenuItem", {
-  name: name,
-  status: status
-}).then(res => {
-
-  Swal.close(); 
-
-  if (res.success) {
-    Swal.fire("成功", res.message, "success");
-    loadDashboardData();
-  } else {
-    Swal.fire("錯誤", res.message, "error");
-  }
-});
+    if (!result.isConfirmed) return;
+    Swal.fire({ title: "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    callGAS("adminToggleMenuItem", { name: name, status: status }).then(async res => {
+      if (res.success) {
+        await loadDashboardData();
+        Swal.fire("成功", res.message, "success");
+      } else {
+        Swal.fire("錯誤", res.message, "error");
+      }
+    });
   });
 }
-    function toggleStore(status) {
 
-  Swal.fire({
-    title: "處理中...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
-
-  callGAS("adminToggleStore", { status }).then(res => {
-
-    Swal.close();
-
+function toggleStore(status) {
+  Swal.fire({ title: "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  callGAS("adminToggleStore", { status }).then(async res => {
     if (res.success) {
+      await loadDashboardData();
       Swal.fire("成功", res.message, "success");
-      loadDashboardData();
     } else {
       Swal.fire("錯誤", res.message, "error");
     }
   });
 }
+
 function addMenu() {
-
-  Swal.fire({
-    title: "處理中...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
-
   const cat = document.getElementById("menu-cat").value;
   const name = document.getElementById("menu-name").value;
   const pl = document.getElementById("menu-pl").value;
   const pxl = document.getElementById("menu-pxl").value;
 
-  callGAS("adminAddMenuItem", {
-    category: cat,
-    name: name,
-    priceL: pl,
-    priceXL: pxl
-  }).then(res => {
+  if(!cat || !name) return Swal.fire("錯誤", "分類與品名不可空白", "warning");
 
-    Swal.close();
-
+  Swal.fire({ title: "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  callGAS("adminAddMenuItem", { category: cat, name: name, priceL: pl, priceXL: pxl }).then(async res => {
     if (res.success) {
+      await loadDashboardData();
+      document.getElementById("menu-name").value = "";
       Swal.fire("成功", "商品已上架", "success");
-      loadDashboardData();
     } else {
       Swal.fire("錯誤", res.message, "error");
     }
   });
 }
-  function renderUserSelect(users) {
+
+function renderUserSelect(users) {
   const select1 = document.getElementById("user-select");
   const select2 = document.getElementById("edit-user-select");
-
   let html = `<option value="">-- 請選擇會員 --</option>`;
-
-  users.forEach(u => {
-    html += `<option value="${u.userId}">
-      ${u.userName}（$${u.balance}）
-    </option>`;
-  });
-
-  select1.innerHTML = html;
-  select2.innerHTML = html;
+  users.forEach(u => { html += `<option value="${u.userId}">${u.userName}（$${u.balance}）</option>`; });
+  select1.innerHTML = html; select2.innerHTML = html;
 }
 
-// ✅ 錢包功能
 function submitTopUp() {
   const userId = document.getElementById("user-select").value;
   const type = document.getElementById("topup-type").value;
   const amount = document.getElementById("topup-amount").value;
   const note = document.getElementById("topup-note").value;
 
-  if (!userId) {
-    return Swal.fire("錯誤", "請選擇會員", "warning");
-  }
+  if (!userId) return Swal.fire("錯誤", "請選擇會員", "warning");
+  if (!amount || amount <= 0) return Swal.fire("錯誤", "請輸入正確金額", "warning");
 
-  if (!amount || amount <= 0) {
-    return Swal.fire("錯誤", "請輸入正確金額", "warning");
-  }
-
-  Swal.fire({
-    title: "確認帳務",
-    text: `${type === "add" ? "儲值" : "扣款"} $${amount}？`,
-    showCancelButton: true
-  }).then(res => {
-  if (!res.isConfirmed) return;
-
-  Swal.fire({
-    title: "處理中...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
+  Swal.fire({ title: "確認帳務", text: `${type === "add" ? "儲值" : "扣款"} $${amount}？`, showCancelButton: true }).then(res => {
+    if (!res.isConfirmed) return;
+    Swal.fire({ title: "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    callGAS("adminUpdateWallet", { targetUserId: userId, amount: amount, type: type, note: note }).then(async r => {
+      if (r.success) {
+        await loadDashboardData();
+        Swal.fire("成功", r.message, "success");
+      } else {
+        Swal.fire("錯誤", r.message, "error");
+      }
+    });
   });
-
-  callGAS("adminUpdateWallet", {
-    targetUserId: userId,
-    amount: amount,
-    type: type,
-    note: note
-  }).then(r => {
-
-    Swal.close();
-
-    if (r.success) {
-      Swal.fire("成功", r.message, "success");
-      loadDashboardData();
-    } else {
-      Swal.fire("錯誤", r.message, "error");
-    }
-  });
-});
 }
 
-
-// ✅ 修改會員名稱
 function updateMember() {
   const userId = document.getElementById("edit-user-select").value;
   const newName = document.getElementById("new-user-name").value;
 
-  if (!userId) {
-    return Swal.fire("錯誤", "請選擇會員", "warning");
-  }
+  if (!userId) return Swal.fire("錯誤", "請選擇會員", "warning");
+  if (!newName) return Swal.fire("錯誤", "請輸入名稱", "warning");
 
-  if (!newName) {
-    return Swal.fire("錯誤", "請輸入名稱", "warning");
-  }
-
-  callGAS("updateMemberName", {
-    targetUserId: userId,
-    newName: newName
-  }).then(res => {
+  Swal.fire({ title: "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  callGAS("updateMemberName", { targetUserId: userId, newName: newName }).then(async res => {
     if (res.success) {
+      await loadDashboardData();
       Swal.fire("成功", res.message, "success");
-      loadDashboardData();
     } else {
       Swal.fire("錯誤", res.message, "error");
     }
   });
 }
 
+// ✅ 完美的活動 UI 邏輯控制
+function updatePromoTargetUI(isSilentRefresh = false) {
+  const type = document.getElementById("promo-target-type").value;
+  const checkboxBox = document.getElementById("promo-checkbox-list");
+  const multiBox = document.getElementById("promo-multi-drinks-group");
+  const modeSelect = document.getElementById("promo-mode");
+  const targetNameSelect = document.getElementById("promo-target-name");
+
+  if (type === "指定組合") {
+    multiBox.style.display = "block";
+    targetNameSelect.style.display = "none";
+
+    // ✅ 強制跳到組合價並鎖定
+    modeSelect.value = "組合價";
+    modeSelect.disabled = true; 
+
+    // 如果只是背景刷新資料，不覆蓋已經打勾的選項
+    if (!isSilentRefresh || checkboxBox.innerHTML === "") {
+        let html = "";
+        globalMenus.forEach(m => {
+          html += `<label class="checkbox-item"><input type="checkbox" value="${m.name}"> ${m.name}</label>`;
+        });
+        checkboxBox.innerHTML = html;
+    }
+  } else {
+    multiBox.style.display = "none";
+    modeSelect.disabled = false; // ✅ 解鎖模式選擇
+    
+    if (type === "全館") {
+        targetNameSelect.style.display = "none";
+    } else {
+        targetNameSelect.style.display = "block";
+        let opts = "";
+        if (type === "系列") {
+            let cats = [...new Set(globalMenus.map(m => m.category))];
+            cats.forEach(c => opts += `<option value="${c}">${c}</option>`);
+        } else if (type === "單品") {
+            globalMenus.forEach(m => opts += `<option value="${m.name}">${m.name}</option>`);
+        }
+        
+        // 保留目前選中的值
+        let currentVal = targetNameSelect.value;
+        targetNameSelect.innerHTML = opts;
+        if(currentVal) targetNameSelect.value = currentVal;
+    }
+  }
+  updatePromoModeUI();
+}
+
+function updatePromoModeUI() {
+  const mode = document.getElementById("promo-mode").value;
+  const type = document.getElementById("promo-target-type").value;
+
+  document.getElementById("promo-buy-free-ui").style.display = mode === "買X送Y" ? "flex" : "none";
+  const comboUi = document.getElementById("promo-combo-ui");
+  comboUi.style.display = mode === "組合價" ? "flex" : "none";
+
+  // ✅ 如果是指定組合，不需要老闆填「任選幾杯」
+  const comboQtyInput = document.getElementById("promo-combo-qty");
+  if (type === "指定組合" && mode === "組合價") {
+     comboQtyInput.style.display = "none";
+  } else {
+     comboQtyInput.style.display = "block";
+  }
+}
+
 function addPromo() {
   const type = document.getElementById("promo-target-type").value;
   const mode = document.getElementById("promo-mode").value;
-
   let targetName = "";
 
   if (type === "指定組合") {
     const checked = document.querySelectorAll("#promo-checkbox-list input:checked");
-
     let arr = [];
     checked.forEach(c => arr.push(c.value));
-
-    if (arr.length === 0) {
-      return Swal.fire("錯誤", "請選擇套餐內容", "warning");
-    }
-
+    if (arr.length === 0) return Swal.fire("錯誤", "請選擇套餐內容", "warning");
     targetName = arr.join(",");
   } else {
     const select = document.getElementById("promo-target-name");
@@ -520,88 +462,33 @@ function addPromo() {
   let freeQty = document.getElementById("promo-free").value;
   let comboPrice = document.getElementById("promo-combo-price").value;
 
-  Swal.fire({
-    title: "處理中...",
-    allowOutsideClick: false,
-    didOpen: () => {
-      Swal.showLoading();
-    }
-  });
+  Swal.fire({ title: "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-  callGAS("adminAddPromo", {
-    desc,
-    targetType: type,
-    targetName,
-    promoMode: mode,
-    buyQty,
-    freeQty,
-    comboPrice,
-    sizeLimit
-  }).then(res => {
-
-    Swal.close();
-
+  callGAS("adminAddPromo", { desc, targetType: type, targetName, promoMode: mode, buyQty, freeQty, comboPrice, sizeLimit }).then(async res => {
     if (res.success) {
-
-      Swal.fire("成功", res.message, "success");
-      loadDashboardData();
-
-      // ✅ 清空欄位
+      await loadDashboardData(); // ✅ 等待頁面更新完畢
+      // 清空欄位
       document.getElementById("promo-desc").value = "";
       document.getElementById("promo-buy").value = "";
       document.getElementById("promo-free").value = "";
       document.getElementById("promo-combo-price").value = "";
-
-      document.querySelectorAll("#promo-checkbox-list input")
-        .forEach(cb => cb.checked = false);
-
+      document.querySelectorAll("#promo-checkbox-list input").forEach(cb => cb.checked = false);
+      
+      Swal.fire("成功", res.message, "success");
     } else {
       Swal.fire("錯誤", res.message, "error");
     }
   });
 }
-    function updatePromoTargetUI() {
-  const type = document.getElementById("promo-target-type").value;
-  const checkboxBox = document.getElementById("promo-checkbox-list");
-  const multiBox = document.getElementById("promo-multi-drinks-group");
 
-  if (type === "指定組合") {
-    multiBox.style.display = "block";
-
-    let html = "";
-
-    globalMenus.forEach(m => {
-      html += `
-        <label class="checkbox-item">
-          <input type="checkbox" value="${m.name}"> ${m.name}
-        </label>
-      `;
-    });
-
-    checkboxBox.innerHTML = html;
-  } else {
-    multiBox.style.display = "none";
-  }
-}
-    function updatePromoModeUI() {
-  const mode = document.getElementById("promo-mode").value;
-
-  document.getElementById("promo-buy-free-ui").style.display =
-    mode === "買X送Y" ? "flex" : "none";
-
-  document.getElementById("promo-combo-ui").style.display =
-    mode === "組合價" ? "flex" : "none";
-}
-    function renderPromos(promos) {
+// ✅ 活動列表與取消活動功能
+function renderPromos(promos) {
   const box = document.getElementById("promo-list");
-
   if (!promos || promos.length === 0) {
     box.innerHTML = "目前沒有活動";
     return;
   }
-
   let html = "";
-
   promos.forEach(p => {
     html += `
       <div class="list-item">
@@ -610,10 +497,31 @@ function addPromo() {
           ${p.targetName}<br>
           模式：${p.promoMode}
         </div>
+        <button class="btn-action btn-red" onclick="cancelPromo('${p.id}')">取消活動</button>
       </div>
     `;
   });
   box.innerHTML = html;
+}
+
+function cancelPromo(promoId) {
+  Swal.fire({
+    title: "確認操作", text: "確定要取消並停用此活動嗎？", icon: "warning",
+    showCancelButton: true, confirmButtonText: "確定", cancelButtonText: "返回"
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    
+    Swal.fire({ title: "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    callGAS("adminTogglePromo", { promoId: promoId, status: "停用" }).then(async res => {
+      if (res.success) {
+        await loadDashboardData(); // ✅ 等待重載完成，活動就會從畫面上消失
+        Swal.fire("成功", "活動已取消", "success");
+      } else {
+        Swal.fire("錯誤", res.message, "error");
+      }
+    });
+  });
 }
 </script>
 </body>
