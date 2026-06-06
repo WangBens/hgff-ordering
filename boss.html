@@ -239,13 +239,26 @@ function renderOrders(orders) {
     
     let itemsHtml = "";
     if (o.orderDetail && o.orderDetail.items) {
+       // 將攤平的訂單重新分組，計算真實的 qty
+       let groupedItems = {};
        o.orderDetail.items.forEach(item => {
+          let topsStr = item.toppings ? item.toppings.join(",") : "";
+          let key = `${item.size}_${item.name}_${item.sweetness}_${item.ice}_${topsStr}`;
+          
+          if (groupedItems[key]) {
+              groupedItems[key].qty += 1;
+          } else {
+              groupedItems[key] = { ...item, qty: 1 };
+          }
+       });
+
+       Object.values(groupedItems).forEach(item => {
           let tops = item.toppings && item.toppings.length > 0 ? `<br><span style="color:#8e44ad;">➕ 加料：${escapeHTML(item.toppings.join("、"))}</span>` : "";
           itemsHtml += `
             <div style="background: #fff; border: 1px solid #eaeaea; border-radius: 6px; padding: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
                <div style="font-weight: bold; color: #2c3e50; font-size: 15px;">
                   <span style="color:#d35400;">[${escapeHTML(item.size)}]</span> ${escapeHTML(item.name)} 
-                  <span style="color:#e74c3c; float:right;">x${item.qty || 1}</span>
+                  <span style="color:#e74c3c; float:right;">x${item.qty}</span>
                </div>
                <div style="color: #7f8c8d; font-size: 13px; margin-top: 4px; line-height: 1.4;">
                   🧊 ${escapeHTML(item.ice)} ｜ 🍬 ${escapeHTML(item.sweetness)} ${tops}
