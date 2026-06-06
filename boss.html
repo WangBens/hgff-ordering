@@ -23,7 +23,6 @@
     .btn-blue { background-color: #3498db; }
     
     .order-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px; border-left: 5px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    
     .status-new { border-left-color: #e74c3c; }
     .status-accepted { border-left-color: #f39c12; }
     .status-ready { border-left-color: #3498db; }
@@ -33,7 +32,6 @@
     .card-items { margin: 0 0 10px 0; background: #fafbfc; padding: 5px 8px; border-radius: 6px; border: 1px solid #eee; font-size: 15px; line-height: 1.6;}
     .action-btns { display: flex; gap: 8px; justify-content: flex-end; }
     .btn-action { padding: 6px 14px; border: none; border-radius: 5px; font-weight: bold; color: white; cursor: pointer; font-size: 13px; }
-    .btn-gray { background: #95a5a6; }
     
     .list-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }
     .multi-checkbox-box { border: 1px solid #ccc; padding: 10px; border-radius: 6px; max-height: 120px; overflow-y: auto; background: #fafafa; }
@@ -132,18 +130,27 @@
 
   <script>
 const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx-RCpydfuL6flauMH9ggKl5KsVWbow1Oc2vher9d7xvv19l6VzxDhIP8MEKzbbXixt/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzfOlWvr-6HLznsSRiK58HWAw3mHBRtoVE2FH5s2Gfu6J1WJnhRpka6vG2FDrHXMJCC/exec"; // ⚠️ 請確保這是最新發布的網址
 
 let globalMenus = [];
-let currentUserId = ""; 
-let idToken = "";
 
+// 🔒 安全升級：強制驗證 idToken 且加入高隨機性 requestId 防重放
 async function callGAS(action, payload = {}) {
   try {
+    if (!liff.isLoggedIn()) {
+      Swal.fire("錯誤", "無法取得授權，請確保在 LINE 環境中執行", "error");
+      return { success: false, message: "未登入 LINE" };
+    }
+    
+    let currentIdToken = liff.getIDToken();
+    if (!currentIdToken) {
+      Swal.fire("授權失敗", "無法獲取安全憑證，請重新整理頁面", "error");
+      return { success: false, message: "Missing idToken" };
+    }
+
     payload.action = action;
-    // 🔒 安全升級：帶上 LINE idToken
-    payload.idToken = idToken || (liff.isLoggedIn() ? liff.getIDToken() : "");
-    payload.requestId = Date.now();
+    payload.idToken = currentIdToken;
+    payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 9);
 
     const res = await fetch(GAS_API_URL, {
       method: "POST",
@@ -162,20 +169,15 @@ window.onload = async function () {
   await liff.init({ liffId: BOSS_LIFF_ID });
   if (!liff.isLoggedIn()) { liff.login(); return; }
 
-  const profile = await liff.getProfile();
-  currentUserId = profile.userId;
-  idToken = liff.getIDToken();
-
   const res = await callGAS("verifyAdmin");
   document.getElementById("loading-layer").style.display = "none";
 
   if (!res.success || !res.isAdmin) {
-    Swal.fire("錯誤", res.message || "權限不足", "error");
+    Swal.fire("權限拒絕", res.message || "您不具備管理員權限", "error");
     return;
   }
 
   document.getElementById("admin-layer").style.display = "block";
-
   await loadDashboardData();
   updatePromoTargetUI();
   updatePromoModeUI();
@@ -200,7 +202,6 @@ async function loadDashboardData() {
 
 function renderOrders(orders) {
   const box = document.getElementById("orders-container");
-
   if (!orders || orders.length === 0) {
     box.innerHTML = "目前沒有未領取的訂單";
     return;
