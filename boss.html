@@ -1,3 +1,4 @@
+BOSS
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -131,13 +132,13 @@
 
   <script>
 const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyxy1MPY9JfjQBWo9AdQ_OrSBcFzeIjOsSOspo42ULQvrupeKgCzmrmMbpcv5RQY5GM/exec"; 
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzjG8lGh3GuwY0i7OdicIQUkex0UiCVX6wx1iF6FiGXX5ReUZ05qWXLS9-QLsScujN5/exec"; 
 
 let globalMenus = [];
 let currentOrdersMap = {}; 
 let idToken = "";
 
-// 🔒 增強防護 API
+// 🔒 增強防護 API + Timeout 控制
 async function callGAS(action, payload = {}) {
   try {
     if (!liff.isLoggedIn()) {
@@ -155,15 +156,23 @@ async function callGAS(action, payload = {}) {
     payload.idToken = currentIdToken;
     payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 9);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超時
+
     const res = await fetch(GAS_API_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId);
     return await res.json();
   } catch (err) {
     console.error("❌ API錯誤:", err);
+    if (err.name === 'AbortError') {
+      return { success: false, message: "伺服器回應逾時，請稍後再試" };
+    }
     return { success: false, message: "伺服器連線失敗" };
   }
 }
@@ -189,10 +198,10 @@ window.onload = async function () {
   updatePromoTargetUI();
   updatePromoModeUI();
   
-  // ⏱️ 刷新頻率 15 秒
   setInterval(loadDashboardData, 15000); 
 };
 
+// ✅ 修正 1：API 失敗時會有對應的錯誤 UI，不會卡住
 async function loadDashboardData() {
   const res = await callGAS("getAdminDashboardData");
   
@@ -351,7 +360,6 @@ function toggleMenu(name, status) {
         await loadDashboardData();
         Swal.fire("成功", res.message, "success");
       } else {
-        // ✅ 若後端回報因活動綁定無法下架，會在此彈出明確錯誤
         Swal.fire("錯誤", res.message, "error");
       }
     });
@@ -439,7 +447,6 @@ function updateMember() {
   });
 }
 
-// ✅ 確保選擇組合套餐時，只會出現「已上架」的商品供勾選
 function updatePromoTargetUI(isSilentRefresh = false) {
   const type = document.getElementById("promo-target-type").value;
   const checkboxBox = document.getElementById("promo-checkbox-list");
@@ -551,7 +558,6 @@ function renderPromos(promos) {
   }
   let html = "";
   promos.forEach(p => {
-    // ✅ 組合價提示顯示特價金額
     let displayPrice = p.promoMode === "組合價" && p.comboPrice ? ` <span style='color:#e74c3c;font-weight:bold;'>(特價 $${p.comboPrice})</span>` : "";
     html += `
       <div class="list-item">
