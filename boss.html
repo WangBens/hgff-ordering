@@ -130,12 +130,12 @@
 
   <script>
 const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwJwZq645luvBpTYPE4CniG52-xxDFuqgwRyURpxS-eFmTQGalhPJ4RKQODBB8ydDc-/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzaA6QtqUU8wXTM3IiFkrAuhwVVeWdUEBHcpegipLaucYHKsIprXrRmno37mHCj9fow/exec";
 
 let globalMenus = [];
-let currentUserId = ""; // ✅ 新增
+let currentUserId = ""; 
 
-// ✅ API呼叫
+// ✅ API呼叫 (修正了 CORS 跨域問題)
 async function callGAS(action, payload = {}) {
   try {
     payload.action = action;
@@ -147,7 +147,8 @@ async function callGAS(action, payload = {}) {
     const res = await fetch(GAS_API_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        // ✅ 修正：改用 text/plain 來繞過瀏覽器 OPTIONS 預檢，避免 CORS 錯誤
+        "Content-Type": "text/plain;charset=utf-8" 
       },
       body: JSON.stringify(payload)
     });
@@ -210,16 +211,12 @@ async function loadDashboardData() {
   document.getElementById("current-store-status").innerText =
     `(${data.storeStatus})`;
 
-  // ✅ ✅ ✅ 訂單渲染（關鍵修正）
   renderOrders(data.orders);
-
-  // ✅ ✅ ✅ 菜單渲染
   renderMenuManage(data.menus);
-
   renderPromos(data.promos);
 }
 
-// ✅ ✅ ✅ 訂單顯示
+// ✅ 訂單顯示
 function renderOrders(orders) {
   const box = document.getElementById("orders-container");
 
@@ -280,10 +277,10 @@ function orderAction(id, action) {
 
   callGAS("processOrderAction", {
   orderId: id,
-  orderAction: action  // ✅ 改名字
+  orderAction: action  
 }).then(res => {
 
-    Swal.close(); // ✅ 關閉 loading
+    Swal.close(); 
 
     if (res.success) {
       Swal.fire("成功", res.message, "success");
@@ -294,7 +291,7 @@ function orderAction(id, action) {
   });
 }
 
-// ✅ ✅ ✅ 菜單管理（含下架）
+// ✅ 菜單管理（含下架）
 function renderMenuManage(menus) {
   const box = document.getElementById("menu-list");
 
@@ -344,7 +341,7 @@ function toggleMenu(name, status) {
   status: status
 }).then(res => {
 
-  Swal.close(); // ✅ 補這行
+  Swal.close(); 
 
   if (res.success) {
     Swal.fire("成功", res.message, "success");
@@ -421,10 +418,6 @@ function addMenu() {
   select2.innerHTML = html;
 }
 
-//////////////////////////////////////////////////////
-// ✅ ✅ ✅ 從這裡開始新增
-//////////////////////////////////////////////////////
-
 // ✅ 錢包功能
 function submitTopUp() {
   const userId = document.getElementById("user-select").value;
@@ -470,6 +463,7 @@ function submitTopUp() {
     }
   });
 });
+}
 
 
 // ✅ 修改會員名稱
@@ -526,7 +520,6 @@ function addPromo() {
   let freeQty = document.getElementById("promo-free").value;
   let comboPrice = document.getElementById("promo-combo-price").value;
 
-  // ✅ ✅ ✅ ⭐ 關鍵：這裡加 loading
   Swal.fire({
     title: "處理中...",
     allowOutsideClick: false,
@@ -546,7 +539,6 @@ function addPromo() {
     sizeLimit
   }).then(res => {
 
-    // ✅ ✅ ✅ ⭐ API回來第一件事 → 關 loading
     Swal.close();
 
     if (res.success) {
