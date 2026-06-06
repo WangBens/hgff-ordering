@@ -108,9 +108,8 @@
   </div>
 
   <script>
-    // ⚠️ 記得替換成你最新的 GAS 網址
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx-RCpydfuL6flauMH9ggKl5KsVWbow1Oc2vher9d7xvv19l6VzxDhIP8MEKzbbXixt/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzfOlWvr-6HLznsSRiK58HWAw3mHBRtoVE2FH5s2Gfu6J1WJnhRpka6vG2FDrHXMJCC/exec"; // ⚠️ 替換最新網址
 
     let idToken = ""; let lineProfile = null; let cart = []; let currentOrders = [];
     let menuData = []; let optionsData = { sweetness: [], ice: [], toppings: [] }; let promosData = []; let storeStatus = "營業中";
@@ -119,11 +118,22 @@
     function escapeHTML(str) { return (!str) ? "" : String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function escapeJS(str) { return (!str) ? "" : str.toString().replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r"); }
 
+    // 🔒 安全升級：強制驗證 idToken 且加入高隨機性 requestId 防重放
     async function callGAS(action, payload = {}, options = {}) {
+      if (!liff.isLoggedIn()) {
+         Swal.fire("錯誤", "請先登入 LINE", "error");
+         return { success: false, message: "未登入 LINE" };
+      }
+
+      let currentIdToken = liff.getIDToken();
+      if (!currentIdToken) {
+         Swal.fire("授權錯誤", "無法取得安全憑證，請重新開啟頁面", "error");
+         return { success: false, message: "無 idToken" };
+      }
+
       payload.action = action;
-      // 🔒 安全升級：帶上 LINE idToken 以供後端驗證身分
-      payload.idToken = idToken || (liff.isLoggedIn() ? liff.getIDToken() : "");
-      payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+      payload.idToken = currentIdToken;
+      payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 9);
 
       if (options.loading) {
         Swal.fire({
@@ -136,21 +146,16 @@
       try {
         const response = await fetch(GAS_API_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8" 
-          },
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
         });
-
         const text = await response.text();
-
         try {
           return JSON.parse(text);
         } catch (e) {
           console.error("❌ JSON解析失敗", text);
           return { success: false, message: "回應格式錯誤" };
         }
-
       } catch (err) {
         console.error("❌ API錯誤", err);
         return { success: false, message: "連線失敗" };
@@ -158,30 +163,21 @@
     }
 
     window.onload = async function () {
-      console.log("🚀 點餐系統啟動");
       try {
         await liff.init({ liffId: CUSTOMER_LIFF_ID });
-        console.log("✅ LIFF 初始化完成");
         if (!liff.isLoggedIn()) { 
            liff.login({ redirectUri: window.location.href }); 
            return; 
         }
         idToken = liff.getIDToken(); 
         lineProfile = await liff.getProfile();
-        console.log("🔥 LINE PROFILE =", lineProfile);
         await initUser(); 
       } catch (e) { 
-        console.error("LIFF 錯誤訊息：", e);
-        Swal.fire({
-          icon: "error", 
-          title: "LIFF 初始化失敗", 
-          html: `原因：${escapeHTML(e.message)}<br><br><span style="color:#e74c3c;font-size:14px;">※ 請確認您已將網頁上傳至 GitHub，並在 LINE 內透過 https:// 網址開啟，不可單機雙擊檔案執行！</span>`
-        }); 
+        Swal.fire({ icon: "error", title: "初始化失敗", html: `原因：${escapeHTML(e.message)}` }); 
       }
     };
 
     async function initUser() {
-      console.log("🔥 initUser 開始");
       const res = await callGAS("initUser", { lineName: lineProfile ? lineProfile.displayName : "" });
       if (res.success) { 
         userInfo = res.data; 
