@@ -131,10 +131,10 @@
 
   <script>
 const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxueRE38VakyzKm0v0ngOhK67r3qDK9RYOym86dvMHoOZVE-vMn_I-UWufkotQHP70Z/exec"; // ⚠️ 請確保這是最新發布的網址
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzleX0sVz63LTC9jFhKkcz0OAVb14cP3aNeoN7B-vK5Q542iRd7W06Bq1pDXnfbwlhK/exec"; 
 
 let globalMenus = [];
-let currentOrdersMap = {}; // ✅ 供點擊按鈕時抓取訂單詳細資料
+let currentOrdersMap = {}; 
 let idToken = "";
 
 // 🔒 增強防護 API
@@ -169,6 +169,8 @@ async function callGAS(action, payload = {}) {
 }
 
 function escapeHTML(str) { return (!str) ? "" : String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+// ✅ 補上遺失的 escapeJS
+function escapeJS(str) { return (!str) ? "" : str.toString().replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r"); }
 
 window.onload = async function () {
   await liff.init({ liffId: BOSS_LIFF_ID });
@@ -217,7 +219,7 @@ function renderOrders(orders) {
   }
 
   let html = "";
-  currentOrdersMap = {}; // 重置對應表
+  currentOrdersMap = {}; 
 
   orders.forEach(o => {
     currentOrdersMap[o.id] = o;
@@ -241,8 +243,7 @@ function renderOrders(orders) {
           `;
        });
     } else {
-       // 防呆降級方案：如果 JSON 壞掉，就顯示純文字換行
-       itemsHtml = o.content.replace(/\n/g, "<br>");
+       itemsHtml = escapeHTML(o.content).replace(/\n/g, "<br>");
     }
     
     html += `
@@ -270,7 +271,6 @@ function renderOrders(orders) {
   box.innerHTML = html;
 }
 
-// ✅ 老闆專屬的訂單詳細價格彈窗
 window.showOrderDetails = function(orderId) {
   const o = currentOrdersMap[orderId];
   if(!o || !o.orderDetail) return Swal.fire('提示', '這筆訂單可能為舊資料，無法顯示詳細算式', 'info');
