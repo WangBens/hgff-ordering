@@ -24,10 +24,9 @@
     
     .order-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px; border-left: 5px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     
-    /* ✅ 狀態對應的顏色區分 */
-    .status-new { border-left-color: #e74c3c; }       /* 未處理 - 紅 */
-    .status-accepted { border-left-color: #f39c12; }  /* 已接單 - 橘 */
-    .status-ready { border-left-color: #3498db; }     /* 已完成 - 藍 */
+    .status-new { border-left-color: #e74c3c; }
+    .status-accepted { border-left-color: #f39c12; }
+    .status-ready { border-left-color: #3498db; }
     
     .card-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; color: #7f8c8d; }
     .card-customer { font-size: 14px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; }
@@ -133,15 +132,17 @@
 
   <script>
 const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx_ksrTcPPtU-cuLXSYZ0FJ3cQ8Mottlc2UY-L9VnykRoCRXd3mb0vXS31cIminEqGi/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx-RCpydfuL6flauMH9ggKl5KsVWbow1Oc2vher9d7xvv19l6VzxDhIP8MEKzbbXixt/exec";
 
 let globalMenus = [];
 let currentUserId = ""; 
+let idToken = "";
 
 async function callGAS(action, payload = {}) {
   try {
     payload.action = action;
-    payload.userId = currentUserId;
+    // 🔒 安全升級：帶上 LINE idToken
+    payload.idToken = idToken || (liff.isLoggedIn() ? liff.getIDToken() : "");
     payload.requestId = Date.now();
 
     const res = await fetch(GAS_API_URL, {
@@ -163,12 +164,13 @@ window.onload = async function () {
 
   const profile = await liff.getProfile();
   currentUserId = profile.userId;
+  idToken = liff.getIDToken();
 
-  const res = await callGAS("verifyAdmin", { userId: currentUserId });
+  const res = await callGAS("verifyAdmin");
   document.getElementById("loading-layer").style.display = "none";
 
   if (!res.success || !res.isAdmin) {
-    Swal.fire("錯誤", "權限不足", "error");
+    Swal.fire("錯誤", res.message || "權限不足", "error");
     return;
   }
 
@@ -196,7 +198,6 @@ async function loadDashboardData() {
   updatePromoTargetUI(true); 
 }
 
-// ✅ 完美的訂單渲染顯示
 function renderOrders(orders) {
   const box = document.getElementById("orders-container");
 
@@ -208,8 +209,6 @@ function renderOrders(orders) {
   let html = "";
   orders.forEach(o => {
     let cls = o.status === "未處理" ? "status-new" : (o.status === "已接單" ? "status-accepted" : "status-ready");
-    
-    // 將換行符號取代為 html換行，讓明細一目了然
     let formattedContent = o.content.replace(/\n/g, "<br>");
     
     html += `
@@ -238,7 +237,7 @@ function orderAction(id, action) {
   Swal.fire({ title: "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
   callGAS("processOrderAction", { orderId: id, orderAction: action }).then(async res => {
     if (res.success) {
-      await loadDashboardData(); // 必須等資料更新完
+      await loadDashboardData(); 
       Swal.fire("成功", res.message, "success");
     } else {
       Swal.fire("錯誤", res.message, "error");
@@ -366,7 +365,6 @@ function updateMember() {
   });
 }
 
-// ✅ 完美的活動 UI 邏輯控制
 function updatePromoTargetUI(isSilentRefresh = false) {
   const type = document.getElementById("promo-target-type").value;
   const checkboxBox = document.getElementById("promo-checkbox-list");
@@ -378,11 +376,9 @@ function updatePromoTargetUI(isSilentRefresh = false) {
     multiBox.style.display = "block";
     targetNameSelect.style.display = "none";
 
-    // ✅ 強制跳到組合價並鎖定
     modeSelect.value = "組合價";
     modeSelect.disabled = true; 
 
-    // 如果只是背景刷新資料，不覆蓋已經打勾的選項
     if (!isSilentRefresh || checkboxBox.innerHTML === "") {
         let html = "";
         globalMenus.forEach(m => {
@@ -392,7 +388,7 @@ function updatePromoTargetUI(isSilentRefresh = false) {
     }
   } else {
     multiBox.style.display = "none";
-    modeSelect.disabled = false; // ✅ 解鎖模式選擇
+    modeSelect.disabled = false; 
     
     if (type === "全館") {
         targetNameSelect.style.display = "none";
@@ -406,7 +402,6 @@ function updatePromoTargetUI(isSilentRefresh = false) {
             globalMenus.forEach(m => opts += `<option value="${m.name}">${m.name}</option>`);
         }
         
-        // 保留目前選中的值
         let currentVal = targetNameSelect.value;
         targetNameSelect.innerHTML = opts;
         if(currentVal) targetNameSelect.value = currentVal;
@@ -423,7 +418,6 @@ function updatePromoModeUI() {
   const comboUi = document.getElementById("promo-combo-ui");
   comboUi.style.display = mode === "組合價" ? "flex" : "none";
 
-  // ✅ 如果是指定組合，不需要老闆填「任選幾杯」
   const comboQtyInput = document.getElementById("promo-combo-qty");
   if (type === "指定組合" && mode === "組合價") {
      comboQtyInput.style.display = "none";
@@ -458,8 +452,7 @@ function addPromo() {
 
   callGAS("adminAddPromo", { desc, targetType: type, targetName, promoMode: mode, buyQty, freeQty, comboPrice, sizeLimit }).then(async res => {
     if (res.success) {
-      await loadDashboardData(); // ✅ 等待頁面更新完畢
-      // 清空欄位
+      await loadDashboardData(); 
       document.getElementById("promo-desc").value = "";
       document.getElementById("promo-buy").value = "";
       document.getElementById("promo-free").value = "";
