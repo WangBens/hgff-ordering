@@ -131,7 +131,7 @@
 
   <script>
 const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzleX0sVz63LTC9jFhKkcz0OAVb14cP3aNeoN7B-vK5Q542iRd7W06Bq1pDXnfbwlhK/exec"; 
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyxy1MPY9JfjQBWo9AdQ_OrSBcFzeIjOsSOspo42ULQvrupeKgCzmrmMbpcv5RQY5GM/exec"; 
 
 let globalMenus = [];
 let currentOrdersMap = {}; 
@@ -189,11 +189,10 @@ window.onload = async function () {
   updatePromoTargetUI();
   updatePromoModeUI();
   
-  // ⏱️ 將刷新頻率調整至 15 秒
+  // ⏱️ 刷新頻率 15 秒
   setInterval(loadDashboardData, 15000); 
 };
 
-// ✅ 修正 1：API 失敗時會有對應的錯誤 UI，不會卡住
 async function loadDashboardData() {
   const res = await callGAS("getAdminDashboardData");
   
@@ -246,7 +245,6 @@ function renderOrders(orders) {
           `;
        });
     } else {
-       // 防呆降級方案：如果 JSON 壞掉，就顯示純文字換行
        itemsHtml = escapeHTML(o.content).replace(/\n/g, "<br>");
     }
     
@@ -353,6 +351,7 @@ function toggleMenu(name, status) {
         await loadDashboardData();
         Swal.fire("成功", res.message, "success");
       } else {
+        // ✅ 若後端回報因活動綁定無法下架，會在此彈出明確錯誤
         Swal.fire("錯誤", res.message, "error");
       }
     });
@@ -440,6 +439,7 @@ function updateMember() {
   });
 }
 
+// ✅ 確保選擇組合套餐時，只會出現「已上架」的商品供勾選
 function updatePromoTargetUI(isSilentRefresh = false) {
   const type = document.getElementById("promo-target-type").value;
   const checkboxBox = document.getElementById("promo-checkbox-list");
@@ -457,9 +457,11 @@ function updatePromoTargetUI(isSilentRefresh = false) {
     if (!isSilentRefresh || checkboxBox.innerHTML === "") {
         let html = "";
         globalMenus.forEach(m => {
-          html += `<label class="checkbox-item"><input type="checkbox" value="${m.name}"> ${m.name}</label>`;
+          if(m.status === "上架") {
+             html += `<label class="checkbox-item"><input type="checkbox" value="${m.name}"> ${m.name}</label>`;
+          }
         });
-        checkboxBox.innerHTML = html;
+        checkboxBox.innerHTML = html || "<span style='color:#e74c3c;font-size:13px;'>目前無上架商品可供選擇</span>";
     }
   } else {
     multiBox.style.display = "none";
@@ -471,10 +473,10 @@ function updatePromoTargetUI(isSilentRefresh = false) {
         targetNameSelect.style.display = "block";
         let opts = "";
         if (type === "系列") {
-            let cats = [...new Set(globalMenus.map(m => m.category))];
+            let cats = [...new Set(globalMenus.filter(m => m.status === "上架").map(m => m.category))];
             cats.forEach(c => opts += `<option value="${c}">${c}</option>`);
         } else if (type === "單品") {
-            globalMenus.forEach(m => opts += `<option value="${m.name}">${m.name}</option>`);
+            globalMenus.filter(m => m.status === "上架").forEach(m => opts += `<option value="${m.name}">${m.name}</option>`);
         }
         
         let currentVal = targetNameSelect.value;
@@ -549,11 +551,13 @@ function renderPromos(promos) {
   }
   let html = "";
   promos.forEach(p => {
+    // ✅ 組合價提示顯示特價金額
+    let displayPrice = p.promoMode === "組合價" && p.comboPrice ? ` <span style='color:#e74c3c;font-weight:bold;'>(特價 $${p.comboPrice})</span>` : "";
     html += `
       <div class="list-item">
         <div>
-          <b>${p.desc || "活動"}</b><br>
-          ${p.targetName}<br>
+          <b>${p.desc || "活動"}</b>${displayPrice}<br>
+          <span style="color:#7f8c8d; font-size:12px;">目標：${p.targetType} - ${p.targetName}</span><br>
           模式：${p.promoMode}
         </div>
         <button class="btn-action btn-red" onclick="cancelPromo('${p.id}')">取消活動</button>
