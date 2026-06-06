@@ -109,7 +109,7 @@
 
   <script>
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyxy1MPY9JfjQBWo9AdQ_OrSBcFzeIjOsSOspo42ULQvrupeKgCzmrmMbpcv5RQY5GM/exec"; // ⚠️ 請確保這是最新網址
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzjG8lGh3GuwY0i7OdicIQUkex0UiCVX6wx1iF6FiGXX5ReUZ05qWXLS9-QLsScujN5/exec"; // ⚠️ 請確保這是最新網址
 
     let idToken = ""; let lineProfile = null; let cart = []; let currentOrders = [];
     let menuData = []; let optionsData = { sweetness: [], ice: [], toppings: [] }; let promosData = []; let storeStatus = "營業中";
@@ -137,10 +137,19 @@
         Swal.fire({ title: options.loadingText || "處理中...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       }
 
+      // 加入 15 秒 Timeout 機制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); 
+
       try {
         const response = await fetch(GAS_API_URL, {
-          method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload)
+          method: "POST", 
+          headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+          body: JSON.stringify(payload),
+          signal: controller.signal // 綁定中止訊號
         });
+        clearTimeout(timeoutId); // 成功拿到回應就清除倒數
+
         const text = await response.text();
         try {
           return JSON.parse(text);
@@ -149,7 +158,12 @@
           return { success: false, message: "回應格式錯誤" };
         }
       } catch (err) {
+        clearTimeout(timeoutId);
         console.error("❌ API錯誤", err);
+        // 判斷是否為超時錯誤
+        if (err.name === 'AbortError') {
+          return { success: false, message: "伺服器回應逾時，請稍後再試" };
+        }
         return { success: false, message: "連線失敗" };
       }
     }
@@ -445,27 +459,30 @@
     function calculateCart() {
       let flatItems = []; let originalTotal = 0;
       
-      // 1. 將所有購物車品項根據數量「攤平」為單杯獨立計算，並把加料金額與本體分離
-      cart.forEach((item, cartIndex) => { 
-        for(let i=0; i<item.qty; i++){ 
-          flatItems.push({ 
-             cartIndex: cartIndex, name: item.name, category: item.category, 
-             basePrice: item.basePrice, toppingPrice: item.toppingPrice, size: item.size, 
-             usedPromo: false 
-          }); 
-          originalTotal += (item.basePrice + item.toppingPrice); 
-        } 
+      // 1. 將購物車依照數量攤平，對齊後端邏輯
+      cart.forEach((item, cartIndex) => {
+        let baseP = Number(item.basePrice) || 0;
+        let topP = Number(item.toppingPrice) || 0;
+        let qty = Number(item.qty) || 1;
+        
+        for(let i = 0; i < qty; i++){
+          flatItems.push({
+             cartIndex: cartIndex, name: item.name, category: item.category,
+             basePrice: baseP, toppingPrice: topP, size: item.size,
+             usedPromo: false
+          });
+          originalTotal += (baseP + topP);
+        }
       });
-      
-      // 優先從高價飲料開始折抵 (對消費者最有利)
-      flatItems.sort((a, b) => b.basePrice - a.basePrice); 
-      let discountAmount = 0;
-      let appliedPromos = [];
+
+      // 優先從高價飲料開始折抵
+      flatItems.sort((a, b) => b.basePrice - a.basePrice);
+      let discountAmount = 0; let appliedPromos = [];
 
       promosData.forEach(promo => {
-        // [A] 指定組合套餐處理
+        // [A] 指定組合
         if (promo.targetType === "指定組合" && promo.promoMode === "組合價") {
-          let requiredNames = promo.targetName.split(",").map(x => x.trim()).filter(x => x);
+          let requiredNames = String(promo.targetName || "").split(",").map(x => x.trim()).filter(x => x);
           if (requiredNames.length === 0) return;
           
           while (true) {
@@ -484,9 +501,9 @@
             }
             if (!canMakeCombo) break;
             
-            let groupBaseTotal = 0; 
+            let groupBaseTotal = 0;
             currentGroup.forEach(idx => groupBaseTotal += flatItems[idx].basePrice);
-            let discount = groupBaseTotal - promo.comboPrice;
+            let discount = groupBaseTotal - Number(promo.comboPrice);
             if (discount > 0) {
               discountAmount += discount;
               appliedPromos.push(`(套餐優惠) ${requiredNames.join(" + ")} 特價 $${promo.comboPrice}，折抵 $${discount}`);
@@ -496,7 +513,7 @@
           return;
         }
 
-        // [B] 全館 / 系列 / 單品 處理
+        // [B] 全館 / 系列 / 單品
         let matchedIndices = [];
         for (let i = 0; i < flatItems.length; i++) {
           if (flatItems[i].usedPromo) continue;
@@ -508,26 +525,26 @@
           if (isMatch) matchedIndices.push(i);
         }
 
-        if (promo.promoMode === "買X送Y" && (promo.buyQty + promo.freeQty) > 0) {
-          let groupSize = promo.buyQty + promo.freeQty;
+        if (promo.promoMode === "買X送Y" && (Number(promo.buyQty) + Number(promo.freeQty)) > 0) {
+          let groupSize = Number(promo.buyQty) + Number(promo.freeQty);
           let groups = Math.floor(matchedIndices.length / groupSize);
           for (let g = 0; g < groups; g++) {
             let curGroup = matchedIndices.slice(g * groupSize, (g + 1) * groupSize);
-            // 送價位較低的飲料 (前面已經由高至低排序過)
-            for (let f = promo.buyQty; f < groupSize; f++) {
+            for (let f = Number(promo.buyQty); f < groupSize; f++) {
               let freeIdx = curGroup[f];
-              discountAmount += flatItems[freeIdx].basePrice;
-              appliedPromos.push(`(買${promo.buyQty}送${promo.freeQty}) 折抵 ${flatItems[freeIdx].name} 飲料本體 $${flatItems[freeIdx].basePrice}`);
+              let freeDiscount = flatItems[freeIdx].basePrice;
+              discountAmount += freeDiscount;
+              appliedPromos.push(`(買${promo.buyQty}送${promo.freeQty}) 折抵 ${flatItems[freeIdx].name} 飲料本體 $${freeDiscount}`);
             }
             curGroup.forEach(idx => flatItems[idx].usedPromo = true);
           }
-        } else if (promo.promoMode === "組合價" && promo.buyQty > 0) {
-          let groups = Math.floor(matchedIndices.length / promo.buyQty);
+        } else if (promo.promoMode === "組合價" && Number(promo.buyQty) > 0) {
+          let groups = Math.floor(matchedIndices.length / Number(promo.buyQty));
           for (let g = 0; g < groups; g++) {
-            let curGroup = matchedIndices.slice(g * promo.buyQty, (g + 1) * promo.buyQty);
+            let curGroup = matchedIndices.slice(g * Number(promo.buyQty), (g + 1) * Number(promo.buyQty));
             let baseSum = 0;
             curGroup.forEach(idx => baseSum += flatItems[idx].basePrice);
-            let comboDiscount = baseSum - promo.comboPrice;
+            let comboDiscount = baseSum - Number(promo.comboPrice);
             if (comboDiscount > 0) {
               discountAmount += comboDiscount;
               appliedPromos.push(`(任選組合價) 原價 $${baseSum} 特價 $${promo.comboPrice}，折抵 $${comboDiscount}`);
