@@ -23,13 +23,15 @@
     .btn-blue { background-color: #3498db; }
     
     .order-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px; border-left: 5px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .status-new { border-left-color: #e74c3c; }
-    .status-accepted { border-left-color: #f39c12; }
-    .status-ready { border-left-color: #3498db; }
+    
+    /* ✅ 狀態對應的顏色區分 */
+    .status-new { border-left-color: #e74c3c; }       /* 未處理 - 紅 */
+    .status-accepted { border-left-color: #f39c12; }  /* 已接單 - 橘 */
+    .status-ready { border-left-color: #3498db; }     /* 已完成 - 藍 */
     
     .card-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; color: #7f8c8d; }
     .card-customer { font-size: 14px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; }
-    .card-items { margin: 0 0 10px 0; background: #fafbfc; padding: 5px 8px; border-radius: 6px; border: 1px solid #eee; }
+    .card-items { margin: 0 0 10px 0; background: #fafbfc; padding: 5px 8px; border-radius: 6px; border: 1px solid #eee; font-size: 15px; line-height: 1.6;}
     .action-btns { display: flex; gap: 8px; justify-content: flex-end; }
     .btn-action { padding: 6px 14px; border: none; border-radius: 5px; font-weight: bold; color: white; cursor: pointer; font-size: 13px; }
     .btn-gray { background: #95a5a6; }
@@ -131,12 +133,11 @@
 
   <script>
 const BOSS_LIFF_ID = "2010243276-ZRC8eTMt";
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyraMdqK8wdBF9dMorc7pk9eejLMjbhG8Kus4j1ZxO9tn73D5_GjXeO9d7OHlADsOi0/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx_ksrTcPPtU-cuLXSYZ0FJ3cQ8Mottlc2UY-L9VnykRoCRXd3mb0vXS31cIminEqGi/exec";
 
 let globalMenus = [];
 let currentUserId = ""; 
 
-// ✅ API呼叫
 async function callGAS(action, payload = {}) {
   try {
     payload.action = action;
@@ -145,35 +146,25 @@ async function callGAS(action, payload = {}) {
 
     const res = await fetch(GAS_API_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8" 
-      },
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload)
     });
 
-    const data = await res.json();
-    return data;
-
+    return await res.json();
   } catch (err) {
     console.error("❌ API錯誤:", err);
     return { success: false, message: "伺服器連線失敗" };
   }
 }
 
-// ✅ 啟動
 window.onload = async function () {
   await liff.init({ liffId: BOSS_LIFF_ID });
-
-  if (!liff.isLoggedIn()) {
-    liff.login();
-    return;
-  }
+  if (!liff.isLoggedIn()) { liff.login(); return; }
 
   const profile = await liff.getProfile();
   currentUserId = profile.userId;
 
   const res = await callGAS("verifyAdmin", { userId: currentUserId });
-
   document.getElementById("loading-layer").style.display = "none";
 
   if (!res.success || !res.isAdmin) {
@@ -189,51 +180,53 @@ window.onload = async function () {
   setInterval(loadDashboardData, 10000);
 };
 
-// ✅ 載入資料
 async function loadDashboardData() {
   const res = await callGAS("getAdminDashboardData");
   if (!res.success) return;
 
   const data = res.data;
-
   globalMenus = data.menus;
   renderUserSelect(data.users);
-
   document.getElementById("current-store-status").innerText = `(${data.storeStatus})`;
 
   renderOrders(data.orders);
   renderMenuManage(data.menus);
   renderPromos(data.promos);
   
-  // 保持下拉選單的內容即時
   updatePromoTargetUI(true); 
 }
 
-// ✅ 訂單顯示
+// ✅ 完美的訂單渲染顯示
 function renderOrders(orders) {
   const box = document.getElementById("orders-container");
 
   if (!orders || orders.length === 0) {
-    box.innerHTML = "目前沒有訂單";
+    box.innerHTML = "目前沒有未領取的訂單";
     return;
   }
 
   let html = "";
   orders.forEach(o => {
-    let cls = o.status === "未處理" ? "status-new" : o.status === "已接單" ? "status-accepted" : "status-ready";
+    let cls = o.status === "未處理" ? "status-new" : (o.status === "已接單" ? "status-accepted" : "status-ready");
+    
+    // 將換行符號取代為 html換行，讓明細一目了然
+    let formattedContent = o.content.replace(/\n/g, "<br>");
+    
     html += `
       <div class="order-card ${cls}">
         <div class="card-header">
           <span>#${o.id}</span>
           <span>${o.time}</span>
         </div>
-        <div class="card-customer">${o.userName}</div>
+        <div class="card-customer">${o.userName} <span style="font-weight:normal; font-size:12px; margin-left:8px; padding:2px 6px; border-radius:4px; background:#eee;">${o.payMethod}</span></div>
         <div class="card-items">
-          ${o.content.replace(/\n/g, "<br>")}
+          <b>📌 點單內容：</b><br>
+          ${formattedContent}
         </div>
         <div class="action-btns">
-          ${o.status === "未處理" ? `<button class="btn-action btn-orange" onclick="orderAction('${o.id}','accept')">接單</button>` : ""}
-          ${o.status === "已接單" ? `<button class="btn-action btn-blue" onclick="orderAction('${o.id}','ready')">完成</button>` : ""}
+          ${o.status === "未處理" ? `<button class="btn-action btn-orange" onclick="orderAction('${o.id}','accept')">👉 接單製作</button>` : ""}
+          ${o.status === "已接單" ? `<button class="btn-action btn-blue" onclick="orderAction('${o.id}','complete')">✅ 製作完成</button>` : ""}
+          ${o.status === "已完成" ? `<button class="btn-action btn-success" onclick="orderAction('${o.id}','collected')">🛍️ 客人已領取</button>` : ""}
         </div>
       </div>
     `;
@@ -253,7 +246,6 @@ function orderAction(id, action) {
   });
 }
 
-// ✅ 菜單管理
 function renderMenuManage(menus) {
   const box = document.getElementById("menu-list");
   let html = "";
@@ -481,7 +473,6 @@ function addPromo() {
   });
 }
 
-// ✅ 活動列表與取消活動功能
 function renderPromos(promos) {
   const box = document.getElementById("promo-list");
   if (!promos || promos.length === 0) {
@@ -515,7 +506,7 @@ function cancelPromo(promoId) {
     
     callGAS("adminTogglePromo", { promoId: promoId, status: "停用" }).then(async res => {
       if (res.success) {
-        await loadDashboardData(); // ✅ 等待重載完成，活動就會從畫面上消失
+        await loadDashboardData(); 
         Swal.fire("成功", "活動已取消", "success");
       } else {
         Swal.fire("錯誤", res.message, "error");
