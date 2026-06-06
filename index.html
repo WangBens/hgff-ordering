@@ -57,7 +57,6 @@
     .discount-text { color: #27ae60; font-weight: bold; }
     .final-price { color: #e74c3c; font-weight: bold; }
 
-    /* 邀請加入會員 Modal 專用樣式 */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
     .modal-content-center { background: white; width: 90%; max-width: 400px; border-radius: 12px; padding: 25px; box-sizing: border-box; text-align: center; }
     .btn-submit-order { width: 100%; background: #d35400; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
@@ -111,7 +110,7 @@
   <script>
     // ⚠️ 記得替換成你最新的 GAS 網址
     const CUSTOMER_LIFF_ID = "2010243276-yKzFVFFC";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx_ksrTcPPtU-cuLXSYZ0FJ3cQ8Mottlc2UY-L9VnykRoCRXd3mb0vXS31cIminEqGi/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx-RCpydfuL6flauMH9ggKl5KsVWbow1Oc2vher9d7xvv19l6VzxDhIP8MEKzbbXixt/exec";
 
     let idToken = ""; let lineProfile = null; let cart = []; let currentOrders = [];
     let menuData = []; let optionsData = { sweetness: [], ice: [], toppings: [] }; let promosData = []; let storeStatus = "營業中";
@@ -122,7 +121,8 @@
 
     async function callGAS(action, payload = {}, options = {}) {
       payload.action = action;
-      payload.userId = lineProfile ? lineProfile.userId : "";
+      // 🔒 安全升級：帶上 LINE idToken 以供後端驗證身分
+      payload.idToken = idToken || (liff.isLoggedIn() ? liff.getIDToken() : "");
       payload.requestId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
 
       if (options.loading) {
@@ -134,7 +134,6 @@
       }
 
       try {
-        // ✅ 修正：改用 text/plain 來繞過瀏覽器 OPTIONS 預檢，避免因 CORS 導致的卡住問題
         const response = await fetch(GAS_API_URL, {
           method: "POST",
           headers: {
@@ -144,7 +143,6 @@
         });
 
         const text = await response.text();
-        console.log("✅ 原始回應:", text);
 
         try {
           return JSON.parse(text);
@@ -185,7 +183,6 @@
     async function initUser() {
       console.log("🔥 initUser 開始");
       const res = await callGAS("initUser", { lineName: lineProfile ? lineProfile.displayName : "" });
-      console.log("🔥 initUser 回應 =", res); 
       if (res.success) { 
         userInfo = res.data; 
         renderMemberBox(); 
@@ -195,6 +192,8 @@
            await loadMenu(); 
            await fetchUserData();
         }
+      } else {
+        Swal.fire("驗證失敗", res.message, "error");
       }
     }
 
@@ -302,7 +301,7 @@
           </div>`;
       });
       if (orderDetail.promoLogs && orderDetail.promoLogs.length > 0) {
-        html += `<div style="text-align:left;background:#eef9ff;border-left:4px solid #3498db;padding:10px;border-radius:6px;margin-top:8px;font-size:13px;"><b>活動說明</b><br>${orderDetail.promoLogs.map(x => escapeHTML(x)).join("<br>")}</div>`;
+        html += `<div style="text-align:left;background:#eef9ff;border-left:4px solid #3498db;padding:10px;border-radius:6px;margin-top:8px;font-size:13px;"><b>系統自動套用活動</b><br>${orderDetail.promoLogs.map(x => escapeHTML(x)).join("<br>")}</div>`;
       }
       html += `
         <div style="text-align:right;margin-top:12px;color:#555;">原價合計：$${Number(orderDetail.originalTotal)}</div>
@@ -332,7 +331,6 @@
       container.innerHTML = "";
       if (storeStatus !== "營業中") { container.innerHTML = `<div class="store-closed">門市休息中</div>`; return; }
 
-      // 1. 優先渲染「今日優惠組合」在最頂端
       let comboHtml = ""; let bannerHtml = "";
       promosData.forEach(p => {
         const sizeText = p.sizeLimit !== "不限" ? `[限${escapeHTML(p.sizeLimit)}杯] ` : "";
@@ -359,7 +357,6 @@
          document.getElementById("promo-banner").style.display = "none";
       }
 
-      // 2. 渲染下方常規菜單分類
       const grouped = {};
       menuData.forEach(item => { if (!grouped[item.category]) grouped[item.category] = []; grouped[item.category].push(item); });
       for (let cat in grouped) {
@@ -377,7 +374,6 @@
       }
     }
 
-    // --- 客製化表單 (支援新增與編輯預設值) ---
     window.changeQty = function(delta) {
       const el = document.getElementById("swal-qty-value"); let next = Number(el.innerText) + delta;
       if (next < 1) next = 1; if (next > 20) next = 20; el.innerText = next;
@@ -442,7 +438,6 @@
       };
     }
 
-    // --- 新增：編輯購物車商品 ---
     window.editCartItem = function(index) {
       let existingItem = cart[index];
       let isCombo = !!existingItem.groupId;
@@ -465,7 +460,7 @@
               updated.groupId = existingItem.groupId;
               updated.comboName = existingItem.comboName;
               updated.comboPrice = existingItem.comboPrice;
-              updated.qty = 1; // 套餐鎖死1杯
+              updated.qty = 1; 
            }
            cart[index] = updated; 
            updateCart(); 
@@ -539,11 +534,7 @@
     function updateCart() {
       let count = 0;
       let total = 0;
-
-      cart.forEach(i => {
-        count += i.qty;
-        total += i.unitPrice * i.qty;
-      });
+      cart.forEach(i => { count += i.qty; total += i.unitPrice * i.qty; });
 
       if (count > 0) {
         document.getElementById("cart-bar").style.display = "flex";
@@ -554,9 +545,20 @@
       }
     }
 
-    // --- 修改：購物車清單加入編輯按鈕 ---
+    function getPromoHint() {
+      let promoHint = "";
+      promosData.forEach(p => {
+        if(p.promoMode === '買X送Y') {
+           promoHint += `📢 溫馨提示：本店有「${p.targetName===""?"全館":p.targetName}買${p.buyQty}送${p.freeQty}」活動，若您點餐符合條件，系統結帳會自動為您折抵！<br>`;
+        }
+      });
+      return promoHint ? `<div style="background:#eef9ff; color:#2980b9; padding:10px; border-radius:8px; font-size:13px; margin-bottom:12px; line-height:1.5;">${promoHint}</div>` : "";
+    }
+
     window.openCartManager = function() {
       let html = `<div style="text-align:left; max-height: 400px; overflow-y:auto; border-top: 1px solid #eee; padding-top:10px; padding-right:5px;">`;
+      html += getPromoHint();
+
       let groups = {}; let singles = [];
       cart.forEach((item, index) => {
         item._idx = index;
@@ -573,7 +575,7 @@
            html += `<div style="font-size:13px; margin-top:5px; padding-bottom:5px; border-bottom:1px dashed #f3ce95; position:relative;">
                       <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <b>[${escapeHTML(item.size)}] ${escapeHTML(item.name)}</b>
-                        <button style="background:#3498db; color:white; border:none; padding:3px 8px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="editCartItem(${item._idx})">✏️ 編輯此杯</button>
+                        <button style="background:#3498db; color:white; border:none; padding:3px 8px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="editCartItem(${item._idx})">✏️ 編輯</button>
                       </div>
                       <div style="color:#7f8c8d; margin-top:3px;">${escapeHTML(item.sweetness)}, ${escapeHTML(item.ice)} ${tops}</div>
                     </div>`;
@@ -596,120 +598,88 @@
     };
 
     window.openCheckoutModal = function() {
+      if (storeStatus !== "營業中") return Swal.fire("休息中", "門市目前暫停點餐", "warning");
+      if (cart.length === 0) return Swal.fire("錯誤", "購物車是空的", "warning");
 
- 
-    // ✅ 先檢查營業
-    if (storeStatus !== "營業中") {
-      return Swal.fire("休息中", "門市目前暫停點餐", "warning");
-    }
+      let calc = calculateCart();
 
-    // ✅ 再檢查購物車
-    if (cart.length === 0) {
-      return Swal.fire("錯誤", "購物車是空的", "warning");
-    }
+      let itemDetails = "";
+      cart.forEach(item => {
+         let tops = item.toppings.length > 0 ? ` (+${item.toppings.join("、")})` : "";
+         itemDetails += `<div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>[${item.size}] ${item.name} x${item.qty} <span style="color:#7f8c8d;font-size:12px;">${tops}</span></span>
+            <span>$${item.unitPrice * item.qty}</span>
+         </div>`;
+      });
 
-  let calc = calculateCart();
+      let payOpts = userInfo.isMember && userInfo.balance >= calc.final
+        ? `<option value="現場結帳">現場結帳</option><option value="餘額扣款">餘額扣款 (剩餘 $${userInfo.balance})</option>`
+        : `<option value="現場結帳">現場結帳</option><option value="餘額扣款" disabled>餘額扣款 (餘額不足)</option>`;
 
-  let payOpts = userInfo.isMember && userInfo.balance >= calc.final
-    ? `<option value="現場結帳">現場結帳</option>
-       <option value="餘額扣款">餘額扣款 (剩餘 $${userInfo.balance})</option>`
-    : `<option value="現場結帳">現場結帳</option>
-       <option value="餘額扣款" disabled>餘額扣款 (餘額不足)</option>`;
+      let html = `
+        ${getPromoHint()}
+        
+        <div style="text-align:left; font-size:14px; background:#fafafa; border:1px solid #eee; padding:12px; border-radius:8px; margin-bottom:15px;">
+          <div style="font-weight:bold; color:#2c3e50; border-bottom:1px dashed #ccc; padding-bottom:5px; margin-bottom:8px;">計價明細</div>
+          ${itemDetails}
+          <hr style="border:0; border-top:1px solid #ddd; margin:10px 0;">
+          <div style="display:flex; justify-content:space-between; color:#555;"><span>原價小計</span><span>$${calc.original}</span></div>
+          ${calc.discount > 0 ? `<div style="display:flex; justify-content:space-between; color:#27ae60; font-weight:bold; margin-top:5px;"><span>系統自動活動折抵</span><span>-$${calc.discount}</span></div>` : ''}
+        </div>
 
-  let html = `
-    <div style="text-align:right; font-weight:bold; font-size:22px; color:#d35400; margin-bottom:15px;">
-      應付總額：$${calc.final}
-    </div>
-    ${calc.discount > 0 ? `<div style="color:#27ae60;">折抵 -$${calc.discount}</div>` : ''}
+        <div style="text-align:right; font-weight:bold; font-size:24px; color:#d35400; margin-bottom:15px;">應付總額：$${calc.final}</div>
+        
+        <div style="text-align:left; margin-top:10px; font-weight:bold;">付款方式</div>
+        <select id="co-pay" style="width:100%; padding:12px; font-size:16px; border-radius:10px; border:1px solid #ccc; margin-bottom:10px;">${payOpts}</select>
 
-    <div style="text-align:left; margin-top:10px; font-weight:bold;">付款方式</div>
-<select id="co-pay" style="
-  width:100%;
-  padding:12px;
-  font-size:16px;
-  border-radius:10px;
-  border:1px solid #ccc;
-  margin-bottom:10px;
-">
-  ${payOpts}
-</select>
+        <div style="text-align:left; margin-top:10px; font-weight:bold;">姓名</div>
+        <input id="co-name" placeholder="請輸入姓名" style="width:100%; padding:12px; font-size:16px; border-radius:10px; border:1px solid #ccc; margin-bottom:10px; box-sizing:border-box;">
 
-<div style="text-align:left; margin-top:10px; font-weight:bold;">姓名</div>
-<input id="co-name" placeholder="請輸入姓名" style="
-  width:100%;
-  padding:12px;
-  font-size:16px;
-  border-radius:10px;
-  border:1px solid #ccc;
-  margin-bottom:10px;
-  box-sizing:border-box;
-">
+        <div style="text-align:left; margin-top:10px; font-weight:bold;">手機末三碼</div>
+        <input id="co-phone" placeholder="例：123" maxlength="3" style="width:100%; padding:12px; font-size:18px; border-radius:10px; border:1px solid #ccc; letter-spacing:3px; text-align:center; box-sizing:border-box;">
+      `;
 
-<div style="text-align:left; margin-top:10px; font-weight:bold;">手機末三碼</div>
-<input id="co-phone" placeholder="例：123" maxlength="3" style="
-  width:100%;
-  padding:12px;
-  font-size:18px;
-  border-radius:10px;
-  border:1px solid #ccc;
-  letter-spacing:3px;
-  text-align:center;
-  box-sizing:border-box;
-">
-  `;
-
-  Swal.fire({
-    title: "確認結帳",
-    html: html,
-    showCancelButton: true,
-    confirmButtonText: "送出訂單",
-    
-didOpen: () => {
-  const nameEl = document.getElementById("co-name");
-  const phoneEl = document.getElementById("co-phone");
-
-  nameEl.focus();
-
-  nameEl.addEventListener("input", () => Swal.resetValidationMessage());
-  phoneEl.addEventListener("input", () => Swal.resetValidationMessage());
-},
-
-    preConfirm: () => {
-  let n = document.getElementById("co-name").value;
-  let p = document.getElementById("co-phone").value;
-  let py = document.getElementById("co-pay").value;
-
-  if (!n) {
-    Swal.showValidationMessage("請輸入姓名");
-    return false;
-  }
-
-  if (!/^\d{3}$/.test(p)) {
-    Swal.showValidationMessage("請輸入正確的手機末三碼（3位數字）");
-    return false;
-  }
-
-  return { n, p, py };
-}
-  }).then(res => {
-    if(res.isConfirmed){
-      callGAS("submitOrder", {
-        lineName: lineProfile?.displayName || "",
-        lastName: res.value.n,
-        phone: res.value.p,
-        payMethod: res.value.py,
-        cart: cart
-      }).then(submitRes => {
-        if(submitRes.success){
-          cart = [];
-          updateCart();
-          fetchUserData();
-          Swal.fire("成功","訂單已送出！","success");
+      Swal.fire({
+        title: "確認結帳",
+        html: html,
+        showCancelButton: true,
+        confirmButtonText: "送出訂單",
+        didOpen: () => {
+          const nameEl = document.getElementById("co-name");
+          const phoneEl = document.getElementById("co-phone");
+          nameEl.focus();
+          nameEl.addEventListener("input", () => Swal.resetValidationMessage());
+          phoneEl.addEventListener("input", () => Swal.resetValidationMessage());
+        },
+        preConfirm: () => {
+          let n = document.getElementById("co-name").value;
+          let p = document.getElementById("co-phone").value;
+          let py = document.getElementById("co-pay").value;
+          if (!n) { Swal.showValidationMessage("請輸入姓名"); return false; }
+          if (!/^\d{3}$/.test(p)) { Swal.showValidationMessage("請輸入正確的手機末三碼（3位數字）"); return false; }
+          return { n, p, py };
+        }
+      }).then(res => {
+        if(res.isConfirmed){
+          callGAS("submitOrder", {
+            lineName: lineProfile?.displayName || "",
+            lastName: res.value.n,
+            phone: res.value.p,
+            payMethod: res.value.py,
+            cart: cart
+          }, { loading: true, loadingText: "訂單處理中，請稍候..." }).then(submitRes => {
+            if(submitRes.success){
+              cart = [];
+              updateCart();
+              fetchUserData();
+              Swal.fire("成功", "訂單已送出，感謝您的點餐！", "success");
+            } else {
+              Swal.fire("錯誤", submitRes.message, "error");
+            }
+          });
         }
       });
-    }
-  });
-};
+    };
   </script>
 </body>
 </html>
