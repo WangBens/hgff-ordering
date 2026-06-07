@@ -119,12 +119,13 @@
 ### 💡 關鍵步驟：強制開啟 Google 服務權限 (Auth Trigger)
 為了讓你的 Google Apps Script 順利連線外部 API (LINE) 並存取你的試算表，你在**部署前**必須先手動觸發一次權限請求。請將以下程式碼貼入你的 Apps Script 編輯器並執行一次：
 // 這段程式碼呼叫了三個不同的服務，會強制引導 Google 跳出授權請求視窗
-```javascript```
-`function forceAuth() {
-  UrlFetchApp.fetch("[https://api.line.me/](https://api.line.me/)");
+```javascript
+function forceAuth() {
+  UrlFetchApp.fetch("https://api.line.me/");
   SpreadsheetApp.getActiveSpreadsheet().getName();
   LockService.getScriptLock();
-}`
+}
+```
 
 ---
 
