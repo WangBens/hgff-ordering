@@ -116,6 +116,24 @@ Before starting, ensure you have the following three files. You must modify the 
 5. Select type: **Web App**. Execute as: **Me**. Who has access: **Anyone**.
 6. After deployment, copy the **Web App URL**. This is your `GAS_API_URL`.
 
+---
+
+To allow your Google Apps Script to successfully call external APIs (LINE) and access your spreadsheet, you must manually trigger an authorization request before deployment.
+
+Please paste the following code into your Apps Script editor and run it once.
+
+> ⚠️ This function calls three different Google services, which will prompt Google to display the authorization consent screen.
+
+```javascript
+function forceAuth() {
+  UrlFetchApp.fetch("https://api.line.me/");
+  SpreadsheetApp.getActiveSpreadsheet().getName();
+  LockService.getScriptLock();
+}
+```
+
+---
+
 ### Step 3: Bind Keys & Deploy Frontend Webpages
 1. Edit **INDEX.html**, replace `CUSTOMER_LIFF_ID` and `GAS_API_URL`.
 2. Edit **BOSS.html**, replace `BOSS_LIFF_ID` and `GAS_API_URL`.
